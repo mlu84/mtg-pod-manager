@@ -1,0 +1,68 @@
+<div class="auth-page">
+  <div class="auth-card card">
+    <div class="auth-header">
+      <h1>MTG Pod-Manager</h1>
+      <p class="text-muted">Sign in to your account</p>
+    </div>
+
+    @if (success()) {
+      <div class="alert alert--success">
+        <i class="fas fa-check-circle"></i>
+        {{ success() }}
+      </div>
+    }
+
+    @if (error()) {
+      <div class="alert alert--danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ error() }}
+      </div>
+    }
+
+    <form (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="your@email.com"
+          [disabled]="loading()"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="••••••••"
+          [disabled]="loading()"
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn--primary btn--block"
+        [disabled]="loading()"
+      >
+        @if (loading()) {
+          <span class="spinner" style="width: 20px; height: 20px;"></span>
+          Signing in...
+        } @else {
+          <i class="fas fa-sign-in-alt"></i>
+          Sign In
+        }
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>Don't have an account? <a routerLink="/register">Register</a></p>
+    </div>
+  </div>
+</div>

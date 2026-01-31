@@ -1,0 +1,214 @@
+<div class="groups-page">
+  <header class="header">
+    <div class="header__content container">
+      <h1><i class="fas fa-layer-group"></i> My Groups</h1>
+      <div class="header__actions">
+        <button class="btn btn--outline" (click)="goToProfile()">
+          <i class="fas fa-user"></i> Profile
+        </button>
+        <button class="btn btn--outline" (click)="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  @if (!isEmailVerified()) {
+    <div class="container">
+      <div class="alert alert--warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        Your email is not verified. Some features are limited until you verify your email.
+      </div>
+    </div>
+  }
+
+  <main class="container">
+    @if (loading()) {
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Loading groups...</p>
+      </div>
+    } @else if (error()) {
+      <div class="alert alert--danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ error() }}
+        <button class="btn btn--outline" (click)="loadGroups()">Retry</button>
+      </div>
+    } @else {
+      <div class="actions">
+        @if (isEmailVerified()) {
+          <button class="btn btn--primary" (click)="openCreateModal()">
+            <i class="fas fa-plus"></i> Create Group
+          </button>
+        }
+        <button class="btn btn--secondary" (click)="openJoinModal()">
+          <i class="fas fa-door-open"></i> Join Group
+        </button>
+      </div>
+
+      @if (groups().length === 0) {
+        <div class="empty-state card">
+          <i class="fas fa-users-slash"></i>
+          <h2>No groups yet</h2>
+          <p>Create a new group or join an existing one to get started!</p>
+        </div>
+      } @else {
+        <div class="groups-grid">
+          @for (group of groups(); track group.id) {
+            <div class="group-card card" (click)="openGroup(group)">
+              <div class="group-card__icon">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="group-card__content">
+                <h3>{{ group.name }}</h3>
+                <span class="group-card__format">{{ group.format }}</span>
+                @if (group.role === 'ADMIN') {
+                  <span class="group-card__badge">Admin</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </main>
+</div>
+
+<!-- Create Group Modal -->
+@if (showCreateModal()) {
+  <div class="modal-overlay" (click)="closeCreateModal()">
+    <div class="modal card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Create New Group</h2>
+        <button class="modal__close" (click)="closeCreateModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      @if (createError()) {
+        <div class="alert alert--danger">{{ createError() }}</div>
+      }
+
+      <form (ngSubmit)="createGroup()">
+        <div class="form-group">
+          <label for="groupName">Group Name *</label>
+          <input
+            type="text"
+            id="groupName"
+            class="form-control"
+            [(ngModel)]="newGroupName"
+            name="groupName"
+            placeholder="e.g., Friday Night Magic"
+            [disabled]="createLoading()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="groupFormat">Format *</label>
+          <select
+            id="groupFormat"
+            class="form-control"
+            [(ngModel)]="newGroupFormat"
+            name="groupFormat"
+            [disabled]="createLoading()"
+          >
+            <option value="">Select a format</option>
+            @for (format of formats; track format) {
+              <option [value]="format">{{ format }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="groupDescription">Description (optional)</label>
+          <textarea
+            id="groupDescription"
+            class="form-control"
+            [(ngModel)]="newGroupDescription"
+            name="groupDescription"
+            placeholder="Describe your group..."
+            rows="3"
+            [disabled]="createLoading()"
+          ></textarea>
+        </div>
+
+        <div class="modal__actions">
+          <button
+            type="button"
+            class="btn btn--outline"
+            (click)="closeCreateModal()"
+            [disabled]="createLoading()"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn--primary"
+            [disabled]="createLoading()"
+          >
+            @if (createLoading()) {
+              Creating...
+            } @else {
+              Create Group
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Join Group Modal -->
+@if (showJoinModal()) {
+  <div class="modal-overlay" (click)="closeJoinModal()">
+    <div class="modal card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Join Group</h2>
+        <button class="modal__close" (click)="closeJoinModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      @if (joinError()) {
+        <div class="alert alert--danger">{{ joinError() }}</div>
+      }
+
+      <form (ngSubmit)="joinGroup()">
+        <div class="form-group">
+          <label for="inviteCode">Invite Code</label>
+          <input
+            type="text"
+            id="inviteCode"
+            class="form-control"
+            [(ngModel)]="inviteCode"
+            name="inviteCode"
+            placeholder="Enter invite code"
+            [disabled]="joinLoading()"
+          />
+        </div>
+
+        <div class="modal__actions">
+          <button
+            type="button"
+            class="btn btn--outline"
+            (click)="closeJoinModal()"
+            [disabled]="joinLoading()"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn--primary"
+            [disabled]="joinLoading()"
+          >
+            @if (joinLoading()) {
+              Joining...
+            } @else {
+              Join Group
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

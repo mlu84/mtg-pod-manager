@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.angular/
+
+# Environment files (contain secrets!)
+.env
+.env.local
+.env.*.local
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Claude Code
+.claude/
+
+# Windows artifacts
+nul

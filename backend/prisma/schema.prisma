@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Hier beginnen die Datenmodelle
+
+model User {
+  id                     String    @id @default(cuid())
+  email                  String    @unique
+  password               String
+  inAppName              String    @unique
+  emailVerified          DateTime?
+  emailVerificationToken String?   @unique
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  ownedDecks     Deck[]
+  groups         UsersOnGroups[]
+  gamePlacements GamePlacement[]
+}
+
+model Group {
+  id           String @id @default(cuid())
+  name         String
+  format       String
+  description  String?
+  inviteCode   String   @unique @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members      UsersOnGroups[]
+  decks        Deck[]
+  games        Game[]
+  events       GroupEvent[]
+}
+
+model UsersOnGroups {
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  group     Group    @relation(fields: [groupId], references: [id])
+  groupId   String
+  role      String   // "ADMIN" or "MEMBER"
+  assignedAt DateTime @default(now())
+
+  @@id([userId, groupId])
+}
+
+model Deck {
+  id                String  @id @default(cuid())
+  name              String
+  colors            String  // z.B. "WUBRG", "RG", "B"
+  type              String? // z.B. "Aggro", "Control"
+  isActive          Boolean @default(true)
+  performanceRating Float   @default(0)
+  gamesPlayed       Int     @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  owner    User   @relation(fields: [ownerId], references: [id])
+  ownerId  String
+  group    Group  @relation(fields: [groupId], references: [id])
+  groupId  String
+
+  placements GamePlacement[]
+
+  @@unique([name, groupId]) // Deckname muss pro Gruppe unique sein
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  playedAt  DateTime @default(now())
+  playerCount Int
+  createdAt DateTime @default(now())
+
+  group   Group  @relation(fields: [groupId], references: [id])
+  groupId String
+
+  placements GamePlacement[]
+}
+
+model GamePlacement {
+  id         String   @id @default(cuid())
+  rank       Int
+  points     Float
+  playerName String? // Für Gast-Spieler
+  deletedDeckName String? // Name des gelöschten Decks (für Historie)
+
+  game   Game   @relation(fields: [gameId], references: [id])
+  gameId String
+  deck   Deck?  @relation(fields: [deckId], references: [id], onDelete: SetNull)
+  deckId String?
+  user   User?  @relation(fields: [userId], references: [id]) // Der tatsächliche Spieler (kann null sein für Gäste)
+  userId String?
+}
+
+model GroupEvent {
+  id        String   @id @default(cuid())
+  type      String   // DECK_CREATED, DECK_DELETED, DECK_DEACTIVATED, DECK_REACTIVATED, MEMBER_JOINED, MEMBER_LEFT, MEMBER_REMOVED, GAME_RECORDED, GAME_UNDONE
+  message   String   // Kurze Beschreibung des Events
+  createdAt DateTime @default(now())
+
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+}

@@ -1,0 +1,630 @@
+<div class="group-detail-page">
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading group...</p>
+    </div>
+  } @else if (error()) {
+    <div class="container">
+      <div class="alert alert--danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ error() }}
+      </div>
+      <button class="btn btn--outline" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Back to Groups
+      </button>
+    </div>
+  } @else if (group()) {
+    <header class="header">
+      <div class="header__content container">
+        <div class="header__left">
+          <button class="btn btn--outline" (click)="goBack()">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div class="header__info">
+            <h1>
+              {{ group()!.name }}
+              @if (isAdmin()) {
+                <button class="btn-icon" (click)="openEditGroupModal()" title="Edit group">
+                  <i class="fas fa-edit"></i>
+                </button>
+              }
+            </h1>
+            <span class="header__format">{{ group()!.format }}</span>
+          </div>
+        </div>
+        <div class="header__actions">
+          @if (isAdmin() && group()!.inviteCode) {
+            <div class="invite-code">
+              <span class="invite-code__label">Invite Code:</span>
+              <code class="invite-code__value">{{ group()!.inviteCode }}</code>
+              <button class="btn btn--outline" (click)="copyInviteCode()" title="Copy">
+                <i class="fas fa-copy"></i>
+              </button>
+              <button class="btn btn--outline" (click)="regenerateInviteCode()" title="Generate new code">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+            @if (confirmDeleteGroup()) {
+              <button class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteGroupAction()" [disabled]="deleteGroupLoading()">
+                <i class="fas fa-exclamation-triangle"></i> Really delete group?
+              </button>
+              <button class="btn btn--outline" (click)="cancelDeleteGroup()" [disabled]="deleteGroupLoading()">
+                Cancel
+              </button>
+            } @else {
+              <button class="btn btn--danger" (click)="requestDeleteGroup()" title="Delete group">
+                <i class="fas fa-trash"></i>
+              </button>
+            }
+          }
+        </div>
+      </div>
+    </header>
+
+    <main class="container main-content">
+      <div class="content-grid">
+        <!-- Left Column: Ranking & History -->
+        <div class="left-column">
+          <!-- Ranking -->
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title"><i class="fas fa-trophy"></i> Ranking</h2>
+            </div>
+            @if (ranking().length === 0) {
+              <p class="text-muted">No games played yet.</p>
+            } @else {
+              <div class="ranking-list">
+                @for (entry of ranking(); track entry.id) {
+                  <div class="ranking-item" [class.inactive]="!entry.isActive">
+                    <span class="ranking-item__position">{{ entry.position }}</span>
+                    <div class="ranking-item__trend">
+                      @if (entry.trend === 'up') {
+                        <span class="trend trend-up">
+                          <i class="fas fa-caret-up"></i>
+                          <span class="trend__value">{{ entry.positionChange }}</span>
+                        </span>
+                      } @else if (entry.trend === 'down') {
+                        <span class="trend trend-down">
+                          <i class="fas fa-caret-down"></i>
+                          <span class="trend__value">{{ -entry.positionChange }}</span>
+                        </span>
+                      } @else if (entry.trend === 'new') {
+                        <span class="trend trend-new">
+                          <i class="fas fa-star"></i>
+                        </span>
+                      } @else {
+                        <span class="trend trend-same">
+                          <i class="fas fa-minus"></i>
+                        </span>
+                      }
+                    </div>
+                    <div class="ranking-item__info">
+                      <span class="ranking-item__name">{{ entry.name }}</span>
+                      <span class="ranking-item__owner">{{ entry.owner.inAppName }}</span>
+                    </div>
+                    <div class="ranking-item__stats">
+                      <span class="ranking-item__rating">{{ entry.performanceRating }}</span>
+                      <span class="ranking-item__games">{{ entry.gamesPlayed }} games</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+
+          <!-- History -->
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title"><i class="fas fa-history"></i> History</h2>
+              @if (isAdmin() && isEmailVerified() && games().length > 0) {
+                <button class="btn btn--danger" (click)="undoLastGame()">
+                  <i class="fas fa-undo"></i> Undo Last
+                </button>
+              }
+            </div>
+            @if (history().length === 0) {
+              <p class="text-muted">No activity yet.</p>
+            } @else {
+              <div class="history-list">
+                @for (item of history(); track $index) {
+                  @if (item.type === 'game') {
+                    <div class="game-item">
+                      <div class="game-item__header">
+                        <span class="game-item__date">{{ formatDate($any(item.data).playedAt) }}</span>
+                        <span class="game-item__players">{{ $any(item.data).playerCount }} players</span>
+                      </div>
+                      <div class="game-item__placements">
+                        @for (placement of $any(item.data).placements; track placement.deck?.id || $index) {
+                          <div class="placement">
+                            <span class="placement__rank">#{{ placement.rank }}</span>
+                            <span class="placement__deck">
+                              {{ placement.deck?.name || placement.deletedDeckName || 'Deleted Deck' }}
+                              @if (placement.playerName) {
+                                <span class="placement__player">({{ placement.playerName }})</span>
+                              }
+                            </span>
+                            <span class="placement__points">{{ placement.points }} pts</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="event-item">
+                      <span class="event-item__date">{{ formatDate($any(item.data).createdAt) }}</span>
+                      <span class="event-item__message">{{ $any(item.data).message }}</span>
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </section>
+        </div>
+
+        <!-- Right Column: Actions & Decks -->
+        <div class="right-column">
+          <!-- Actions -->
+          <section class="card actions-card">
+            @if (isEmailVerified()) {
+              <button class="btn btn--primary btn--block" (click)="openDeckModal()">
+                <i class="fas fa-plus"></i> Add Deck
+              </button>
+              @if (isAdmin()) {
+                <button class="btn btn--secondary btn--block" (click)="openGameModal()">
+                  <i class="fas fa-gamepad"></i> Record Game
+                </button>
+              }
+            } @else {
+              <div class="alert alert--warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                Verify your email to add decks and record games.
+              </div>
+            }
+          </section>
+
+          <!-- Decks List -->
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title"><i class="fas fa-layer-group"></i> Decks</h2>
+            </div>
+            @if (group()!.decks.length === 0) {
+              <p class="text-muted">No decks added yet.</p>
+            } @else {
+              <div class="decks-list">
+                @for (deck of group()!.decks; track deck.id) {
+                  <div class="deck-item" [class.inactive]="!deck.isActive">
+                    <div class="deck-item__info">
+                      <span class="deck-item__name">{{ deck.name }}</span>
+                      <span class="deck-item__colors">{{ deck.colors }}</span>
+                      @if (!deck.isActive) {
+                        <span class="deck-item__badge">Inactive</span>
+                      }
+                    </div>
+                    <div class="deck-item__actions">
+                      <span class="deck-item__owner">{{ deck.owner.inAppName }}</span>
+                      @if (canEditDeck(deck) && isEmailVerified()) {
+                        <button class="btn-icon" (click)="openEditDeckModal(deck)" title="Edit deck">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+
+          <!-- Members -->
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title"><i class="fas fa-users"></i> Members</h2>
+            </div>
+            <div class="members-list">
+              @for (member of group()!.members; track member.userId) {
+                <div class="member-item">
+                  <div class="member-item__info">
+                    <span class="member-item__name">{{ member.user.inAppName }}</span>
+                    @if (member.role === 'ADMIN') {
+                      <span class="member-item__badge">Admin</span>
+                    }
+                  </div>
+                  @if (isAdmin() && member.userId !== currentUserId() && member.role !== 'ADMIN') {
+                    <button class="btn-icon btn-icon--danger" (click)="removeMember(member)" title="Remove member">
+                      <i class="fas fa-user-minus"></i>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  }
+</div>
+
+<!-- Add Deck Modal -->
+@if (showDeckModal()) {
+  <div class="modal-overlay" (click)="closeDeckModal()">
+    <div class="modal card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Add New Deck</h2>
+        <button class="modal__close" (click)="closeDeckModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      @if (deckError()) {
+        <div class="alert alert--danger">{{ deckError() }}</div>
+      }
+
+      <form (ngSubmit)="createDeck()">
+        <div class="form-group">
+          <label for="deckName">Deck Name *</label>
+          <input
+            type="text"
+            id="deckName"
+            class="form-control"
+            [(ngModel)]="deckName"
+            name="deckName"
+            placeholder="e.g., Atraxa Superfriends"
+            [disabled]="deckLoading()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="deckColors">Colors *</label>
+          <select
+            id="deckColors"
+            class="form-control"
+            [(ngModel)]="deckColors"
+            name="deckColors"
+            [disabled]="deckLoading()"
+          >
+            <option value="">Select colors</option>
+            @for (color of colorOptions; track color) {
+              <option [value]="color">{{ color }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="deckType">Type (optional)</label>
+          <select
+            id="deckType"
+            class="form-control"
+            [(ngModel)]="deckType"
+            name="deckType"
+            [disabled]="deckLoading()"
+          >
+            <option value="">Select type</option>
+            @for (type of typeOptions; track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" (click)="closeDeckModal()" [disabled]="deckLoading()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn--primary" [disabled]="deckLoading()">
+            @if (deckLoading()) { Adding... } @else { Add Deck }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Record Game Modal -->
+@if (showGameModal()) {
+  <div class="modal-overlay" (click)="closeGameModal()">
+    <div class="modal modal--large card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Record Game</h2>
+        <button class="modal__close" (click)="closeGameModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <p class="game-hint">
+        <i class="fas fa-info-circle"></i>
+        Assign the same rank to multiple players to record a tie.
+      </p>
+
+      @if (gameError()) {
+        <div class="alert alert--danger">{{ gameError() }}</div>
+      }
+
+      <form (ngSubmit)="createGame()">
+        <div class="placements-list">
+          @for (placement of gamePlacements; track $index; let i = $index) {
+            <div class="placement-row">
+              <div class="form-group">
+                <label>Rank</label>
+                <select
+                  class="form-control"
+                  [(ngModel)]="placement.rank"
+                  [name]="'rank' + i"
+                  [disabled]="gameLoading()"
+                >
+                  @for (rank of getAvailableRanks(); track rank) {
+                    <option [value]="rank">{{ rank }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group form-group--grow">
+                <label>Deck</label>
+                <select
+                  class="form-control"
+                  [(ngModel)]="placement.deckId"
+                  [name]="'deck' + i"
+                  [disabled]="gameLoading()"
+                >
+                  <option value="">Select deck</option>
+                  @for (deck of getAvailableDecksForSlot(i); track deck.id) {
+                    <option [value]="deck.id">{{ deck.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Player (optional)</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="placement.playerName"
+                  [name]="'player' + i"
+                  placeholder="Guest name"
+                  [disabled]="gameLoading()"
+                />
+              </div>
+              <button type="button" class="btn btn--danger" (click)="removePlayer(i)" [disabled]="gameLoading()">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (gamePlacements.length < 6) {
+          <button type="button" class="btn btn--outline btn--block" (click)="addPlayer()" [disabled]="gameLoading()">
+            <i class="fas fa-plus"></i> Add Player ({{ gamePlacements.length }}/6)
+          </button>
+        }
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" (click)="closeGameModal()" [disabled]="gameLoading()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn--primary" [disabled]="gameLoading() || gamePlacements.length < 2">
+            @if (gameLoading()) { Recording... } @else { Record Game }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Edit Deck Modal -->
+@if (showEditDeckModal()) {
+  <div class="modal-overlay" (click)="closeEditDeckModal()">
+    <div class="modal card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Edit Deck</h2>
+        <button class="modal__close" (click)="closeEditDeckModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      @if (editDeckError()) {
+        <div class="alert alert--danger">{{ editDeckError() }}</div>
+      }
+
+      <form (ngSubmit)="updateDeck()">
+        <div class="form-group">
+          <label for="editDeckName">Deck Name *</label>
+          <input
+            type="text"
+            id="editDeckName"
+            class="form-control"
+            [(ngModel)]="editDeckName"
+            name="editDeckName"
+            [disabled]="editDeckLoading()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="editDeckColors">Colors *</label>
+          <select
+            id="editDeckColors"
+            class="form-control"
+            [(ngModel)]="editDeckColors"
+            name="editDeckColors"
+            [disabled]="editDeckLoading()"
+          >
+            <option value="">Select colors</option>
+            @for (color of colorOptions; track color) {
+              <option [value]="color">{{ color }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editDeckType">Type (optional)</label>
+          <select
+            id="editDeckType"
+            class="form-control"
+            [(ngModel)]="editDeckType"
+            name="editDeckType"
+            [disabled]="editDeckLoading()"
+          >
+            <option value="">Select type</option>
+            @for (type of typeOptions; track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="editDeckIsActive"
+              name="editDeckIsActive"
+              [disabled]="editDeckLoading()"
+            />
+            <span>Active (can be selected for new games)</span>
+          </label>
+        </div>
+
+        <div class="modal__actions modal__actions--split">
+          @if (confirmDelete()) {
+            <button type="button" class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteDeck()" [disabled]="editDeckLoading()">
+              <i class="fas fa-exclamation-triangle"></i> Really delete?
+            </button>
+            <button type="button" class="btn btn--outline" (click)="cancelDeleteDeck()" [disabled]="editDeckLoading()">
+              Cancel
+            </button>
+          } @else {
+            <button type="button" class="btn btn--danger" (click)="requestDeleteDeck()" [disabled]="editDeckLoading()">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+            <div class="modal__actions">
+              <button type="button" class="btn btn--outline" (click)="closeEditDeckModal()" [disabled]="editDeckLoading()">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn--primary" [disabled]="editDeckLoading()">
+                @if (editDeckLoading()) { Saving... } @else { Save Changes }
+              </button>
+            </div>
+          }
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Edit Group Modal -->
+@if (showEditGroupModal()) {
+  <div class="modal-overlay" (click)="closeEditGroupModal()">
+    <div class="modal card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Edit Group</h2>
+        <button class="modal__close" (click)="closeEditGroupModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      @if (editGroupError()) {
+        <div class="alert alert--danger">{{ editGroupError() }}</div>
+      }
+
+      <form (ngSubmit)="updateGroup()">
+        <div class="form-group">
+          <label for="editGroupName">Group Name *</label>
+          <input
+            type="text"
+            id="editGroupName"
+            class="form-control"
+            [(ngModel)]="editGroupName"
+            name="editGroupName"
+            [disabled]="editGroupLoading()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="editGroupFormat">Format *</label>
+          <select
+            id="editGroupFormat"
+            class="form-control"
+            [(ngModel)]="editGroupFormat"
+            name="editGroupFormat"
+            [disabled]="editGroupLoading()"
+          >
+            <option value="">Select format</option>
+            @for (format of formats; track format) {
+              <option [value]="format">{{ format }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editGroupDescription">Description (optional)</label>
+          <textarea
+            id="editGroupDescription"
+            class="form-control"
+            [(ngModel)]="editGroupDescription"
+            name="editGroupDescription"
+            rows="3"
+            [disabled]="editGroupLoading()"
+          ></textarea>
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" (click)="closeEditGroupModal()" [disabled]="editGroupLoading()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn--primary" [disabled]="editGroupLoading()">
+            @if (editGroupLoading()) { Saving... } @else { Save Changes }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Confirmation Modal -->
+@if (showConfirmModal()) {
+  <div class="modal-overlay" (click)="closeConfirmModal()">
+    <div class="modal modal--confirm card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>{{ confirmModalTitle }}</h2>
+        <button class="modal__close" (click)="closeConfirmModal()" [disabled]="confirmModalLoading()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <p class="modal__message">{{ confirmModalMessage }}</p>
+      <div class="modal__actions">
+        <button class="btn btn--outline" (click)="closeConfirmModal()" [disabled]="confirmModalLoading()">
+          Cancel
+        </button>
+        <button class="btn btn--danger" (click)="executeConfirmAction()" [disabled]="confirmModalLoading()">
+          @if (confirmModalLoading()) {
+            <i class="fas fa-spinner fa-spin"></i> Processing...
+          } @else {
+            Confirm
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Alert Modal -->
+@if (showAlertModal()) {
+  <div class="modal-overlay" (click)="closeAlertModal()">
+    <div class="modal modal--alert card" (click)="$event.stopPropagation()">
+      <div class="modal__header" [class.modal__header--error]="alertModalType === 'error'" [class.modal__header--success]="alertModalType === 'success'">
+        <h2>
+          @if (alertModalType === 'error') {
+            <i class="fas fa-exclamation-circle"></i>
+          } @else if (alertModalType === 'success') {
+            <i class="fas fa-check-circle"></i>
+          } @else {
+            <i class="fas fa-info-circle"></i>
+          }
+          {{ alertModalTitle }}
+        </h2>
+        <button class="modal__close" (click)="closeAlertModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <p class="modal__message">{{ alertModalMessage }}</p>
+      <div class="modal__actions">
+        <button class="btn btn--primary" (click)="closeAlertModal()">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+}
