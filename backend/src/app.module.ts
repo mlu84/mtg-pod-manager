@@ -8,6 +8,7 @@ import { GamesModule } from './games/games.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
 import { EventsModule } from './events/events.module';
+import { ArchidektModule } from './archidekt/archidekt.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EventsModule } from './events/events.module';
     GroupsModule,
     DecksModule,
     GamesModule,
+    ArchidektModule,
   ],
   controllers: [],
   providers: [],

@@ -1,0 +1,268 @@
+<div class="archidekt-test-page">
+  <header class="header">
+    <div class="header__content container">
+      <div class="header__left">
+        <button class="btn btn--outline" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1>Archidekt API Test</h1>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <!-- Input Section -->
+    <section class="card">
+      <h2 class="card__title">Deck URL eingeben</h2>
+      <div class="input-row">
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="deckUrl"
+          placeholder="https://archidekt.com/decks/12784239/ oder nur die ID"
+          [disabled]="loading()"
+        />
+        <button class="btn btn--primary" (click)="fetchDeck()" [disabled]="loading() || !deckUrl">
+          @if (loading()) {
+            <i class="fas fa-spinner fa-spin"></i> Loading...
+          } @else {
+            <i class="fas fa-search"></i> Fetch
+          }
+        </button>
+      </div>
+
+      @if (error()) {
+        <div class="alert alert--danger">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ error() }}
+        </div>
+      }
+    </section>
+
+    <!-- Extracted Data -->
+    @if (deckInfo()) {
+      <section class="card">
+        <h2 class="card__title"><i class="fas fa-info-circle"></i> Extrahierte Deck-Informationen</h2>
+        <p class="text-muted">Diese Daten könnten für die App nützlich sein:</p>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Feld</th>
+              <th>Wert</th>
+              <th>Nutzbarkeit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>ID</strong></td>
+              <td>{{ deckInfo()!.id }}</td>
+              <td class="usefulness high">Wichtig - zum Speichern</td>
+            </tr>
+            <tr>
+              <td><strong>Name</strong></td>
+              <td>{{ deckInfo()!.name }}</td>
+              <td class="usefulness high">Könnte als Vorschlag dienen</td>
+            </tr>
+            <tr>
+              <td><strong>Format</strong></td>
+              <td>{{ deckInfo()!.format }}</td>
+              <td class="usefulness medium">Zum Abgleich mit Gruppenformat</td>
+            </tr>
+            <tr>
+              <td><strong>Owner</strong></td>
+              <td>{{ deckInfo()!.owner }}</td>
+              <td class="usefulness low">Info-Zweck</td>
+            </tr>
+            <tr>
+              <td><strong>Commander</strong></td>
+              <td>
+                @if (deckInfo()!.commanderNames.length > 0) {
+                  {{ deckInfo()!.commanderNames.join(', ') }}
+                } @else {
+                  <span class="text-muted">Kein Commander gefunden</span>
+                }
+              </td>
+              <td class="usefulness high">Könnte als Deckname verwendet werden</td>
+            </tr>
+            <tr>
+              <td><strong>Color Identity</strong></td>
+              <td>
+                @if (deckInfo()!.colorIdentity.length > 0) {
+                  <span class="color-badges">
+                    @for (color of deckInfo()!.colorIdentity; track color) {
+                      <span class="color-badge color-badge--{{ color.toLowerCase() }}">{{ color }}</span>
+                    }
+                  </span>
+                  ({{ getColorNamesString(deckInfo()!.colorIdentity) }})
+                } @else {
+                  <span class="text-muted">Colorless</span>
+                }
+              </td>
+              <td class="usefulness high">Automatische Farbzuweisung!</td>
+            </tr>
+            <tr>
+              <td><strong>Kartenanzahl</strong></td>
+              <td>{{ deckInfo()!.cardCount }}</td>
+              <td class="usefulness low">Info-Zweck</td>
+            </tr>
+            <tr>
+              <td><strong>Views</strong></td>
+              <td>{{ deckInfo()!.viewCount }}</td>
+              <td class="usefulness low">Info-Zweck</td>
+            </tr>
+            <tr>
+              <td><strong>Erstellt</strong></td>
+              <td>{{ formatDate(deckInfo()!.createdAt) }}</td>
+              <td class="usefulness low">Info-Zweck</td>
+            </tr>
+            <tr>
+              <td><strong>Aktualisiert</strong></td>
+              <td>{{ formatDate(deckInfo()!.updatedAt) }}</td>
+              <td class="usefulness low">Info-Zweck</td>
+            </tr>
+            <tr>
+              <td><strong>Privat</strong></td>
+              <td>{{ deckInfo()!.isPrivate ? 'Ja' : 'Nein' }}</td>
+              <td class="usefulness medium">Warnung wenn privat</td>
+            </tr>
+            <tr>
+              <td><strong>Kategorien</strong></td>
+              <td>
+                @if (deckInfo()!.categories.length > 0) {
+                  {{ deckInfo()!.categories.join(', ') }}
+                } @else {
+                  <span class="text-muted">Keine</span>
+                }
+              </td>
+              <td class="usefulness low">Info-Zweck</td>
+            </tr>
+            <tr>
+              <td><strong>Tags</strong></td>
+              <td>
+                @if (deckInfo()!.tags.length > 0) {
+                  {{ deckInfo()!.tags.join(', ') }}
+                } @else {
+                  <span class="text-muted">Keine</span>
+                }
+              </td>
+              <td class="usefulness low">Evtl. für Deck-Typ</td>
+            </tr>
+            <tr>
+              <td><strong>Beschreibung</strong></td>
+              <td class="description-cell">
+                @if (deckInfo()!.description) {
+                  {{ deckInfo()!.description }}
+                } @else {
+                  <span class="text-muted">Keine Beschreibung</span>
+                }
+              </td>
+              <td class="usefulness low">Info-Zweck</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Recommendations -->
+      <section class="card">
+        <h2 class="card__title"><i class="fas fa-lightbulb"></i> Empfehlungen für Integration</h2>
+        <div class="recommendations">
+          <div class="recommendation">
+            <h3>1. Automatische Farbzuweisung</h3>
+            <p>Die Color Identity kann automatisch das "Colors" Feld beim Deck-Erstellen ausfüllen.</p>
+          </div>
+          <div class="recommendation">
+            <h3>2. Commander als Deckname</h3>
+            <p>Der Commander-Name könnte als Vorschlag für den Decknamen verwendet werden.</p>
+          </div>
+          <div class="recommendation">
+            <h3>3. Link zum Decklist</h3>
+            <p>Ein direkter Link zur Archidekt-Seite kann in der Deck-Ansicht angezeigt werden.</p>
+          </div>
+          <div class="recommendation">
+            <h3>4. Format-Validierung</h3>
+            <p>Das Deck-Format kann mit dem Gruppenformat abgeglichen werden.</p>
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- Raw Data -->
+    @if (rawData()) {
+      <section class="card">
+        <h2 class="card__title"><i class="fas fa-code"></i> Raw API Response</h2>
+        <pre class="raw-data">{{ rawData() | json }}</pre>
+      </section>
+    }
+
+    <!-- API Field Reference -->
+    <section class="card">
+      <h2 class="card__title"><i class="fas fa-book"></i> API Feld-Referenz</h2>
+      <p class="text-muted">Vollständige Liste der verfügbaren Felder:</p>
+
+      <h3>Hauptfelder (Root Level)</h3>
+      <table class="data-table data-table--compact">
+        <thead>
+          <tr>
+            <th>Feld</th>
+            <th>Typ</th>
+            <th>Beschreibung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>id</td><td>number</td><td>Eindeutige Deck-ID</td></tr>
+          <tr><td>name</td><td>string</td><td>Deckname</td></tr>
+          <tr><td>createdAt</td><td>ISO 8601</td><td>Erstellungsdatum</td></tr>
+          <tr><td>updatedAt</td><td>ISO 8601</td><td>Letzte Änderung</td></tr>
+          <tr><td>deckFormat</td><td>number</td><td>Format (3 = Commander)</td></tr>
+          <tr><td>edhBracket</td><td>number</td><td>Power Level (1-4)</td></tr>
+          <tr><td>viewCount</td><td>number</td><td>Aufrufe</td></tr>
+          <tr><td>private</td><td>boolean</td><td>Privat?</td></tr>
+          <tr><td>owner</td><td>object</td><td>Ersteller-Info</td></tr>
+          <tr><td>categories</td><td>array</td><td>Deck-Kategorien</td></tr>
+          <tr><td>deckTags</td><td>array</td><td>Tags</td></tr>
+          <tr><td>cards</td><td>array</td><td>Kartenliste</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Owner Objekt</h3>
+      <table class="data-table data-table--compact">
+        <thead>
+          <tr>
+            <th>Feld</th>
+            <th>Typ</th>
+            <th>Beschreibung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>id</td><td>number</td><td>User-ID</td></tr>
+          <tr><td>username</td><td>string</td><td>Benutzername</td></tr>
+          <tr><td>avatar</td><td>string</td><td>Avatar-URL</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Card Objekt (in cards[])</h3>
+      <table class="data-table data-table--compact">
+        <thead>
+          <tr>
+            <th>Feld</th>
+            <th>Typ</th>
+            <th>Beschreibung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>id</td><td>number</td><td>Karten-Instanz-ID</td></tr>
+          <tr><td>categories</td><td>array</td><td>Zugewiesene Kategorien</td></tr>
+          <tr><td>quantity</td><td>number</td><td>Anzahl</td></tr>
+          <tr><td>card.oracleCard.name</td><td>string</td><td>Kartenname</td></tr>
+          <tr><td>card.oracleCard.colorIdentity</td><td>array</td><td>Farbidentität</td></tr>
+          <tr><td>card.oracleCard.colors</td><td>array</td><td>Kartenfarben</td></tr>
+          <tr><td>card.oracleCard.manaCost</td><td>string</td><td>Manakosten</td></tr>
+          <tr><td>card.oracleCard.types</td><td>array</td><td>Kartentypen</td></tr>
+          <tr><td>card.oracleCard.text</td><td>string</td><td>Regeltext</td></tr>
+          <tr><td>card.prices</td><td>object</td><td>Preise (tcg, ck, etc.)</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>

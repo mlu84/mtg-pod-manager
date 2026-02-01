@@ -84,6 +84,10 @@ export class ApiService {
     return this.http.delete<{ message: string }>(`${API_URL}/decks/${id}`);
   }
 
+  refreshDeckArchidekt(id: string): Observable<Deck> {
+    return this.http.post<Deck>(`${API_URL}/decks/${id}/refresh-archidekt`, {});
+  }
+
   // Games
   getGames(groupId: string, limit = 20): Observable<Game[]> {
     return this.http.get<Game[]>(`${API_URL}/games`, {

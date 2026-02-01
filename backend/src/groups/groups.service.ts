@@ -104,6 +104,9 @@ export class GroupsService {
             isActive: true,
             performanceRating: true,
             gamesPlayed: true,
+            archidektId: true,
+            archidektImageUrl: true,
+            archidektLastSync: true,
             owner: {
               select: {
                 id: true,

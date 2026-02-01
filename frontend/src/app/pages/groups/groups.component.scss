@@ -20,6 +20,23 @@
       gap: var(--spacing-sm);
     }
   }
+
+  &__actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+  }
+}
+
+// Sysadmin button styling
+.btn--sysadmin {
+  border-color: #ff6b35 !important;
+  color: #ff6b35 !important;
+
+  &:hover {
+    background-color: #ff6b35 !important;
+    color: var(--color-text) !important;
+  }
 }
 
 .actions {

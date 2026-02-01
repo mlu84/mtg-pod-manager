@@ -56,6 +56,15 @@ export class DecksController {
     return this.decksService.update(id, updateDeckDto, user.id);
   }
 
+  @Post(':id/refresh-archidekt')
+  @UseGuards(VerifiedUserGuard)
+  refreshArchidekt(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.decksService.refreshArchidekt(id, user.id);
+  }
+
   @Delete(':id')
   @UseGuards(VerifiedUserGuard)
   remove(

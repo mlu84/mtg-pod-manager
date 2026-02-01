@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, sysadminGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -42,6 +42,14 @@ export const routes: Routes = [
         (m) => m.ProfileComponent
       ),
     canActivate: [authGuard],
+  },
+  {
+    path: 'archidekt-test',
+    loadComponent: () =>
+      import('./pages/archidekt-test/archidekt-test.component').then(
+        (m) => m.ArchidektTestComponent
+      ),
+    canActivate: [sysadminGuard],
   },
   {
     path: '**',

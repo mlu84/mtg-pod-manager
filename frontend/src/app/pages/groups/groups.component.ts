@@ -53,6 +53,7 @@ export class GroupsComponent implements OnInit {
   private router = inject(Router);
 
   isEmailVerified = this.authService.isEmailVerified;
+  isSysAdmin = this.authService.isSysAdmin;
 
   constructor() {}
 
@@ -158,5 +159,9 @@ export class GroupsComponent implements OnInit {
 
   goToProfile(): void {
     this.router.navigate(['/profile']);
+  }
+
+  goToArchidektTest(): void {
+    this.router.navigate(['/archidekt-test']);
   }
 }

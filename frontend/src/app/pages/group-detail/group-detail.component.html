@@ -75,9 +75,27 @@
               <p class="text-muted">No games played yet.</p>
             } @else {
               <div class="ranking-list">
-                @for (entry of ranking(); track entry.id) {
-                  <div class="ranking-item" [class.inactive]="!entry.isActive">
-                    <span class="ranking-item__position">{{ entry.position }}</span>
+                @for (entry of paginatedRanking(); track entry.id) {
+                  <div class="ranking-item"
+                       [class.inactive]="!entry.isActive"
+                       [class.ranking-item--first]="entry.position === 1"
+                       [class.ranking-item--second]="entry.position === 2"
+                       [class.ranking-item--third]="entry.position === 3"
+                       [class.ranking-item--other]="entry.position > 3">
+                    @if (entry.position <= 3) {
+                      <span class="ranking-item__trophy"
+                            [class.ranking-item__trophy--first]="entry.position === 1"
+                            [class.ranking-item__trophy--second]="entry.position === 2"
+                            [class.ranking-item__trophy--third]="entry.position === 3">
+                        <i class="fas fa-trophy"
+                           [class.trophy--gold]="entry.position === 1"
+                           [class.trophy--silver]="entry.position === 2"
+                           [class.trophy--bronze]="entry.position === 3"></i>
+                        <span class="ranking-item__trophy-number">{{ entry.position }}</span>
+                      </span>
+                    } @else {
+                      <span class="ranking-item__position">{{ entry.position }}</span>
+                    }
                     <div class="ranking-item__trend">
                       @if (entry.trend === 'up') {
                         <span class="trend trend-up">
@@ -99,8 +117,18 @@
                         </span>
                       }
                     </div>
+                    <div class="deck-icon">
+                      <img [src]="getDeckImageUrl(entry.id) || defaultDeckImage" [alt]="entry.name" class="deck-icon__img" />
+                    </div>
                     <div class="ranking-item__info">
-                      <span class="ranking-item__name">{{ entry.name }}</span>
+                      <span class="ranking-item__name">
+                        {{ entry.name }}
+                        @if (getArchidektUrl(entry.id)) {
+                          <a [href]="getArchidektUrl(entry.id)" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
+                            <i class="fas fa-external-link-alt"></i>
+                          </a>
+                        }
+                      </span>
                       <span class="ranking-item__owner">{{ entry.owner.inAppName }}</span>
                     </div>
                     <div class="ranking-item__stats">
@@ -110,6 +138,33 @@
                   </div>
                 }
               </div>
+              @if (rankingTotalPages() > 1) {
+                <div class="pagination">
+                  <button
+                    class="pagination__btn"
+                    (click)="setRankingPage(rankingPage() - 1)"
+                    [disabled]="rankingPage() === 1"
+                  >
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                  @for (page of [].constructor(rankingTotalPages()); track $index) {
+                    <button
+                      class="pagination__btn"
+                      [class.pagination__btn--active]="rankingPage() === $index + 1"
+                      (click)="setRankingPage($index + 1)"
+                    >
+                      {{ $index + 1 }}
+                    </button>
+                  }
+                  <button
+                    class="pagination__btn"
+                    (click)="setRankingPage(rankingPage() + 1)"
+                    [disabled]="rankingPage() === rankingTotalPages()"
+                  >
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              }
             }
           </section>
 
@@ -123,16 +178,43 @@
                 </button>
               }
             </div>
-            @if (history().length === 0) {
+            <div class="history-filters">
+              <button
+                class="btn btn--sm"
+                [class.btn--primary]="historyFilter() === 'all'"
+                [class.btn--outline]="historyFilter() !== 'all'"
+                (click)="setHistoryFilter('all')"
+              >
+                All
+              </button>
+              <button
+                class="btn btn--sm"
+                [class.btn--primary]="historyFilter() === 'games'"
+                [class.btn--outline]="historyFilter() !== 'games'"
+                (click)="setHistoryFilter('games')"
+              >
+                Games
+              </button>
+              <button
+                class="btn btn--sm"
+                [class.btn--primary]="historyFilter() === 'events'"
+                [class.btn--outline]="historyFilter() !== 'events'"
+                (click)="setHistoryFilter('events')"
+              >
+                Events
+              </button>
+            </div>
+            @if (filteredHistory().length === 0) {
               <p class="text-muted">No activity yet.</p>
             } @else {
               <div class="history-list">
-                @for (item of history(); track $index) {
+                @for (item of filteredHistory(); track $index) {
                   @if (item.type === 'game') {
                     <div class="game-item">
                       <div class="game-item__header">
-                        <span class="game-item__date">{{ formatDate($any(item.data).playedAt) }}</span>
+                        <span class="game-item__title">Game {{ item.gameNumber }}</span>
                         <span class="game-item__players">{{ $any(item.data).playerCount }} players</span>
+                        <span class="game-item__date">{{ formatDate($any(item.data).playedAt) }}</span>
                       </div>
                       <div class="game-item__placements">
                         @for (placement of $any(item.data).placements; track placement.deck?.id || $index) {
@@ -193,8 +275,18 @@
               <div class="decks-list">
                 @for (deck of group()!.decks; track deck.id) {
                   <div class="deck-item" [class.inactive]="!deck.isActive">
+                    <div class="deck-icon">
+                      <img [src]="deck.archidektImageUrl || defaultDeckImage" [alt]="deck.name" class="deck-icon__img" />
+                    </div>
                     <div class="deck-item__info">
-                      <span class="deck-item__name">{{ deck.name }}</span>
+                      <span class="deck-item__name">
+                        {{ deck.name }}
+                        @if (deck.archidektId) {
+                          <a [href]="'https://archidekt.com/decks/' + deck.archidektId" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
+                            <i class="fas fa-external-link-alt"></i>
+                          </a>
+                        }
+                      </span>
                       <span class="deck-item__colors">{{ deck.colors }}</span>
                       @if (!deck.isActive) {
                         <span class="deck-item__badge">Inactive</span>
@@ -245,7 +337,7 @@
 
 <!-- Add Deck Modal -->
 @if (showDeckModal()) {
-  <div class="modal-overlay" (click)="closeDeckModal()">
+  <div class="modal-overlay">
     <div class="modal card" (click)="$event.stopPropagation()">
       <div class="modal__header">
         <h2>Add New Deck</h2>
@@ -304,6 +396,20 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label for="deckArchidektUrl">Archidekt Link (optional)</label>
+          <input
+            type="text"
+            id="deckArchidektUrl"
+            class="form-control"
+            [(ngModel)]="deckArchidektUrl"
+            name="deckArchidektUrl"
+            placeholder="https://archidekt.com/decks/12345678"
+            [disabled]="deckLoading()"
+          />
+          <small class="form-hint">Link oder ID deines Archidekt-Decks</small>
+        </div>
+
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" (click)="closeDeckModal()" [disabled]="deckLoading()">
             Cancel
@@ -319,8 +425,8 @@
 
 <!-- Record Game Modal -->
 @if (showGameModal()) {
-  <div class="modal-overlay" (click)="closeGameModal()">
-    <div class="modal modal--large card" (click)="$event.stopPropagation()">
+  <div class="modal-overlay">
+    <div class="modal modal--large card" (click)="$event.stopPropagation(); closeAllDeckDropdowns()">
       <div class="modal__header">
         <h2>Record Game</h2>
         <button class="modal__close" (click)="closeGameModal()">
@@ -354,19 +460,39 @@
                   }
                 </select>
               </div>
-              <div class="form-group form-group--grow">
+              <div class="form-group form-group--grow deck-search-container" (click)="$event.stopPropagation()">
                 <label>Deck</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="placement.deckId"
-                  [name]="'deck' + i"
-                  [disabled]="gameLoading()"
-                >
-                  <option value="">Select deck</option>
-                  @for (deck of getAvailableDecksForSlot(i); track deck.id) {
-                    <option [value]="deck.id">{{ deck.name }}</option>
+                <div class="deck-search">
+                  <input
+                    type="text"
+                    class="form-control"
+                    [value]="getDeckNameById(placement.deckId)"
+                    (input)="onDeckSearchInput(i, $event)"
+                    (focus)="openDeckDropdown(i)"
+                    (blur)="closeDeckDropdownDelayed(i)"
+                    [placeholder]="placement.deckId ? '' : 'Search deck...'"
+                    [disabled]="gameLoading()"
+                    [name]="'deckSearch' + i"
+                  />
+                  @if (placement.deckId) {
+                    <button type="button" class="deck-search__clear" (click)="clearDeckSelection(i)" [disabled]="gameLoading()">
+                      <i class="fas fa-times"></i>
+                    </button>
                   }
-                </select>
+                  @if (deckDropdownOpen[i]) {
+                    <div class="deck-dropdown">
+                      @for (deck of getFilteredDecksForSlot(i); track deck.id) {
+                        <div class="deck-dropdown__item" (mousedown)="selectDeck(i, deck.id, deck.name)">
+                          {{ deck.name }}
+                        </div>
+                      } @empty {
+                        <div class="deck-dropdown__empty">No decks found</div>
+                      }
+                    </div>
+                  }
+                </div>
+                <!-- Hidden input for form validation -->
+                <input type="hidden" [(ngModel)]="placement.deckId" [name]="'deck' + i" />
               </div>
               <div class="form-group">
                 <label>Player (optional)</label>
@@ -377,6 +503,8 @@
                   [name]="'player' + i"
                   placeholder="Guest name"
                   [disabled]="gameLoading()"
+                  list="memberNamesList"
+                  autocomplete="off"
                 />
               </div>
               <button type="button" class="btn btn--danger" (click)="removePlayer(i)" [disabled]="gameLoading()">
@@ -401,13 +529,20 @@
           </button>
         </div>
       </form>
+
+      <!-- Datalist for player name autocomplete -->
+      <datalist id="memberNamesList">
+        @for (name of memberNames(); track name) {
+          <option [value]="name"></option>
+        }
+      </datalist>
     </div>
   </div>
 }
 
 <!-- Edit Deck Modal -->
 @if (showEditDeckModal()) {
-  <div class="modal-overlay" (click)="closeEditDeckModal()">
+  <div class="modal-overlay">
     <div class="modal card" (click)="$event.stopPropagation()">
       <div class="modal__header">
         <h2>Edit Deck</h2>
@@ -477,6 +612,33 @@
           </label>
         </div>
 
+        <div class="form-group">
+          <label for="editDeckArchidektUrl">Archidekt Link (optional)</label>
+          <div class="archidekt-input-row">
+            <input
+              type="text"
+              id="editDeckArchidektUrl"
+              class="form-control"
+              [(ngModel)]="editDeckArchidektUrl"
+              name="editDeckArchidektUrl"
+              placeholder="https://archidekt.com/decks/12345678"
+              [disabled]="editDeckLoading()"
+            />
+            @if (editingDeck?.archidektId) {
+              <button
+                type="button"
+                class="btn btn--outline"
+                (click)="refreshArchidekt()"
+                [disabled]="editDeckLoading()"
+                title="Refresh from Archidekt"
+              >
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            }
+          </div>
+          <small class="form-hint">Link oder ID deines Archidekt-Decks (leer lassen zum Entfernen)</small>
+        </div>
+
         <div class="modal__actions modal__actions--split">
           @if (confirmDelete()) {
             <button type="button" class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteDeck()" [disabled]="editDeckLoading()">
@@ -506,7 +668,7 @@
 
 <!-- Edit Group Modal -->
 @if (showEditGroupModal()) {
-  <div class="modal-overlay" (click)="closeEditGroupModal()">
+  <div class="modal-overlay">
     <div class="modal card" (click)="$event.stopPropagation()">
       <div class="modal__header">
         <h2>Edit Group</h2>
@@ -575,7 +737,7 @@
 
 <!-- Confirmation Modal -->
 @if (showConfirmModal()) {
-  <div class="modal-overlay" (click)="closeConfirmModal()">
+  <div class="modal-overlay">
     <div class="modal modal--confirm card" (click)="$event.stopPropagation()">
       <div class="modal__header">
         <h2>{{ confirmModalTitle }}</h2>
@@ -602,8 +764,8 @@
 
 <!-- Alert Modal -->
 @if (showAlertModal()) {
-  <div class="modal-overlay" (click)="closeAlertModal()">
-    <div class="modal modal--alert card" (click)="$event.stopPropagation()">
+  <div class="modal-overlay">
+    <div class="modal modal--alert card">
       <div class="modal__header" [class.modal__header--error]="alertModalType === 'error'" [class.modal__header--success]="alertModalType === 'success'">
         <h2>
           @if (alertModalType === 'error') {

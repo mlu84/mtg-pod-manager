@@ -12,15 +12,21 @@ datasource db {
 
 // Hier beginnen die Datenmodelle
 
+enum SystemRole {
+  USER
+  SYSADMIN
+}
+
 model User {
-  id                     String    @id @default(cuid())
-  email                  String    @unique
+  id                     String     @id @default(cuid())
+  email                  String     @unique
   password               String
-  inAppName              String    @unique
+  inAppName              String     @unique
+  systemRole             SystemRole @default(USER)
   emailVerified          DateTime?
-  emailVerificationToken String?   @unique
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  emailVerificationToken String?    @unique
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
 
   ownedDecks     Deck[]
   groups         UsersOnGroups[]
@@ -63,6 +69,11 @@ model Deck {
   gamesPlayed       Int     @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  // Archidekt Integration
+  archidektId       String?   // Archidekt Deck ID (z.B. "12784239")
+  archidektImageUrl String?   // Featured Image URL von Archidekt
+  archidektLastSync DateTime? // Letzter Sync mit Archidekt API
 
   owner    User   @relation(fields: [ownerId], references: [id])
   ownerId  String

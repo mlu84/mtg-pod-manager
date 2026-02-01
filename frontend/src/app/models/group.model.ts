@@ -40,6 +40,10 @@ export interface Deck {
     id: string;
     inAppName: string;
   };
+  // Archidekt Integration
+  archidektId?: string;
+  archidektImageUrl?: string;
+  archidektLastSync?: string;
 }
 
 export interface CreateDeckRequest {
@@ -47,6 +51,7 @@ export interface CreateDeckRequest {
   colors: string;
   type?: string;
   groupId: string;
+  archidektUrl?: string;
 }
 
 export interface UpdateDeckRequest {
@@ -54,4 +59,5 @@ export interface UpdateDeckRequest {
   colors?: string;
   type?: string;
   isActive?: boolean;
+  archidektUrl?: string;
 }

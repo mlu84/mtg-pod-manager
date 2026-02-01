@@ -73,4 +73,8 @@ export class CreateDeckDto {
   @IsString()
   @IsNotEmpty()
   groupId: string;
+
+  @IsString()
+  @IsOptional()
+  archidektUrl?: string; // URL oder ID des Archidekt-Decks
 }

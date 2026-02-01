@@ -25,3 +25,20 @@ export const guestGuard: CanActivateFn = () => {
   router.navigate(['/groups']);
   return false;
 };
+
+export const sysadminGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  if (!authService.isSysAdmin()) {
+    router.navigate(['/groups']);
+    return false;
+  }
+
+  return true;
+};

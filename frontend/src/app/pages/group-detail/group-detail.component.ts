@@ -38,6 +38,7 @@ export class GroupDetailComponent implements OnInit {
   deckName = '';
   deckColors = '';
   deckType = '';
+  deckArchidektUrl = '';
   deckLoading = signal(false);
   deckError = signal<string | null>(null);
 
@@ -47,6 +48,7 @@ export class GroupDetailComponent implements OnInit {
   editDeckColors = '';
   editDeckType = '';
   editDeckIsActive = true;
+  editDeckArchidektUrl = '';
   editDeckLoading = signal(false);
   editDeckError = signal<string | null>(null);
   confirmDelete = signal(false);
@@ -89,6 +91,9 @@ export class GroupDetailComponent implements OnInit {
   alertModalMessage = '';
   alertModalType: 'error' | 'success' | 'info' = 'error';
 
+  // History filter
+  historyFilter = signal<'all' | 'games' | 'events'>('all');
+
   // Member to remove (for confirmation)
   memberToRemove: { userId: string; user: { inAppName: string } } | null = null;
 
@@ -96,6 +101,11 @@ export class GroupDetailComponent implements OnInit {
   gamePlacements: { deckId: string; rank: number; playerName: string }[] = [];
   gameLoading = signal(false);
   gameError = signal<string | null>(null);
+
+  // Deck search
+  deckDropdownOpen: boolean[] = [];
+  deckSearchTerms: string[] = [];
+  private dropdownCloseTimers: (ReturnType<typeof setTimeout> | null)[] = [];
 
   // Constants
   colorOptions = VALID_COLORS;
@@ -117,6 +127,81 @@ export class GroupDetailComponent implements OnInit {
     return this.activeDecks().filter((deck) => !selectedDeckIds.includes(deck.id));
   }
 
+  // Get filtered decks based on search term
+  getFilteredDecksForSlot(slotIndex: number): { id: string; name: string }[] {
+    const availableDecks = this.getAvailableDecksForSlot(slotIndex);
+    const searchTerm = (this.deckSearchTerms[slotIndex] || '').toLowerCase().trim();
+
+    if (!searchTerm) {
+      return availableDecks;
+    }
+
+    return availableDecks.filter((deck) =>
+      deck.name.toLowerCase().includes(searchTerm)
+    );
+  }
+
+  // Get deck name by ID
+  getDeckNameById(deckId: string): string {
+    if (!deckId) return '';
+    const deck = this.activeDecks().find((d) => d.id === deckId);
+    return deck?.name || '';
+  }
+
+  // Deck search handlers
+  onDeckSearchInput(slotIndex: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.deckSearchTerms[slotIndex] = input.value;
+    // Clear selection when user starts typing
+    if (this.gamePlacements[slotIndex].deckId) {
+      this.gamePlacements[slotIndex].deckId = '';
+    }
+    this.deckDropdownOpen[slotIndex] = true;
+  }
+
+  openDeckDropdown(slotIndex: number): void {
+    // Cancel any pending close
+    if (this.dropdownCloseTimers[slotIndex]) {
+      clearTimeout(this.dropdownCloseTimers[slotIndex]!);
+      this.dropdownCloseTimers[slotIndex] = null;
+    }
+    this.deckDropdownOpen[slotIndex] = true;
+  }
+
+  closeDeckDropdownDelayed(slotIndex: number): void {
+    // Delay close to allow click on dropdown item
+    this.dropdownCloseTimers[slotIndex] = setTimeout(() => {
+      this.deckDropdownOpen[slotIndex] = false;
+      // Reset search term to selected deck name if one is selected
+      if (this.gamePlacements[slotIndex].deckId) {
+        this.deckSearchTerms[slotIndex] = '';
+      }
+    }, 200);
+  }
+
+  selectDeck(slotIndex: number, deckId: string, deckName: string): void {
+    // Cancel any pending close timer
+    if (this.dropdownCloseTimers[slotIndex]) {
+      clearTimeout(this.dropdownCloseTimers[slotIndex]!);
+      this.dropdownCloseTimers[slotIndex] = null;
+    }
+    this.gamePlacements[slotIndex].deckId = deckId;
+    this.deckSearchTerms[slotIndex] = '';
+    this.deckDropdownOpen[slotIndex] = false;
+  }
+
+  clearDeckSelection(slotIndex: number): void {
+    this.gamePlacements[slotIndex].deckId = '';
+    this.deckSearchTerms[slotIndex] = '';
+  }
+
+  // Close all deck dropdowns (called when clicking outside)
+  closeAllDeckDropdowns(): void {
+    for (let i = 0; i < this.deckDropdownOpen.length; i++) {
+      this.deckDropdownOpen[i] = false;
+    }
+  }
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private apiService = inject(ApiService);
@@ -128,17 +213,60 @@ export class GroupDetailComponent implements OnInit {
   activeDecks = computed(() =>
     this.group()?.decks.filter((d) => d.isActive) || []
   );
+  memberNames = computed(() =>
+    this.group()?.members.map((m) => m.user.inAppName) || []
+  );
+
+  // Default deck image when no Archidekt image is available
+  readonly defaultDeckImage = '/assets/images/deckBG_default.jpg';
+
+  // Ranking pagination
+  readonly rankingPageSize = 10;
+  rankingPage = signal(1);
+
+  rankingTotalPages = computed(() =>
+    Math.ceil(this.ranking().length / this.rankingPageSize)
+  );
+
+  paginatedRanking = computed(() => {
+    const start = (this.rankingPage() - 1) * this.rankingPageSize;
+    return this.ranking().slice(start, start + this.rankingPageSize);
+  });
+
+  setRankingPage(page: number): void {
+    if (page >= 1 && page <= this.rankingTotalPages()) {
+      this.rankingPage.set(page);
+    }
+  }
+
+  // Get deck image URL by deck ID (for ranking display)
+  getDeckImageUrl(deckId: string): string | null {
+    const deck = this.group()?.decks.find((d) => d.id === deckId);
+    return deck?.archidektImageUrl || null;
+  }
+
+  // Get Archidekt URL by deck ID
+  getArchidektUrl(deckId: string): string | null {
+    const deck = this.group()?.decks.find((d) => d.id === deckId);
+    return deck?.archidektId ? `https://archidekt.com/decks/${deck.archidektId}` : null;
+  }
 
   // Combined history of games and events, sorted by date
   history = computed(() => {
-    const items: { type: 'game' | 'event'; date: Date; data: Game | GroupEvent }[] = [];
+    const items: { type: 'game' | 'event'; date: Date; data: Game | GroupEvent; gameNumber?: number }[] = [];
 
-    // Add games
-    for (const game of this.games()) {
+    // Games are sorted by playedAt descending, so calculate game numbers
+    const gamesList = this.games();
+    const totalGames = gamesList.length;
+
+    // Add games with their number (oldest = 1, newest = totalGames)
+    for (let i = 0; i < gamesList.length; i++) {
+      const game = gamesList[i];
       items.push({
         type: 'game',
         date: new Date(game.playedAt),
         data: game,
+        gameNumber: totalGames - i, // Newest game has highest number
       });
     }
 
@@ -157,6 +285,20 @@ export class GroupDetailComponent implements OnInit {
     items.sort((a, b) => b.date.getTime() - a.date.getTime());
 
     return items;
+  });
+
+  // Filtered history based on selected filter
+  filteredHistory = computed(() => {
+    const filter = this.historyFilter();
+    const items = this.history();
+
+    if (filter === 'all') {
+      return items;
+    } else if (filter === 'games') {
+      return items.filter((item) => item.type === 'game');
+    } else {
+      return items.filter((item) => item.type === 'event');
+    }
   });
 
   constructor() {}
@@ -323,17 +465,29 @@ export class GroupDetailComponent implements OnInit {
     }
   }
 
+  // Body scroll locking for modals
+  private lockBodyScroll(): void {
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockBodyScroll(): void {
+    document.body.style.overflow = '';
+  }
+
   // Deck Modal
   openDeckModal(): void {
     this.deckName = '';
     this.deckColors = '';
     this.deckType = '';
+    this.deckArchidektUrl = '';
     this.deckError.set(null);
     this.showDeckModal.set(true);
+    this.lockBodyScroll();
   }
 
   closeDeckModal(): void {
     this.showDeckModal.set(false);
+    this.unlockBodyScroll();
   }
 
   createDeck(): void {
@@ -351,11 +505,13 @@ export class GroupDetailComponent implements OnInit {
         colors: this.deckColors,
         type: this.deckType || undefined,
         groupId: this.groupId,
+        archidektUrl: this.deckArchidektUrl || undefined,
       })
       .subscribe({
         next: () => {
           this.deckLoading.set(false);
           this.showDeckModal.set(false);
+          this.unlockBodyScroll();
           this.loadData();
         },
         error: (err) => {
@@ -370,10 +526,12 @@ export class GroupDetailComponent implements OnInit {
     this.gamePlacements = [];
     this.gameError.set(null);
     this.showGameModal.set(true);
+    this.lockBodyScroll();
   }
 
   closeGameModal(): void {
     this.showGameModal.set(false);
+    this.unlockBodyScroll();
   }
 
   addPlayer(): void {
@@ -468,15 +626,20 @@ export class GroupDetailComponent implements OnInit {
     this.editDeckColors = deck.colors;
     this.editDeckType = deck.type || '';
     this.editDeckIsActive = deck.isActive;
+    this.editDeckArchidektUrl = deck.archidektId
+      ? `https://archidekt.com/decks/${deck.archidektId}`
+      : '';
     this.editDeckError.set(null);
     this.confirmDelete.set(false);
     this.showEditDeckModal.set(true);
+    this.lockBodyScroll();
   }
 
   closeEditDeckModal(): void {
     this.showEditDeckModal.set(false);
     this.editingDeck = null;
     this.confirmDelete.set(false);
+    this.unlockBodyScroll();
   }
 
   canEditDeck(deck: Deck): boolean {
@@ -498,12 +661,14 @@ export class GroupDetailComponent implements OnInit {
         colors: this.editDeckColors,
         type: this.editDeckType || undefined,
         isActive: this.editDeckIsActive,
+        archidektUrl: this.editDeckArchidektUrl,
       })
       .subscribe({
         next: () => {
           this.editDeckLoading.set(false);
           this.showEditDeckModal.set(false);
           this.editingDeck = null;
+          this.unlockBodyScroll();
           this.loadData();
         },
         error: (err) => {
@@ -511,6 +676,25 @@ export class GroupDetailComponent implements OnInit {
           this.editDeckError.set(err.error?.message || 'Failed to update deck');
         },
       });
+  }
+
+  refreshArchidekt(): void {
+    if (!this.editingDeck?.archidektId) return;
+
+    this.editDeckLoading.set(true);
+    this.editDeckError.set(null);
+
+    this.apiService.refreshDeckArchidekt(this.editingDeck.id).subscribe({
+      next: (updatedDeck) => {
+        this.editDeckLoading.set(false);
+        this.editingDeck = updatedDeck;
+        this.showAlert('Success', 'Archidekt data refreshed successfully', 'success');
+      },
+      error: (err) => {
+        this.editDeckLoading.set(false);
+        this.editDeckError.set(err.error?.message || 'Failed to refresh Archidekt data');
+      },
+    });
   }
 
   requestDeleteDeck(): void {
@@ -611,10 +795,12 @@ export class GroupDetailComponent implements OnInit {
     this.editGroupDescription = group.description || '';
     this.editGroupError.set(null);
     this.showEditGroupModal.set(true);
+    this.lockBodyScroll();
   }
 
   closeEditGroupModal(): void {
     this.showEditGroupModal.set(false);
+    this.unlockBodyScroll();
   }
 
   updateGroup(): void {
@@ -678,6 +864,10 @@ export class GroupDetailComponent implements OnInit {
     });
   }
 
+  setHistoryFilter(filter: 'all' | 'games' | 'events'): void {
+    this.historyFilter.set(filter);
+  }
+
   // Confirmation Modal helpers
   showConfirmation(title: string, message: string, action: () => void): void {
     this.confirmModalTitle = title;
@@ -685,12 +875,14 @@ export class GroupDetailComponent implements OnInit {
     this.confirmModalAction = action;
     this.confirmModalLoading.set(false);
     this.showConfirmModal.set(true);
+    this.lockBodyScroll();
   }
 
   closeConfirmModal(): void {
     this.showConfirmModal.set(false);
     this.confirmModalAction = null;
     this.memberToRemove = null;
+    this.unlockBodyScroll();
   }
 
   executeConfirmAction(): void {
@@ -705,9 +897,11 @@ export class GroupDetailComponent implements OnInit {
     this.alertModalMessage = message;
     this.alertModalType = type;
     this.showAlertModal.set(true);
+    this.lockBodyScroll();
   }
 
   closeAlertModal(): void {
     this.showAlertModal.set(false);
+    this.unlockBodyScroll();
   }
 }

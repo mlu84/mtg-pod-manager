@@ -14,6 +14,7 @@ interface TokenPayload {
   sub: string;
   email: string;
   emailVerified: boolean;
+  systemRole: 'USER' | 'SYSADMIN';
   exp: number;
 }
 
@@ -47,6 +48,14 @@ export class AuthService {
 
     const payload = this.decodeToken(token);
     return payload?.sub ?? null;
+  });
+
+  isSysAdmin = computed(() => {
+    const token = this.tokenSignal();
+    if (!token) return false;
+
+    const payload = this.decodeToken(token);
+    return payload?.systemRole === 'SYSADMIN';
   });
 
   constructor(
