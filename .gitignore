@@ -44,3 +44,5 @@ temp/
 
 # Windows artifacts
 nul
+frontend/src/environments/
+tmppw.txt
