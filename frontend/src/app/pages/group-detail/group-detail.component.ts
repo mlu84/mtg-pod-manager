@@ -1839,18 +1839,21 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // default: avg performance by color combo
       const comboPerf = new Map<string, { total: number; count: number }>();
-    for (const deck of decks) {
-      const combo = this.getSortedColors(deck.colors).join('') || 'C';
-      const entry = comboPerf.get(combo) || { total: 0, count: 0 };
-      entry.total += deck.performanceRating;
-      entry.count += 1;
-      comboPerf.set(combo, entry);
-    }
-      const labels = [...comboPerf.keys()].map((l) => (l === 'C' ? 'Colorless' : l));
-      const values = labels.map((l) => {
-        const entry = comboPerf.get(l === 'Colorless' ? 'C' : l)!;
-        return Number((entry.total / entry.count).toFixed(1));
-      });
+      for (const deck of decks) {
+        const combo = this.getSortedColors(deck.colors).join('') || 'C';
+        const entry = comboPerf.get(combo) || { total: 0, count: 0 };
+        entry.total += deck.performanceRating;
+        entry.count += 1;
+        comboPerf.set(combo, entry);
+      }
+      const sorted = [...comboPerf.entries()]
+        .map(([combo, entry]) => ({
+          label: combo === 'C' ? 'Colorless' : combo,
+          value: Number((entry.total / entry.count).toFixed(1)),
+        }))
+        .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+      const labels = sorted.map((d) => d.label);
+      const values = sorted.map((d) => d.value);
       return this.buildColorBarChart(labels, values, 'Avg performance', false, true);
     }
 
