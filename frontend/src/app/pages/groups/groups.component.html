@@ -7,7 +7,23 @@
           <button class="btn btn--outline btn--sysadmin" (click)="goToArchidektTest()" title="Archidekt API Test">
             <i class="fas fa-flask"></i>
           </button>
+          <button class="btn btn--outline btn--sysadmin" (click)="goToSysadminUsers()" title="Sysadmin Users">
+            <i class="fas fa-users-cog"></i>
+          </button>
         }
+        <div class="donate-inline">
+          <span class="donate-prefix">Buy me a booster</span>
+          <a
+            class="btn btn--secondary"
+            href="https://paypal.me/mluckeystrauss"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="yes, i am a cardboard addict"
+            aria-label="Buy me a booster on PayPal"
+          >
+            <i class="fab fa-paypal"></i>
+          </a>
+        </div>
         <button class="btn btn--outline" (click)="goToProfile()">
           <i class="fas fa-user"></i> Profile
         </button>
@@ -49,6 +65,12 @@
         <button class="btn btn--secondary" (click)="openJoinModal()">
           <i class="fas fa-door-open"></i> Join Group
         </button>
+        <button class="btn btn--secondary btn--search" (click)="openSearchModal()">
+          <i class="fas fa-search"></i> Search Groups
+          @if (applicationsBadge() > 0) {
+            <span class="btn-badge">{{ applicationsBadge() }}</span>
+          }
+        </button>
       </div>
 
       @if (groups().length === 0) {
@@ -62,7 +84,11 @@
           @for (group of groups(); track group.id) {
             <div class="group-card card" (click)="openGroup(group)">
               <div class="group-card__icon">
-                <i class="fas fa-users"></i>
+                @if (group.imageUrl) {
+                  <img [src]="group.imageUrl" [alt]="group.name" />
+                } @else {
+                  <i class="fas fa-users"></i>
+                }
               </div>
               <div class="group-card__content">
                 <h3>{{ group.name }}</h3>
@@ -214,6 +240,129 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+}
+
+<!-- Search Groups Modal -->
+@if (showSearchModal()) {
+  <div class="modal-overlay" (click)="closeSearchModal()">
+    <div class="modal modal--wide card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Search Groups</h2>
+        <button class="modal__close" (click)="closeSearchModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      @if (searchError()) {
+        <div class="alert alert--danger">{{ searchError() }}</div>
+      }
+
+      <form class="form-group search-form" (ngSubmit)="searchGroups(1)">
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="searchQuery"
+          name="searchQuery"
+          placeholder="Search by group name"
+        />
+        <button type="submit" class="btn btn--primary" [disabled]="searchLoading()">
+          @if (searchLoading()) { Searching... } @else { Search }
+        </button>
+      </form>
+
+      <div class="search-content">
+        <div class="search-results">
+          <h3>Results</h3>
+          @if (searchLoading()) {
+            <div class="loading-inline">
+              <div class="spinner"></div>
+              <span>Searching...</span>
+            </div>
+          } @else if (searchResults().length === 0 && searchQuery) {
+            <p class="text-muted">No groups found.</p>
+          } @else {
+            <div class="result-list">
+              @for (result of searchResults(); track result.id) {
+                <div class="result-item">
+                  <div class="result-item__image">
+                    <img [src]="result.imageUrl || defaultGroupImage" [alt]="result.name" />
+                  </div>
+                  <div class="result-item__info">
+                    <div class="result-item__title">
+                      <span class="result-item__name">{{ result.name }}</span>
+                      <span class="result-item__format">{{ result.format }}</span>
+                    </div>
+                    @if (result.description) {
+                      <p class="result-item__description">{{ result.description }}</p>
+                    }
+                    <span class="result-item__meta">{{ result.memberCount }} members</span>
+                  </div>
+                  <div class="result-item__actions">
+                    @if (isMember(result.id)) {
+                      <button class="btn btn--outline" disabled>Member</button>
+                    } @else if (hasApplied(result.id)) {
+                      <button class="btn btn--outline" disabled>Applied</button>
+                    } @else {
+                      <button class="btn btn--secondary" (click)="applyToGroup(result.id)"
+                              [disabled]="searchLoading() || !isEmailVerified()">
+                        Apply
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (searchTotalPages() > 1) {
+              <div class="pagination">
+                <button class="btn btn--outline" (click)="setSearchPage(searchPage() - 1)"
+                        [disabled]="searchPage() === 1">Prev</button>
+                <span class="pagination__info">Page {{ searchPage() }} of {{ searchTotalPages() }}</span>
+                <button class="btn btn--outline" (click)="setSearchPage(searchPage() + 1)"
+                        [disabled]="searchPage() === searchTotalPages()">Next</button>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="applications">
+          <h3>My Open Applications</h3>
+          @if (applicationsLoading()) {
+            <div class="loading-inline">
+              <div class="spinner"></div>
+              <span>Loading...</span>
+            </div>
+          } @else if (applicationsError()) {
+            <p class="text-muted">{{ applicationsError() }}</p>
+          } @else if (myApplications().length === 0) {
+            <p class="text-muted">No open applications.</p>
+          } @else {
+            <div class="application-list">
+              @for (app of paginatedApplications(); track app.group.id) {
+                <div class="application-item">
+                  <div class="application-item__info">
+                    <span class="application-item__name">{{ app.group.name }}</span>
+                    <span class="application-item__format">{{ app.group.format }}</span>
+                  </div>
+                  <span class="application-item__date">{{ app.createdAt | date:'dd.MM.yyyy' }}</span>
+                </div>
+              }
+            </div>
+
+            @if (applicationsTotalPages() > 1) {
+              <div class="pagination">
+                <button class="btn btn--outline" (click)="setApplicationsPage(applicationsPage() - 1)"
+                        [disabled]="applicationsPage() === 1">Prev</button>
+                <span class="pagination__info">Page {{ applicationsPage() }} of {{ applicationsTotalPages() }}</span>
+                <button class="btn btn--outline" (click)="setApplicationsPage(applicationsPage() + 1)"
+                        [disabled]="applicationsPage() === applicationsTotalPages()">Next</button>
+              </div>
+            }
+          }
+        </div>
+      </div>
     </div>
   </div>
 }

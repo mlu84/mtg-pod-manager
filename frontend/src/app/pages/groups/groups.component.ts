@@ -1,10 +1,14 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Group } from '../../models/group.model';
+import {
+  Group,
+  GroupSearchResult,
+  UserGroupApplication,
+} from '../../models/group.model';
 
 @Component({
   selector: 'app-groups',
@@ -17,10 +21,12 @@ export class GroupsComponent implements OnInit {
   groups = signal<Group[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+  memberGroupIds = computed(() => new Set(this.groups().map((g) => g.id)));
 
   // Modal states
   showCreateModal = signal(false);
   showJoinModal = signal(false);
+  showSearchModal = signal(false);
 
   // Create group form
   newGroupName = '';
@@ -33,6 +39,22 @@ export class GroupsComponent implements OnInit {
   inviteCode = '';
   joinLoading = signal(false);
   joinError = signal<string | null>(null);
+
+  // Search groups
+  searchQuery = '';
+  searchResults = signal<GroupSearchResult[]>([]);
+  searchLoading = signal(false);
+  searchError = signal<string | null>(null);
+  searchTotal = signal(0);
+  searchPage = signal(1);
+  readonly searchPageSize = 10;
+
+  // Applications
+  myApplications = signal<UserGroupApplication[]>([]);
+  applicationsLoading = signal(false);
+  applicationsError = signal<string | null>(null);
+  applicationsPage = signal(1);
+  readonly applicationsPageSize = 5;
 
   // Format options
   formats = [
@@ -48,17 +70,28 @@ export class GroupsComponent implements OnInit {
     'Other',
   ];
 
+  readonly defaultGroupImage = '/assets/images/deckBG_default.jpg';
+
   private apiService = inject(ApiService);
   private authService = inject(AuthService);
   private router = inject(Router);
 
   isEmailVerified = this.authService.isEmailVerified;
   isSysAdmin = this.authService.isSysAdmin;
+  applicationsBadge = computed(() => this.myApplications().length);
+  applicationsTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.myApplications().length / this.applicationsPageSize))
+  );
+  paginatedApplications = computed(() => {
+    const start = (this.applicationsPage() - 1) * this.applicationsPageSize;
+    return this.myApplications().slice(start, start + this.applicationsPageSize);
+  });
 
   constructor() {}
 
   ngOnInit(): void {
     this.loadGroups();
+    this.loadMyApplications();
   }
 
   loadGroups(): void {
@@ -153,6 +186,109 @@ export class GroupsComponent implements OnInit {
     });
   }
 
+  openSearchModal(): void {
+    this.searchQuery = '';
+    this.searchResults.set([]);
+    this.searchError.set(null);
+    this.searchTotal.set(0);
+    this.searchPage.set(1);
+    this.applicationsPage.set(1);
+    this.showSearchModal.set(true);
+  }
+
+  closeSearchModal(): void {
+    this.showSearchModal.set(false);
+  }
+
+  loadMyApplications(): void {
+    this.applicationsLoading.set(true);
+    this.applicationsError.set(null);
+
+    this.apiService.getMyApplications().subscribe({
+      next: (apps) => {
+        this.myApplications.set(apps);
+        this.applicationsLoading.set(false);
+      },
+      error: (err) => {
+        this.applicationsError.set(err.error?.message || 'Failed to load applications');
+        this.applicationsLoading.set(false);
+      },
+    });
+  }
+
+  searchGroups(page = 1): void {
+    const query = this.searchQuery.trim();
+    if (!query) {
+      this.searchError.set('Please enter a search term');
+      this.searchResults.set([]);
+      this.searchTotal.set(0);
+      return;
+    }
+
+    this.searchQuery = query;
+    this.searchLoading.set(true);
+    this.searchError.set(null);
+
+    this.apiService.searchGroups(query, page, this.searchPageSize).subscribe({
+      next: (result) => {
+        this.searchResults.set(result.items);
+        this.searchTotal.set(result.total);
+        this.searchPage.set(result.page);
+        this.searchLoading.set(false);
+      },
+      error: (err) => {
+        this.searchError.set(err.error?.message || 'Failed to search groups');
+        this.searchLoading.set(false);
+      },
+    });
+  }
+
+  searchTotalPages(): number {
+    return Math.max(1, Math.ceil(this.searchTotal() / this.searchPageSize));
+  }
+
+  setSearchPage(page: number): void {
+    if (page < 1 || page > this.searchTotalPages()) return;
+    this.searchGroups(page);
+  }
+
+  hasApplied(groupId: string): boolean {
+    return this.myApplications().some((app) => app.group.id === groupId);
+  }
+
+  isMember(groupId: string): boolean {
+    return this.memberGroupIds().has(groupId);
+  }
+
+  applyToGroup(groupId: string): void {
+    if (this.isMember(groupId)) {
+      return;
+    }
+    if (!this.isEmailVerified()) {
+      this.searchError.set('Please verify your email to apply to groups');
+      return;
+    }
+
+    this.searchLoading.set(true);
+    this.searchError.set(null);
+
+    this.apiService.applyToGroup(groupId).subscribe({
+      next: () => {
+        this.searchLoading.set(false);
+        this.loadMyApplications();
+      },
+      error: (err) => {
+        this.searchLoading.set(false);
+        this.searchError.set(err.error?.message || 'Failed to apply to group');
+      },
+    });
+  }
+
+  setApplicationsPage(page: number): void {
+    if (page < 1 || page > this.applicationsTotalPages()) return;
+    this.applicationsPage.set(page);
+  }
+
   logout(): void {
     this.authService.logout();
   }
@@ -163,5 +299,9 @@ export class GroupsComponent implements OnInit {
 
   goToArchidektTest(): void {
     this.router.navigate(['/archidekt-test']);
+  }
+
+  goToSysadminUsers(): void {
+    this.router.navigate(['/sysadmin-users']);
   }
 }

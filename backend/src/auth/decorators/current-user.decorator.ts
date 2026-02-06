@@ -5,6 +5,7 @@ export interface CurrentUserType {
   email: string;
   inAppName: string;
   emailVerified: boolean;
+  systemRole: 'USER' | 'SYSADMIN';
 }
 
 export const CurrentUser = createParamDecorator(

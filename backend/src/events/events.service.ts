@@ -9,12 +9,39 @@ export type EventType =
   | 'MEMBER_JOINED'
   | 'MEMBER_LEFT'
   | 'MEMBER_REMOVED'
+  | 'MEMBER_PROMOTED'
+  | 'MEMBER_DEMOTED'
+  | 'USER_RENAMED'
+  | 'USER_ACCOUNT_DELETED'
+  | 'APPLICATION_ACCEPTED'
+  | 'APPLICATION_REJECTED'
   | 'GAME_RECORDED'
-  | 'GAME_UNDONE';
+  | 'GAME_UNDONE'
+  | 'SEASON_RESET';
 
 @Injectable()
 export class EventsService {
   constructor(private prisma: PrismaService) {}
+
+  private async cleanupExpiredEvents(groupId: string): Promise<void> {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { historyRetentionDays: true },
+    });
+
+    if (!group?.historyRetentionDays) return;
+
+    const cutoff = new Date(
+      Date.now() - group.historyRetentionDays * 24 * 60 * 60 * 1000,
+    );
+
+    await this.prisma.groupEvent.deleteMany({
+      where: {
+        groupId,
+        createdAt: { lt: cutoff },
+      },
+    });
+  }
 
   async log(groupId: string, type: EventType, message: string): Promise<void> {
     await this.prisma.groupEvent.create({
@@ -27,6 +54,7 @@ export class EventsService {
   }
 
   async getEvents(groupId: string, limit = 50) {
+    await this.cleanupExpiredEvents(groupId);
     return this.prisma.groupEvent.findMany({
       where: { groupId },
       orderBy: { createdAt: 'desc' },

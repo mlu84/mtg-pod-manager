@@ -78,22 +78,34 @@ body {
   min-height: 100vh;
 }
 
-a {
-  color: var(--color-secondary);
-  text-decoration: none;
-  transition: color var(--transition-fast);
+  a {
+    color: var(--color-secondary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
 
-  &:hover {
-    color: var(--color-secondary-dark);
+    &:hover {
+      color: #000;
+    }
   }
-}
 
 // Utility Classes
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--spacing-md);
-}
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+  }
+
+  .donate-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+
+  .donate-prefix {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
 
 .text-center {
   text-align: center;
@@ -111,66 +123,82 @@ a {
 .mb-3 { margin-bottom: var(--spacing-lg); }
 
 // Buttons
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
 
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  &--primary {
-    background-color: var(--color-primary);
-    color: var(--color-text);
-
-    &:hover:not(:disabled) {
-      background-color: var(--color-primary-dark);
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
-  }
 
-  &--secondary {
-    background-color: var(--color-secondary);
-    color: var(--color-text-dark);
-
-    &:hover:not(:disabled) {
-      background-color: var(--color-secondary-dark);
-    }
-  }
-
-  &--danger {
-    background-color: var(--color-danger);
-    color: var(--color-text);
-
-    &:hover:not(:disabled) {
-      background-color: #b02a37;
-    }
-  }
-
-  &--outline {
-    background-color: transparent;
-    border: 2px solid var(--color-primary);
-    color: var(--color-primary-light);
-
-    &:hover:not(:disabled) {
+    &--primary {
       background-color: var(--color-primary);
       color: var(--color-text);
+
+      &:hover:not(:disabled) {
+        background-color: var(--color-primary-dark);
+      }
+    }
+
+    &--secondary {
+      background-color: var(--color-secondary);
+      color: var(--color-text-dark);
+
+      &:hover:not(:disabled) {
+        background-color: var(--color-secondary-dark);
+        color: #000;
+      }
+    }
+
+    &--danger {
+      background-color: var(--color-danger);
+      color: var(--color-text);
+
+      &:hover:not(:disabled) {
+        background-color: #b02a37;
+      }
+    }
+
+    &--outline {
+      background-color: transparent;
+      border: 2px solid var(--color-primary);
+      color: var(--color-primary-light);
+
+      &:hover:not(:disabled) {
+        background-color: var(--color-primary);
+        color: var(--color-text);
+      }
+    }
+
+    &--block {
+      width: 100%;
     }
   }
 
-  &--block {
-    width: 100%;
+  .btn.btn--paypal {
+    min-width: 0 !important;
+    width: auto;
+    padding: 2px 6px !important;
+    gap: 0;
+    color: #0B1B3A;
+    line-height: 1;
+
+    i {
+      color: #0B1B3A;
+      line-height: 1;
+    }
   }
-}
+
 
 // Forms
 .form-group {
@@ -202,6 +230,7 @@ a {
 
   &::placeholder {
     color: var(--color-text-muted);
+    opacity: 0.6;
   }
 
   &.is-invalid {
@@ -232,6 +261,21 @@ a {
     font-size: 1.25rem;
     font-weight: 600;
   }
+}
+
+// Modals (global)
+.modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal.card {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-overlay {
+  align-items: flex-start;
 }
 
 // Alerts

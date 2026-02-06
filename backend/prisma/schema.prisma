@@ -31,6 +31,8 @@ model User {
   ownedDecks     Deck[]
   groups         UsersOnGroups[]
   gamePlacements GamePlacement[]
+  groupApplications GroupApplication[]
+  seasonDismissals GroupSeasonDismissal[]
 }
 
 model Group {
@@ -39,6 +41,15 @@ model Group {
   format       String
   description  String?
   inviteCode   String   @unique @default(cuid())
+  historyRetentionDays Int @default(30)
+  groupImage   Bytes?
+  groupImageMime String?
+  activeSeasonName String?
+  activeSeasonEndsAt DateTime?
+  activeSeasonStartedAt DateTime?
+  seasonPauseDays Int @default(0)
+  seasonPauseUntil DateTime?
+  lastSeasonId String? @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -46,6 +57,9 @@ model Group {
   decks        Deck[]
   games        Game[]
   events       GroupEvent[]
+  applications GroupApplication[]
+  seasons      GroupSeason[]
+  lastSeason   GroupSeason? @relation("GroupLastSeason", fields: [lastSeasonId], references: [id])
 }
 
 model UsersOnGroups {
@@ -81,6 +95,7 @@ model Deck {
   groupId  String
 
   placements GamePlacement[]
+  seasonSnapshots GroupSeasonDeck[]
 
   @@unique([name, groupId]) // Deckname muss pro Gruppe unique sein
 }
@@ -120,4 +135,57 @@ model GroupEvent {
 
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId String
+}
+
+model GroupApplication {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+
+  @@unique([userId, groupId])
+}
+
+model GroupSeason {
+  id        String   @id @default(cuid())
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  name      String?
+  startedAt DateTime
+  endedAt   DateTime
+  createdAt DateTime @default(now())
+
+  decks     GroupSeasonDeck[]
+  dismissals GroupSeasonDismissal[]
+  lastSeasonOfGroup Group? @relation("GroupLastSeason")
+
+  @@index([groupId, endedAt])
+}
+
+model GroupSeasonDeck {
+  id        String   @id @default(cuid())
+  season    GroupSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  seasonId  String
+  deck      Deck? @relation(fields: [deckId], references: [id], onDelete: SetNull)
+  deckId    String?
+  deckName  String
+  colors    String
+  ownerName String
+  performanceRating Float
+  gamesPlayed Int
+  position  Int
+}
+
+model GroupSeasonDismissal {
+  id        String   @id @default(cuid())
+  season    GroupSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  seasonId  String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  dismissedAt DateTime @default(now())
+
+  @@unique([seasonId, userId])
 }

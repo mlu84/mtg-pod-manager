@@ -7,15 +7,19 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 import { CreateGameDto, GamePlacementDto } from './dto/create-game.dto';
+import { GroupsService } from '../groups/groups.service';
 
 @Injectable()
 export class GamesService {
   constructor(
     private prisma: PrismaService,
     private eventsService: EventsService,
+    private groupsService: GroupsService,
   ) {}
 
   async create(createGameDto: CreateGameDto, userId: string) {
+    await this.groupsService.ensureSeasonUpToDate(createGameDto.groupId);
+
     // Verify user is admin of the group
     const membership = await this.prisma.usersOnGroups.findUnique({
       where: {
@@ -32,6 +36,15 @@ export class GamesService {
 
     if (membership.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can record games');
+    }
+
+    const group = await this.prisma.group.findUnique({
+      where: { id: createGameDto.groupId },
+      select: { seasonPauseUntil: true },
+    });
+
+    if (group?.seasonPauseUntil && new Date() < group.seasonPauseUntil) {
+      throw new BadRequestException('Season is in pause. Recording games is disabled.');
     }
 
     // Validate all decks exist, are active, and belong to the group
@@ -59,6 +72,9 @@ export class GamesService {
         `Cannot use inactive decks: ${inactiveDecks.map((d) => d.name).join(', ')}`,
       );
     }
+
+    // Validate rank configuration (tie rules, bounds)
+    this.validateRankConfiguration(createGameDto.placements);
 
     // Calculate points for each placement
     const playerCount = createGameDto.placements.length;
@@ -317,7 +333,8 @@ export class GamesService {
     return { message: 'Last game has been undone successfully' };
   }
 
-  async getRanking(groupId: string, userId: string) {
+  async getRanking(groupId: string, userId: string, snapshot = false) {
+    await this.groupsService.ensureSeasonUpToDate(groupId);
     // Verify user is a member of the group
     const membership = await this.prisma.usersOnGroups.findUnique({
       where: {
@@ -330,6 +347,10 @@ export class GamesService {
 
     if (!membership) {
       throw new ForbiddenException('You are not a member of this group');
+    }
+
+    if (snapshot) {
+      return this.groupsService.getLastSeasonRanking(groupId);
     }
 
     const decks = await this.prisma.deck.findMany({
@@ -461,4 +482,40 @@ export class GamesService {
       })),
     };
   }
+
+  private validateRankConfiguration(placements: GamePlacementDto[]): void {
+    const playerCount = placements.length;
+    const sortedRanks = placements
+      .map((p) => p.rank)
+      .sort((a, b) => a - b);
+
+    let expectedMinRank = 1;
+
+    for (let i = 0; i < sortedRanks.length; i++) {
+      const rank = sortedRanks[i];
+
+      if (!Number.isInteger(rank)) {
+        throw new BadRequestException('Rank must be an integer');
+      }
+
+      // Rank must be at least expectedMinRank
+      if (rank < expectedMinRank) {
+        throw new BadRequestException('Invalid rank configuration');
+      }
+
+      // Rank must not exceed total player count
+      if (rank > playerCount) {
+        throw new BadRequestException('Rank cannot exceed player count');
+      }
+
+      // Count ties at this rank and calculate next expected rank
+      let tieCount = 1;
+      while (i + 1 < sortedRanks.length && sortedRanks[i + 1] === rank) {
+        tieCount++;
+        i++;
+      }
+      expectedMinRank = rank + tieCount;
+    }
+  }
+
 }

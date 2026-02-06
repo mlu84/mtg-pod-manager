@@ -36,6 +36,14 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'groups/:id/play',
+    loadComponent: () =>
+      import('./pages/group-play/group-play.component').then(
+        (m) => m.GroupPlayComponent
+      ),
+    canActivate: [authGuard],
+  },
+  {
     path: 'profile',
     loadComponent: () =>
       import('./pages/profile/profile.component').then(
@@ -48,6 +56,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/archidekt-test/archidekt-test.component').then(
         (m) => m.ArchidektTestComponent
+      ),
+    canActivate: [sysadminGuard],
+  },
+  {
+    path: 'sysadmin-users',
+    loadComponent: () =>
+      import('./pages/sysadmin-users/sysadmin-users.component').then(
+        (m) => m.SysadminUsersComponent
       ),
     canActivate: [sysadminGuard],
   },

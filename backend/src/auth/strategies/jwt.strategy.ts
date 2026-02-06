@@ -8,6 +8,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   emailVerified: boolean;
+  systemRole: 'USER' | 'SYSADMIN';
 }
 
 @Injectable()
@@ -35,6 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: user.email,
       inAppName: user.inAppName,
       emailVerified: !!user.emailVerified,
+      systemRole: user.systemRole,
     };
   }
 }

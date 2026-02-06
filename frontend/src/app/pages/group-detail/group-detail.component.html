@@ -18,9 +18,15 @@
     <header class="header">
       <div class="header__content container">
         <div class="header__left">
-          <button class="btn btn--outline" (click)="goBack()">
+          <button class="btn btn--outline btn--back-vertical" (click)="goBack()">
             <i class="fas fa-arrow-left"></i>
           </button>
+          <div class="header__image">
+            <img
+              [src]="group()!.imageUrl || defaultGroupImage"
+              [alt]="group()!.name"
+            />
+          </div>
           <div class="header__info">
             <h1>
               {{ group()!.name }}
@@ -30,37 +36,90 @@
                 </button>
               }
             </h1>
-            <span class="header__format">{{ group()!.format }}</span>
+              <div class="header__format-row">
+                <span class="header__format">{{ group()!.format }}</span>
+              </div>
+            @if (group()!.description) {
+              <div class="header__description">{{ group()!.description }}</div>
+            }
           </div>
         </div>
-        <div class="header__actions">
-          @if (isAdmin() && group()!.inviteCode) {
-            <div class="invite-code">
-              <span class="invite-code__label">Invite Code:</span>
-              <code class="invite-code__value">{{ group()!.inviteCode }}</code>
-              <button class="btn btn--outline" (click)="copyInviteCode()" title="Copy">
-                <i class="fas fa-copy"></i>
-              </button>
-              <button class="btn btn--outline" (click)="regenerateInviteCode()" title="Generate new code">
-                <i class="fas fa-sync-alt"></i>
-              </button>
+          <div class="header__actions">
+            <div class="header__actions-buttons">
+              @if (isAdmin() && group()!.inviteCode) {
+                <div class="invite-code">
+                  <span class="invite-code__label">Invite Code:</span>
+                  <code class="invite-code__value">{{ group()!.inviteCode }}</code>
+                  <button class="btn btn--outline" (click)="copyInviteCode()" title="Copy">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  <button class="btn btn--outline" (click)="regenerateInviteCode()" title="Generate new code">
+                    <i class="fas fa-sync-alt"></i>
+                  </button>
+                </div>
+              }
+              <div class="donate-inline">
+                <span class="donate-prefix">Buy me a booster</span>
+                <a
+                  class="btn btn--secondary btn--paypal"
+                  href="https://paypal.me/mluckeystrauss"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="yes, i am a cardboard addict"
+                  aria-label="Buy me a booster on PayPal"
+                >
+                  <i class="fab fa-paypal"></i>
+                </a>
+              </div>
             </div>
-            @if (confirmDeleteGroup()) {
-              <button class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteGroupAction()" [disabled]="deleteGroupLoading()">
-                <i class="fas fa-exclamation-triangle"></i> Really delete group?
-              </button>
-              <button class="btn btn--outline" (click)="cancelDeleteGroup()" [disabled]="deleteGroupLoading()">
-                Cancel
-              </button>
-            } @else {
-              <button class="btn btn--danger" (click)="requestDeleteGroup()" title="Delete group">
-                <i class="fas fa-trash"></i>
-              </button>
+            @if (isAdmin()) {
+              <div class="header__actions-buttons">
+                <button class="btn btn--outline" (click)="openMemberSettingsModal()" title="Member settings">
+                  <i class="fas fa-users-cog"></i> Member settings
+                </button>
+                <button class="btn btn--outline" (click)="openGroupSettingsModal()" title="Group settings">
+                  <i class="fas fa-sliders-h"></i> Group settings
+                </button>
+              </div>
             }
+          </div>
+        </div>
+      </header>
+
+    @if (group()!.winnersBanner) {
+      <div class="container">
+        <div class="winners-banner card">
+          <div class="winners-banner__header">
+            <h3>
+              Congratulations to the Winners
+              @if (group()!.winnersBanner?.seasonName) {
+                of season {{ group()!.winnersBanner?.seasonName }}
+              }
+            </h3>
+            <button class="btn-icon" (click)="dismissWinnersBanner()" title="Dismiss">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          @if (winnersBannerInfo()) {
+            <p class="winners-banner__meta">{{ winnersBannerInfo() }}</p>
           }
+          <div class="winners-banner__list">
+            @for (winner of group()!.winnersBanner!.winners; track winner.position) {
+              <div class="winners-banner__item">
+                <span class="winners-banner__pos">#{{ winner.position }}</span>
+                <span class="winners-banner__deck">{{ winner.deckName }}</span>
+                <span class="winners-banner__owner">{{ winner.ownerName }}</span>
+                <span class="mana-symbols mana-symbols--inline">
+                  @for (symbol of getManaSymbols(winner.colors); track symbol) {
+                    <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                  }
+                </span>
+              </div>
+            }
+          </div>
         </div>
       </div>
-    </header>
+    }
 
     <main class="container main-content">
       <div class="content-grid">
@@ -70,70 +129,108 @@
           <section class="card">
             <div class="card__header">
               <h2 class="card__title"><i class="fas fa-trophy"></i> Ranking</h2>
+              <div class="ranking-header__meta">
+                @if (group()!.activeSeasonEndsAt) {
+                  <span class="ranking-header__countdown"
+                        [class.ranking-header__countdown--warning]="seasonCountdownState() === 'warning'"
+                        [class.ranking-header__countdown--critical]="seasonCountdownState() === 'critical'">
+                    {{ seasonCountdown() }} ({{ group()!.activeSeasonEndsAt | date:'dd.MM.yyyy' }})
+                  </span>
+                  @if (group()!.activeSeasonName) {
+                    <span class="ranking-header__season">{{ group()!.activeSeasonName }}</span>
+                  }
+                }
+                @if (rankingMode() === 'previous') {
+                  <span class="ranking-header__season">Last season snapshot</span>
+                }
+                @if (snapshotAvailable()) {
+                  <button class="btn btn--sm btn--outline" (click)="toggleRankingMode()">
+                    @if (rankingMode() === 'current') {
+                      Show previous ranking
+                    } @else {
+                      Show current ranking
+                    }
+                  </button>
+                  <span class="info-icon" title="Toggle between current and previous season ranking">
+                    <i class="fas fa-info-circle"></i>
+                  </span>
+                }
+              </div>
             </div>
             @if (ranking().length === 0) {
               <p class="text-muted">No games played yet.</p>
             } @else {
               <div class="ranking-list">
                 @for (entry of paginatedRanking(); track entry.id) {
-                  <div class="ranking-item"
-                       [class.inactive]="!entry.isActive"
-                       [class.ranking-item--first]="entry.position === 1"
-                       [class.ranking-item--second]="entry.position === 2"
-                       [class.ranking-item--third]="entry.position === 3"
-                       [class.ranking-item--other]="entry.position > 3">
-                    @if (entry.position <= 3) {
-                      <span class="ranking-item__trophy"
-                            [class.ranking-item__trophy--first]="entry.position === 1"
-                            [class.ranking-item__trophy--second]="entry.position === 2"
-                            [class.ranking-item__trophy--third]="entry.position === 3">
-                        <i class="fas fa-trophy"
-                           [class.trophy--gold]="entry.position === 1"
-                           [class.trophy--silver]="entry.position === 2"
-                           [class.trophy--bronze]="entry.position === 3"></i>
-                        <span class="ranking-item__trophy-number">{{ entry.position }}</span>
-                      </span>
-                    } @else {
-                      <span class="ranking-item__position">{{ entry.position }}</span>
-                    }
-                    <div class="ranking-item__trend">
-                      @if (entry.trend === 'up') {
-                        <span class="trend trend-up">
-                          <i class="fas fa-caret-up"></i>
-                          <span class="trend__value">{{ entry.positionChange }}</span>
-                        </span>
-                      } @else if (entry.trend === 'down') {
-                        <span class="trend trend-down">
-                          <i class="fas fa-caret-down"></i>
-                          <span class="trend__value">{{ -entry.positionChange }}</span>
-                        </span>
-                      } @else if (entry.trend === 'new') {
-                        <span class="trend trend-new">
-                          <i class="fas fa-star"></i>
+                  <div class="ranking-row" [class.inactive]="!entry.isActive">
+                    <!-- Left: Position & Trend -->
+                    <div class="ranking-row__left">
+                      @if (entry.position <= 3) {
+                        <span class="ranking-item__trophy"
+                              [class.ranking-item__trophy--first]="entry.position === 1"
+                              [class.ranking-item__trophy--second]="entry.position === 2"
+                              [class.ranking-item__trophy--third]="entry.position === 3">
+                          <i class="fas fa-trophy"
+                             [class.trophy--gold]="entry.position === 1"
+                             [class.trophy--silver]="entry.position === 2"
+                             [class.trophy--bronze]="entry.position === 3"></i>
+                          <span class="ranking-item__trophy-number">{{ entry.position }}</span>
                         </span>
                       } @else {
-                        <span class="trend trend-same">
-                          <i class="fas fa-minus"></i>
-                        </span>
+                        <span class="ranking-item__position">{{ entry.position }}</span>
                       }
-                    </div>
-                    <div class="deck-icon">
-                      <img [src]="getDeckImageUrl(entry.id) || defaultDeckImage" [alt]="entry.name" class="deck-icon__img" />
-                    </div>
-                    <div class="ranking-item__info">
-                      <span class="ranking-item__name">
-                        {{ entry.name }}
-                        @if (getArchidektUrl(entry.id)) {
-                          <a [href]="getArchidektUrl(entry.id)" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
-                            <i class="fas fa-external-link-alt"></i>
-                          </a>
+                      <div class="ranking-item__trend">
+                        @if (entry.trend === 'up') {
+                          <span class="trend trend-up">
+                            <i class="fas fa-caret-up"></i>
+                            <span class="trend__value">{{ entry.positionChange }}</span>
+                          </span>
+                        } @else if (entry.trend === 'down') {
+                          <span class="trend trend-down">
+                            <i class="fas fa-caret-down"></i>
+                            <span class="trend__value">{{ -entry.positionChange }}</span>
+                          </span>
+                        } @else if (entry.trend === 'new') {
+                          <span class="trend trend-new">
+                            <i class="fas fa-star"></i>
+                          </span>
+                        } @else {
+                          <span class="trend trend-same">
+                            <i class="fas fa-minus"></i>
+                          </span>
                         }
-                      </span>
-                      <span class="ranking-item__owner">{{ entry.owner.inAppName }}</span>
+                      </div>
                     </div>
-                    <div class="ranking-item__stats">
-                      <span class="ranking-item__rating">{{ entry.performanceRating }}</span>
-                      <span class="ranking-item__games">{{ entry.gamesPlayed }} games</span>
+                    <!-- Right: MTG Card Style Content -->
+                    <div class="ranking-item mtg-card-style"
+                         [class.ranking-item--first]="entry.position === 1"
+                         [class.ranking-item--second]="entry.position === 2"
+                         [class.ranking-item--third]="entry.position === 3"
+                         [class.ranking-item--other]="entry.position > 3"
+                         [style.--color-gradient]="getColorGradient(entry.colors)">
+                      <div class="deck-icon">
+                        <img [src]="getDeckImageUrl(entry.id) || defaultDeckImage" [alt]="entry.name" class="deck-icon__img" />
+                      </div>
+                      <div class="ranking-item__info">
+                        <span class="ranking-item__name" [title]="entry.name">
+                          <span class="ranking-item__name-text">{{ entry.name }}</span>
+                          <span class="mana-symbols">
+                            @for (symbol of getManaSymbols(entry.colors); track symbol) {
+                              <img [src]="symbol" class="mana-symbol" alt="mana" />
+                            }
+                          </span>
+                          @if (getArchidektUrl(entry.id)) {
+                            <a [href]="getArchidektUrl(entry.id)" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
+                              <i class="fas fa-external-link-alt"></i>
+                            </a>
+                          }
+                        </span>
+                        <span class="ranking-item__owner">{{ entry.owner.inAppName }}</span>
+                      </div>
+                      <div class="ranking-item__stats">
+                        <span class="ranking-item__rating">{{ entry.performanceRating }}</span>
+                        <span class="ranking-item__games">{{ entry.gamesPlayed }} games</span>
+                      </div>
                     </div>
                   </div>
                 }
@@ -172,43 +269,45 @@
           <section class="card">
             <div class="card__header">
               <h2 class="card__title"><i class="fas fa-history"></i> History</h2>
+            </div>
+            <div class="history-filters">
+              <div class="history-filters__left">
+                <button
+                  class="btn btn--sm"
+                  [class.btn--primary]="historyFilter() === 'all'"
+                  [class.btn--outline]="historyFilter() !== 'all'"
+                  (click)="setHistoryFilter('all')"
+                >
+                  All
+                </button>
+                <button
+                  class="btn btn--sm"
+                  [class.btn--primary]="historyFilter() === 'games'"
+                  [class.btn--outline]="historyFilter() !== 'games'"
+                  (click)="setHistoryFilter('games')"
+                >
+                  Games
+                </button>
+                <button
+                  class="btn btn--sm"
+                  [class.btn--primary]="historyFilter() === 'events'"
+                  [class.btn--outline]="historyFilter() !== 'events'"
+                  (click)="setHistoryFilter('events')"
+                >
+                  Events
+                </button>
+              </div>
               @if (isAdmin() && isEmailVerified() && games().length > 0) {
-                <button class="btn btn--danger" (click)="undoLastGame()">
+                <button class="btn btn--sm btn--danger" (click)="undoLastGame()">
                   <i class="fas fa-undo"></i> Undo Last
                 </button>
               }
-            </div>
-            <div class="history-filters">
-              <button
-                class="btn btn--sm"
-                [class.btn--primary]="historyFilter() === 'all'"
-                [class.btn--outline]="historyFilter() !== 'all'"
-                (click)="setHistoryFilter('all')"
-              >
-                All
-              </button>
-              <button
-                class="btn btn--sm"
-                [class.btn--primary]="historyFilter() === 'games'"
-                [class.btn--outline]="historyFilter() !== 'games'"
-                (click)="setHistoryFilter('games')"
-              >
-                Games
-              </button>
-              <button
-                class="btn btn--sm"
-                [class.btn--primary]="historyFilter() === 'events'"
-                [class.btn--outline]="historyFilter() !== 'events'"
-                (click)="setHistoryFilter('events')"
-              >
-                Events
-              </button>
             </div>
             @if (filteredHistory().length === 0) {
               <p class="text-muted">No activity yet.</p>
             } @else {
               <div class="history-list">
-                @for (item of filteredHistory(); track $index) {
+                @for (item of paginatedHistory(); track $index) {
                   @if (item.type === 'game') {
                     <div class="game-item">
                       <div class="game-item__header">
@@ -222,6 +321,13 @@
                             <span class="placement__rank">#{{ placement.rank }}</span>
                             <span class="placement__deck">
                               {{ placement.deck?.name || placement.deletedDeckName || 'Deleted Deck' }}
+                              @if (placement.deck?.colors) {
+                                <span class="mana-symbols mana-symbols--inline">
+                                  @for (symbol of getManaSymbols(placement.deck.colors); track symbol) {
+                                    <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                                  }
+                                </span>
+                              }
                               @if (placement.playerName) {
                                 <span class="placement__player">({{ placement.playerName }})</span>
                               }
@@ -239,6 +345,33 @@
                   }
                 }
               </div>
+              @if (historyTotalPages() > 1) {
+                <div class="pagination">
+                  <button
+                    class="pagination__btn"
+                    (click)="setHistoryPage(historyPage() - 1)"
+                    [disabled]="historyPage() === 1"
+                  >
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                  @for (page of [].constructor(historyTotalPages()); track $index) {
+                    <button
+                      class="pagination__btn"
+                      [class.pagination__btn--active]="historyPage() === $index + 1"
+                      (click)="setHistoryPage($index + 1)"
+                    >
+                      {{ $index + 1 }}
+                    </button>
+                  }
+                  <button
+                    class="pagination__btn"
+                    (click)="setHistoryPage(historyPage() + 1)"
+                    [disabled]="historyPage() === historyTotalPages()"
+                  >
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              }
             }
           </section>
         </div>
@@ -246,16 +379,29 @@
         <!-- Right Column: Actions & Decks -->
         <div class="right-column">
           <!-- Actions -->
-          <section class="card actions-card">
-            @if (isEmailVerified()) {
-              <button class="btn btn--primary btn--block" (click)="openDeckModal()">
-                <i class="fas fa-plus"></i> Add Deck
-              </button>
-              @if (isAdmin()) {
-                <button class="btn btn--secondary btn--block" (click)="openGameModal()">
-                  <i class="fas fa-gamepad"></i> Record Game
-                </button>
-              }
+            <section class="card actions-card">
+              @if (isEmailVerified()) {
+                <div class="actions-card__buttons">
+                  <button class="btn btn--secondary btn--square btn--soft-blue"
+                          (click)="openPlayGame()"
+                          [disabled]="!canStartPlayGame()"
+                          [title]="playGameDisabledReason()">
+                    <i class="fas fa-play"></i>
+                    <span>New Game</span>
+                  </button>
+                  @if (isAdmin()) {
+                    <button class="btn btn--secondary btn--square" (click)="openGameModal()" [disabled]="isSeasonPaused()">
+                      <i class="fas fa-gamepad"></i>
+                      <span>Record Game</span>
+                    </button>
+                  }
+                </div>
+                @if (isSeasonPaused()) {
+                  <div class="alert alert--warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Season is in pause. Recording games is disabled until {{ group()!.seasonPauseUntil | date:'dd.MM.yyyy' }}.
+                  </div>
+                }
             } @else {
               <div class="alert alert--warning">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -264,45 +410,206 @@
             }
           </section>
 
-          <!-- Decks List -->
-          <section class="card">
+          <!-- Statistics -->
+          <section class="card stats-card">
             <div class="card__header">
-              <h2 class="card__title"><i class="fas fa-layer-group"></i> Decks</h2>
+              <h2 class="card__title"><i class="fas fa-chart-line"></i> Statistics</h2>
+              <button class="card__toggle" (click)="toggleStatsCollapsed()" title="Toggle statistics">
+                <i class="fas" [class.fa-chevron-down]="statsCollapsed()" [class.fa-chevron-up]="!statsCollapsed()"></i>
+              </button>
             </div>
-            @if (group()!.decks.length === 0) {
-              <p class="text-muted">No decks added yet.</p>
-            } @else {
-              <div class="decks-list">
-                @for (deck of group()!.decks; track deck.id) {
-                  <div class="deck-item" [class.inactive]="!deck.isActive">
-                    <div class="deck-icon">
-                      <img [src]="deck.archidektImageUrl || defaultDeckImage" [alt]="deck.name" class="deck-icon__img" />
-                    </div>
-                    <div class="deck-item__info">
-                      <span class="deck-item__name">
-                        {{ deck.name }}
-                        @if (deck.archidektId) {
-                          <a [href]="'https://archidekt.com/decks/' + deck.archidektId" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
-                            <i class="fas fa-external-link-alt"></i>
-                          </a>
-                        }
-                      </span>
-                      <span class="deck-item__colors">{{ deck.colors }}</span>
-                      @if (!deck.isActive) {
-                        <span class="deck-item__badge">Inactive</span>
-                      }
-                    </div>
-                    <div class="deck-item__actions">
-                      <span class="deck-item__owner">{{ deck.owner.inAppName }}</span>
-                      @if (canEditDeck(deck) && isEmailVerified()) {
-                        <button class="btn-icon" (click)="openEditDeckModal(deck)" title="Edit deck">
-                          <i class="fas fa-edit"></i>
-                        </button>
-                      }
-                    </div>
-                  </div>
+            @if (!statsCollapsed()) {
+              <div class="stats-chart">
+                @if (statsMessage()) {
+                  <p class="text-muted">{{ statsMessage() }}</p>
+                } @else {
+                  <canvas #statsChart></canvas>
                 }
               </div>
+              <div class="stats-controls">
+                <div class="stats-buttons">
+                  <button class="btn btn--sm"
+                          [class.btn--primary]="statsCategory() === 'colors'"
+                          [class.btn--outline]="statsCategory() !== 'colors'"
+                          (click)="setStatsCategory('colors')">
+                    Color data
+                  </button>
+                  <button class="btn btn--sm"
+                          [class.btn--primary]="statsCategory() === 'decks'"
+                          [class.btn--outline]="statsCategory() !== 'decks'"
+                          (click)="setStatsCategory('decks')">
+                    Deck data
+                  </button>
+                  <button class="btn btn--sm"
+                          [class.btn--primary]="statsCategory() === 'players'"
+                          [class.btn--outline]="statsCategory() !== 'players'"
+                          (click)="setStatsCategory('players')">
+                    Player data
+                  </button>
+                </div>
+
+                <div class="stats-selects">
+                  @if (statsCategory() === 'colors') {
+                      <select class="form-control"
+                             [value]="statsOption()"
+                             (change)="setStatsOption($any($event.target).value)">
+                        <option value="colors_distribution">Color popularity (all time)</option>
+                        <option value="colors_combo_distribution">Color combinations (all time)</option>
+                        <option value="colors_perf">Avg performance by color</option>
+                        <option value="colors_perf_combo">Avg perf. by color combination</option>
+                        <option value="colors_deck_types">Deck Types (season)</option>
+                      </select>
+                  } @else if (statsCategory() === 'decks') {
+                    <div class="deck-search">
+                      <input
+                        type="text"
+                        class="form-control"
+                        [value]="statsDeckId() ? getDeckNameById(statsDeckId()!) : statsDeckSearch()"
+                        (input)="onStatsDeckSearchInput($event)"
+                        (focus)="openStatsDeckDropdown()"
+                        (blur)="closeStatsDeckDropdownDelayed()"
+                        [placeholder]="statsDeckId() ? '' : 'Search deck...'"
+                        autocomplete="off"
+                      />
+                      @if (statsDeckId()) {
+                        <button type="button" class="deck-search__clear" (click)="clearStatsDeckSelection()">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      }
+                      @if (statsDeckDropdownOpen()) {
+                        <div class="deck-dropdown">
+                          @for (deck of filteredStatsDecks(); track deck.id) {
+                            <div class="deck-dropdown__item" (mousedown)="selectStatsDeck(deck.id)">
+                              {{ deck.name }}
+                            </div>
+                          } @empty {
+                            <div class="deck-dropdown__empty">No decks found</div>
+                          }
+                        </div>
+                      }
+                    </div>
+                    <select class="form-control"
+                            [value]="statsOption()"
+                            (change)="setStatsOption($any($event.target).value)">
+                      <option value="decks_perf_trend">Performance trend (last 10 games)</option>
+                      <option value="decks_rank_trend">Rank trend (last 10 games)</option>
+                      <option value="decks_games_played">Games played vs others</option>
+                    </select>
+                  } @else {
+                    <select class="form-control"
+                            [value]="statsOption()"
+                            (change)="setStatsOption($any($event.target).value)">
+                      <option value="players_games">Games played by player</option>
+                      <option value="players_perf">Avg deck performance by player</option>
+                    </select>
+                  }
+                </div>
+              </div>
+            }
+          </section>
+
+          <!-- Decks List -->
+            <section class="card">
+              <div class="card__header">
+                <h2 class="card__title"><i class="fas fa-layer-group"></i> Decks</h2>
+                <div class="card__header-actions">
+                  @if (isEmailVerified()) {
+                      <button class="btn btn--secondary btn--sm card__icon-button" (click)="openDeckModal()" title="Add deck">
+                        Add New
+                      </button>
+                  }
+                  <button class="card__toggle" (click)="toggleDecksCollapsed()" title="Toggle decks">
+                    <i class="fas" [class.fa-chevron-down]="decksCollapsed()" [class.fa-chevron-up]="!decksCollapsed()"></i>
+                  </button>
+                </div>
+              </div>
+            @if (!decksCollapsed()) {
+              @if (group()!.decks.length === 0) {
+                <p class="text-muted">No decks added yet.</p>
+              } @else {
+                <div class="decks-search">
+                  <i class="fas fa-search"></i>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Search decks..."
+                    [value]="decksSearchTerm()"
+                    (input)="setDecksSearch($any($event.target).value)"
+                    autocomplete="off"
+                  />
+                  @if (decksSearchTerm()) {
+                    <button class="decks-search__clear" (click)="setDecksSearch('')">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  }
+                </div>
+                @if (filteredDecks().length === 0) {
+                  <p class="text-muted">No decks match your search.</p>
+                } @else {
+                <div class="decks-list">
+                  @for (deck of paginatedDecks(); track deck.id) {
+                    <div class="deck-item mtg-card-style" [class.inactive]="!deck.isActive" [style.--color-gradient]="getColorGradient(deck.colors)">
+                      <div class="deck-icon">
+                        <img [src]="deck.archidektImageUrl || defaultDeckImage" [alt]="deck.name" class="deck-icon__img" />
+                      </div>
+                      <div class="deck-item__info">
+                        <span class="deck-item__name" [title]="deck.name">
+                          <span class="deck-item__name-text">{{ deck.name }}</span>
+                          <span class="mana-symbols">
+                            @for (symbol of getManaSymbols(deck.colors); track symbol) {
+                              <img [src]="symbol" class="mana-symbol" alt="mana" />
+                            }
+                          </span>
+                          @if (deck.archidektId) {
+                            <a [href]="'https://archidekt.com/decks/' + deck.archidektId" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
+                              <i class="fas fa-external-link-alt"></i>
+                            </a>
+                          }
+                        </span>
+                        @if (!deck.isActive) {
+                          <span class="deck-item__badge">Inactive</span>
+                        }
+                      </div>
+                      <div class="deck-item__actions">
+                        <span class="deck-item__owner">{{ deck.owner.inAppName }}</span>
+                        @if (canEditDeck(deck) && isEmailVerified()) {
+                          <button class="btn-icon" (click)="openEditDeckModal(deck)" title="Edit deck">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+                @if (decksTotalPages() > 1) {
+                  <div class="pagination">
+                    <button
+                      class="pagination__btn"
+                      (click)="setDecksPage(decksPage() - 1)"
+                      [disabled]="decksPage() === 1"
+                    >
+                      <i class="fas fa-chevron-left"></i>
+                    </button>
+                    @for (page of [].constructor(decksTotalPages()); track $index) {
+                      <button
+                        class="pagination__btn"
+                        [class.pagination__btn--active]="decksPage() === $index + 1"
+                        (click)="setDecksPage($index + 1)"
+                      >
+                        {{ $index + 1 }}
+                      </button>
+                    }
+                    <button
+                      class="pagination__btn"
+                      (click)="setDecksPage(decksPage() + 1)"
+                      [disabled]="decksPage() === decksTotalPages()"
+                    >
+                      <i class="fas fa-chevron-right"></i>
+                    </button>
+                  </div>
+                }
+                }
+              }
             }
           </section>
 
@@ -310,24 +617,25 @@
           <section class="card">
             <div class="card__header">
               <h2 class="card__title"><i class="fas fa-users"></i> Members</h2>
+              <button class="card__toggle" (click)="toggleMembersCollapsed()" title="Toggle members">
+                <i class="fas" [class.fa-chevron-down]="membersCollapsed()" [class.fa-chevron-up]="!membersCollapsed()"></i>
+              </button>
             </div>
-            <div class="members-list">
-              @for (member of group()!.members; track member.userId) {
-                <div class="member-item">
-                  <div class="member-item__info">
-                    <span class="member-item__name">{{ member.user.inAppName }}</span>
-                    @if (member.role === 'ADMIN') {
-                      <span class="member-item__badge">Admin</span>
-                    }
+            @if (!membersCollapsed()) {
+              <div class="members-list">
+                @for (member of group()!.members; track member.userId) {
+                  <div class="member-item">
+                    <div class="member-item__info">
+                      <span class="member-item__name">{{ member.user.inAppName }}</span>
+                      @if (member.role === 'ADMIN') {
+                        <span class="member-item__badge">Admin</span>
+                      }
+                    </div>
                   </div>
-                  @if (isAdmin() && member.userId !== currentUserId() && member.role !== 'ADMIN') {
-                    <button class="btn-icon btn-icon--danger" (click)="removeMember(member)" title="Remove member">
-                      <i class="fas fa-user-minus"></i>
-                    </button>
-                  }
-                </div>
-              }
-            </div>
+                }
+              </div>
+            }
+
           </section>
         </div>
       </div>
@@ -338,7 +646,7 @@
 <!-- Add Deck Modal -->
 @if (showDeckModal()) {
   <div class="modal-overlay">
-    <div class="modal card" (click)="$event.stopPropagation()">
+    <div class="modal card" (click)="$event.stopPropagation(); closeColorDropdown()">
       <div class="modal__header">
         <h2>Add New Deck</h2>
         <button class="modal__close" (click)="closeDeckModal()">
@@ -364,20 +672,44 @@
           />
         </div>
 
-        <div class="form-group">
-          <label for="deckColors">Colors *</label>
-          <select
-            id="deckColors"
-            class="form-control"
-            [(ngModel)]="deckColors"
-            name="deckColors"
-            [disabled]="deckLoading()"
-          >
-            <option value="">Select colors</option>
-            @for (color of colorOptions; track color) {
-              <option [value]="color">{{ color }}</option>
+        <div class="form-group color-select-container" (click)="$event.stopPropagation()">
+          <label>Colors *</label>
+          <div class="color-select">
+            <div
+              class="color-select__trigger form-control"
+              (click)="openColorDropdown()"
+              [class.disabled]="deckLoading()"
+            >
+              @if (deckColors) {
+                <span class="color-select__value">
+                  <span class="mana-symbols">
+                    @for (symbol of getManaSymbols(deckColors); track symbol) {
+                      <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                    }
+                  </span>
+                  {{ deckColors }}
+                </span>
+              } @else {
+                <span class="color-select__placeholder">Select colors</span>
+              }
+              <i class="fas fa-chevron-down color-select__icon"></i>
+            </div>
+            @if (colorDropdownOpen) {
+              <div class="color-dropdown">
+                @for (color of colorOptions; track color) {
+                  <div class="color-dropdown__item" (mousedown)="selectColor(color)">
+                    <span class="mana-symbols">
+                      @for (symbol of getManaSymbols(color); track symbol) {
+                        <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                      }
+                    </span>
+                    {{ color }}
+                  </div>
+                }
+              </div>
             }
-          </select>
+          </div>
+          <input type="hidden" [(ngModel)]="deckColors" name="deckColors" />
         </div>
 
         <div class="form-group">
@@ -434,13 +766,25 @@
         </button>
       </div>
 
-      <p class="game-hint">
-        <i class="fas fa-info-circle"></i>
-        Assign the same rank to multiple players to record a tie.
-      </p>
+        <p class="game-hint">
+          <i class="fas fa-info-circle"></i>
+          Assign the same rank to multiple players to record a tie.
+        </p>
+        @if (prefilledGame()) {
+          <div class="alert alert--success">
+            <i class="fas fa-bolt"></i>
+            Prefilled from a live game. Decks and player count are locked.
+          </div>
+        }
 
       @if (gameError()) {
         <div class="alert alert--danger">{{ gameError() }}</div>
+      }
+      @if (isSeasonPaused()) {
+        <div class="alert alert--warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          Season is in pause. Recording is disabled until {{ group()!.seasonPauseUntil | date:'dd.MM.yyyy' }}.
+        </div>
       }
 
       <form (ngSubmit)="createGame()">
@@ -455,7 +799,7 @@
                   [name]="'rank' + i"
                   [disabled]="gameLoading()"
                 >
-                  @for (rank of getAvailableRanks(); track rank) {
+                  @for (rank of getAvailableRanksForSlot(i); track rank) {
                     <option [value]="rank">{{ rank }}</option>
                   }
                 </select>
@@ -471,15 +815,16 @@
                     (focus)="openDeckDropdown(i)"
                     (blur)="closeDeckDropdownDelayed(i)"
                     [placeholder]="placement.deckId ? '' : 'Search deck...'"
-                    [disabled]="gameLoading()"
+                    [disabled]="gameLoading() || prefilledGame()"
                     [name]="'deckSearch' + i"
+                    autocomplete="off"
                   />
-                  @if (placement.deckId) {
+                    @if (placement.deckId && !prefilledGame()) {
                     <button type="button" class="deck-search__clear" (click)="clearDeckSelection(i)" [disabled]="gameLoading()">
                       <i class="fas fa-times"></i>
                     </button>
                   }
-                  @if (deckDropdownOpen[i]) {
+                    @if (deckDropdownOpen[i] && !prefilledGame()) {
                     <div class="deck-dropdown">
                       @for (deck of getFilteredDecksForSlot(i); track deck.id) {
                         <div class="deck-dropdown__item" (mousedown)="selectDeck(i, deck.id, deck.name)">
@@ -507,14 +852,16 @@
                   autocomplete="off"
                 />
               </div>
-              <button type="button" class="btn btn--danger" (click)="removePlayer(i)" [disabled]="gameLoading()">
-                <i class="fas fa-trash"></i>
-              </button>
+                @if (!prefilledGame()) {
+                  <button type="button" class="btn btn--danger" (click)="removePlayer(i)" [disabled]="gameLoading()">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                }
             </div>
           }
         </div>
 
-        @if (gamePlacements.length < 6) {
+          @if (gamePlacements.length < 6 && !prefilledGame()) {
           <button type="button" class="btn btn--outline btn--block" (click)="addPlayer()" [disabled]="gameLoading()">
             <i class="fas fa-plus"></i> Add Player ({{ gamePlacements.length }}/6)
           </button>
@@ -524,7 +871,7 @@
           <button type="button" class="btn btn--outline" (click)="closeGameModal()" [disabled]="gameLoading()">
             Cancel
           </button>
-          <button type="submit" class="btn btn--primary" [disabled]="gameLoading() || gamePlacements.length < 2">
+          <button type="submit" class="btn btn--primary" [disabled]="gameLoading() || gamePlacements.length < 2 || !allDecksSelected() || isSeasonPaused()">
             @if (gameLoading()) { Recording... } @else { Record Game }
           </button>
         </div>
@@ -543,7 +890,7 @@
 <!-- Edit Deck Modal -->
 @if (showEditDeckModal()) {
   <div class="modal-overlay">
-    <div class="modal card" (click)="$event.stopPropagation()">
+    <div class="modal card" (click)="$event.stopPropagation(); closeEditColorDropdown()">
       <div class="modal__header">
         <h2>Edit Deck</h2>
         <button class="modal__close" (click)="closeEditDeckModal()">
@@ -568,20 +915,44 @@
           />
         </div>
 
-        <div class="form-group">
-          <label for="editDeckColors">Colors *</label>
-          <select
-            id="editDeckColors"
-            class="form-control"
-            [(ngModel)]="editDeckColors"
-            name="editDeckColors"
-            [disabled]="editDeckLoading()"
-          >
-            <option value="">Select colors</option>
-            @for (color of colorOptions; track color) {
-              <option [value]="color">{{ color }}</option>
+        <div class="form-group color-select-container" (click)="$event.stopPropagation()">
+          <label>Colors *</label>
+          <div class="color-select">
+            <div
+              class="color-select__trigger form-control"
+              (click)="openEditColorDropdown()"
+              [class.disabled]="editDeckLoading()"
+            >
+              @if (editDeckColors) {
+                <span class="color-select__value">
+                  <span class="mana-symbols">
+                    @for (symbol of getManaSymbols(editDeckColors); track symbol) {
+                      <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                    }
+                  </span>
+                  {{ editDeckColors }}
+                </span>
+              } @else {
+                <span class="color-select__placeholder">Select colors</span>
+              }
+              <i class="fas fa-chevron-down color-select__icon"></i>
+            </div>
+            @if (editColorDropdownOpen) {
+              <div class="color-dropdown">
+                @for (color of colorOptions; track color) {
+                  <div class="color-dropdown__item" (mousedown)="selectEditColor(color)">
+                    <span class="mana-symbols">
+                      @for (symbol of getManaSymbols(color); track symbol) {
+                        <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                      }
+                    </span>
+                    {{ color }}
+                  </div>
+                }
+              </div>
             }
-          </select>
+          </div>
+          <input type="hidden" [(ngModel)]="editDeckColors" name="editDeckColors" />
         </div>
 
         <div class="form-group">
@@ -639,37 +1010,38 @@
           <small class="form-hint">Link oder ID deines Archidekt-Decks (leer lassen zum Entfernen)</small>
         </div>
 
-        <div class="modal__actions modal__actions--split">
-          @if (confirmDelete()) {
-            <button type="button" class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteDeck()" [disabled]="editDeckLoading()">
-              <i class="fas fa-exclamation-triangle"></i> Really delete?
-            </button>
-            <button type="button" class="btn btn--outline" (click)="cancelDeleteDeck()" [disabled]="editDeckLoading()">
-              Cancel
-            </button>
-          } @else {
-            <button type="button" class="btn btn--danger" (click)="requestDeleteDeck()" [disabled]="editDeckLoading()">
-              <i class="fas fa-trash"></i> Delete
-            </button>
+          <div class="modal__actions modal__actions--split">
+            @if (confirmDelete()) {
+              <div class="danger-actions">
+                <button type="button" class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteDeck()" [disabled]="editDeckLoading()">
+                  <i class="fas fa-exclamation-triangle"></i> Confirm
+                </button>
+              </div>
+            } @else {
+              <div class="danger-actions">
+                <button type="button" class="btn btn--danger" (click)="requestDeleteDeck(); $event.stopPropagation()" [disabled]="editDeckLoading()">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+              </div>
+            }
             <div class="modal__actions">
               <button type="button" class="btn btn--outline" (click)="closeEditDeckModal()" [disabled]="editDeckLoading()">
                 Cancel
               </button>
-              <button type="submit" class="btn btn--primary" [disabled]="editDeckLoading()">
-                @if (editDeckLoading()) { Saving... } @else { Save Changes }
-              </button>
-            </div>
-          }
+            <button type="submit" class="btn btn--primary" [disabled]="editDeckLoading()">
+              @if (editDeckLoading()) { Saving... } @else { Save Changes }
+            </button>
+          </div>
         </div>
       </form>
     </div>
   </div>
 }
 
-<!-- Edit Group Modal -->
-@if (showEditGroupModal()) {
-  <div class="modal-overlay">
-    <div class="modal card" (click)="$event.stopPropagation()">
+  <!-- Edit Group Modal -->
+  @if (showEditGroupModal()) {
+    <div class="modal-overlay">
+      <div class="modal card" (click)="$event.stopPropagation()">
       <div class="modal__header">
         <h2>Edit Group</h2>
         <button class="modal__close" (click)="closeEditGroupModal()">
@@ -679,9 +1051,10 @@
 
       @if (editGroupError()) {
         <div class="alert alert--danger">{{ editGroupError() }}</div>
-      }
+  }
 
-      <form (ngSubmit)="updateGroup()">
+  <!-- Member Settings Modal -->
+        <form (ngSubmit)="updateGroup()">
         <div class="form-group">
           <label for="editGroupName">Group Name *</label>
           <input
@@ -692,22 +1065,6 @@
             name="editGroupName"
             [disabled]="editGroupLoading()"
           />
-        </div>
-
-        <div class="form-group">
-          <label for="editGroupFormat">Format *</label>
-          <select
-            id="editGroupFormat"
-            class="form-control"
-            [(ngModel)]="editGroupFormat"
-            name="editGroupFormat"
-            [disabled]="editGroupLoading()"
-          >
-            <option value="">Select format</option>
-            @for (format of formats; track format) {
-              <option [value]="format">{{ format }}</option>
-            }
-          </select>
         </div>
 
         <div class="form-group">
@@ -731,9 +1088,248 @@
           </button>
         </div>
       </form>
+      </div>
     </div>
-  </div>
-}
+  }
+
+  <!-- Group Settings Modal -->
+  @if (showGroupSettingsModal()) {
+    <div class="modal-overlay">
+      <div class="modal card" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <h2>Group Settings</h2>
+          <button class="modal__close" (click)="closeGroupSettingsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        @if (groupSettingsError()) {
+          <div class="alert alert--danger">{{ groupSettingsError() }}</div>
+        }
+
+        <form (ngSubmit)="updateGroupSettings()">
+          <div class="form-group">
+            <label>Group image</label>
+            @if (groupImageError()) {
+              <div class="alert alert--danger">{{ groupImageError() }}</div>
+            }
+            <div class="image-upload">
+              <img
+                class="image-upload__preview"
+                [src]="groupImagePreview || group()!.imageUrl || defaultGroupImage"
+                [alt]="group()!.name"
+              />
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                (change)="onGroupImageSelected($event)"
+                [disabled]="groupImageUploading()"
+              />
+              <button
+                type="button"
+                class="btn btn--outline"
+                (click)="uploadGroupImage()"
+                [disabled]="groupImageUploading()"
+              >
+                @if (groupImageUploading()) { Uploading... } @else { Upload Image }
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="editHistoryRetention">History retention</label>
+            <select
+              id="editHistoryRetention"
+              class="form-control"
+              [(ngModel)]="editHistoryRetentionDays"
+              name="editHistoryRetentionDays"
+              [disabled]="groupSettingsLoading()"
+            >
+              <option [ngValue]="7">1 week</option>
+              <option [ngValue]="30">1 month</option>
+              <option [ngValue]="365">1 year</option>
+            </select>
+            <small class="form-hint">Older games and system events are hidden from the history view.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="editSeasonName">Season name (optional)</label>
+            <input
+              type="text"
+              id="editSeasonName"
+              class="form-control"
+              [(ngModel)]="editSeasonName"
+              name="editSeasonName"
+              [disabled]="groupSettingsLoading()"
+              placeholder="Active Season"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editSeasonStart">Season start
+              <span class="info-icon" title="Used to scope season statistics and snapshots">
+                <i class="fas fa-info-circle"></i>
+              </span>
+            </label>
+            <input
+              type="date"
+              id="editSeasonStart"
+              class="form-control"
+              [(ngModel)]="editSeasonStartAt"
+              name="editSeasonStartAt"
+              [disabled]="groupSettingsLoading()"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editSeasonEnd">Season end
+              <span class="info-icon" title="Season ends on this date and will auto-reset">
+                <i class="fas fa-info-circle"></i>
+              </span>
+            </label>
+            <input
+              type="date"
+              id="editSeasonEnd"
+              class="form-control"
+              [(ngModel)]="editSeasonEndsAt"
+              name="editSeasonEndsAt"
+              [disabled]="groupSettingsLoading()"
+            />
+            <small class="form-hint">Maximum season length is 1 year.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="editSeasonPauseDays">Pause after season (days)
+              <span class="info-icon" title="Recording games is disabled during the pause">
+                <i class="fas fa-info-circle"></i>
+              </span>
+            </label>
+            <input
+              type="number"
+              id="editSeasonPauseDays"
+              class="form-control"
+              [(ngModel)]="editSeasonPauseDays"
+              name="editSeasonPauseDays"
+              [disabled]="groupSettingsLoading()"
+              min="0"
+              max="365"
+            />
+          </div>
+
+            <div class="form-group">
+              <button type="button" class="btn btn--danger" (click)="requestSeasonReset()" [disabled]="!canResetSeason()"
+                      >
+                Reset Season Now
+              </button>
+              <span class="info-icon" title="Creates a snapshot of the current ranking and resets deck stats">
+                <i class="fas fa-info-circle"></i>
+              </span>
+              @if (!canResetSeason()) {
+                <small class="form-hint">Set season start and end to enable reset.</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label>Delete group</label>
+              <div class="danger-actions">
+                @if (confirmDeleteGroup()) {
+                  <button type="button" class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteGroupAction()"
+                          [disabled]="deleteGroupLoading()">
+                    <i class="fas fa-exclamation-triangle"></i> Really delete?
+                  </button>
+                  <button type="button" class="btn btn--outline" (click)="cancelDeleteGroup()"
+                          [disabled]="deleteGroupLoading()">
+                    Cancel
+                  </button>
+                } @else {
+                  <button type="button" class="btn btn--danger" (click)="requestDeleteGroup()" title="Delete group">
+                    <i class="fas fa-trash"></i> Delete Group
+                  </button>
+                }
+              </div>
+              <small class="form-hint">This action permanently deletes the group and all related data.</small>
+            </div>
+
+            <div class="modal__actions">
+              <button type="button" class="btn btn--outline" (click)="closeGroupSettingsModal()" [disabled]="groupSettingsLoading()">
+                Cancel
+              </button>
+            <button type="submit" class="btn btn--primary" [disabled]="groupSettingsLoading()">
+              @if (groupSettingsLoading()) { Saving... } @else { Save Changes }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Member Settings Modal -->
+  @if (showMemberSettingsModal()) {
+    <div class="modal-overlay">
+      <div class="modal card" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <h2>Member Settings</h2>
+          <button class="modal__close" (click)="closeMemberSettingsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="members-applications">
+          <h3>Members</h3>
+          <div class="members-list">
+            @for (member of group()!.members; track member.userId) {
+              <div class="member-item">
+                <div class="member-item__info">
+                  <span class="member-item__name">{{ member.user.inAppName }}</span>
+                  @if (member.role === 'ADMIN') {
+                    <span class="member-item__badge">Admin</span>
+                  }
+                </div>
+                <div class="member-item__actions">
+                  @if (member.role === 'MEMBER') {
+                    <button class="btn btn--outline" (click)="promoteMember(member)">Promote</button>
+                    @if (member.userId !== currentUserId()) {
+                      <button class="btn btn--outline btn--danger" (click)="removeMember(member)">Remove</button>
+                    }
+                  } @else {
+                    <button class="btn btn--outline"
+                            (click)="demoteMember(member)"
+                            [disabled]="adminCount() <= 1"
+                            title="At least one admin must remain">
+                      Demote
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="members-applications">
+          <h3>Open Applications</h3>
+          @if (applicationsLoading()) {
+            <p class="text-muted">Loading applications...</p>
+          } @else if (applicationsError()) {
+            <p class="text-muted">{{ applicationsError() }}</p>
+          } @else if (groupApplications().length === 0) {
+            <p class="text-muted">No open applications.</p>
+          } @else {
+            <div class="applications-list">
+              @for (app of groupApplications(); track app.userId) {
+                <div class="application-row">
+                  <span class="application-row__name">{{ app.user.inAppName }}</span>
+                  <div class="application-row__actions">
+                    <button class="btn btn--outline" (click)="rejectApplication(app.userId)" [disabled]="applicationActionLoading()">Reject</button>
+                    <button class="btn btn--primary" (click)="acceptApplication(app.userId)" [disabled]="applicationActionLoading()">Accept</button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
 
 <!-- Confirmation Modal -->
 @if (showConfirmModal()) {

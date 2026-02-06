@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
 import { EventsModule } from './events/events.module';
 import { ArchidektModule } from './archidekt/archidekt.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ArchidektModule } from './archidekt/archidekt.module';
     DecksModule,
     GamesModule,
     ArchidektModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [],

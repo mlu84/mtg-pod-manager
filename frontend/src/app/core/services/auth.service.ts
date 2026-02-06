@@ -1,5 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import {
@@ -8,7 +9,7 @@ import {
   RegisterRequest,
 } from '../../models/user.model';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = environment.apiUrl;
 
 interface TokenPayload {
   sub: string;

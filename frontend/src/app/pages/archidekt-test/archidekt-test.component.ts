@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-archidekt-test',
@@ -71,7 +72,7 @@ export class ArchidektTestComponent {
     this.deckInfo.set(null);
 
     // Use backend proxy to avoid CORS issues
-    const apiUrl = `http://localhost:3000/archidekt/decks/${deckId}`;
+    const apiUrl = `${environment.apiUrl}/archidekt/decks/${deckId}`;
 
     this.http.get<any>(apiUrl).subscribe({
       next: (data) => {

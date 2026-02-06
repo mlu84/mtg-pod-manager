@@ -51,6 +51,28 @@ export class UsersService {
     return user;
   }
 
+  async getApplications(userId: string) {
+    const applications = await this.prisma.groupApplication.findMany({
+      where: { userId },
+      include: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+            format: true,
+            description: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return applications.map((app) => ({
+      group: app.group,
+      createdAt: app.createdAt,
+    }));
+  }
+
   async updateProfile(userId: string, data: { inAppName?: string }) {
     if (data.inAppName) {
       // Check if name is already taken by another user

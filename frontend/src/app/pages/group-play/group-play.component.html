@@ -1,0 +1,467 @@
+@if (loading()) {
+  <div class="play-screen play-screen--loading">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading game setup...</p>
+    </div>
+  </div>
+} @else if (error()) {
+  <div class="play-screen play-screen--error">
+    <div class="alert alert--danger">
+      <i class="fas fa-exclamation-circle"></i>
+      {{ error() }}
+      <button class="btn btn--outline" (click)="goBack()">Back</button>
+    </div>
+  </div>
+} @else {
+  <div class="play-screen">
+    <div class="play-layout" [attr.data-count]="playerCount()">
+      <div class="play-column play-column--left" [attr.data-count]="playerCount()">
+        @for (entry of leftSlots(); track entry.index) {
+          <div
+            class="play-slot"
+            [class.play-slot--winner]="startingWinnerIndex() === entry.index"
+            [class.play-slot--locked]="gameStarted()"
+            [class.play-slot--eliminated]="isEliminated(entry.index)"
+            [style.background-image]="entry.slot.deckId ? 'url(' + getDeckBackgroundImage(entry.slot.deckId) + ')' : ''"
+            [style.background-color]="entry.slot.deckId ? 'transparent' : getSlotFallbackColor(entry.index)"
+            (click)="openSlotModal(entry.index)"
+          >
+            @if (startingWinnerIndex() === entry.index) {
+              <div class="play-slot__crown">
+                <i class="fas fa-crown"></i>
+              </div>
+            }
+            @if (isEliminated(entry.index)) {
+              <div class="play-slot__skull">
+                <i class="fas fa-skull-crossbones"></i>
+              </div>
+            }
+
+            <div class="play-slot__overlay">
+              <div class="play-slot__deck">
+                @if (entry.slot.deckId) {
+                  <span class="play-slot__deck-name">{{ entry.slot.deckName }}</span>
+                  @if (entry.slot.playerName) {
+                    <span class="play-slot__player">{{ entry.slot.playerName }}</span>
+                  } @else {
+                    <span class="play-slot__player play-slot__player--muted">Tap to add player</span>
+                  }
+                } @else {
+                  <span class="play-slot__deck-name play-slot__deck-name--muted">Tap to choose deck</span>
+                }
+              </div>
+              <div class="play-slot__life">
+                <button class="life-btn life-btn--minus" [disabled]="!gameStarted()"
+                        [style.background-color]="getSlotFallbackColor(entry.index)"
+                        [title]="gameStarted() ? '' : 'Start the game to enable controls'"
+                        (mousedown)="startLifeHold(entry.index, -1, $event)"
+                        (mouseup)="cancelLifeHold()"
+                        (mouseleave)="cancelLifeHold()"
+                        (touchstart)="startLifeHold(entry.index, -1, $event)"
+                        (touchend)="cancelLifeHold()"
+                        (click)="decrementLife(entry.index); $event.stopPropagation()">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <span class="life-value">{{ entry.slot.life }}</span>
+                @if (lifeDeltaVisible()[entry.index]) {
+                  <span
+                    class="life-delta"
+                    [class.life-delta--positive]="lifeDelta()[entry.index] > 0"
+                    [class.life-delta--negative]="lifeDelta()[entry.index] < 0"
+                  >
+                    {{ lifeDelta()[entry.index] > 0 ? '+' : '' }}{{ lifeDelta()[entry.index] }}
+                  </span>
+                }
+                <button class="life-btn life-btn--plus" [disabled]="!gameStarted()"
+                        [style.background-color]="getSlotFallbackColor(entry.index)"
+                        [title]="gameStarted() ? '' : 'Start the game to enable controls'"
+                        (mousedown)="startLifeHold(entry.index, 1, $event)"
+                        (mouseup)="cancelLifeHold()"
+                        (mouseleave)="cancelLifeHold()"
+                        (touchstart)="startLifeHold(entry.index, 1, $event)"
+                        (touchend)="cancelLifeHold()"
+                        (click)="incrementLife(entry.index); $event.stopPropagation()">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+
+              <div class="play-slot__bottom">
+                <div class="play-slot__counters">
+                  <button
+                    class="counter-icon counter-icon--poison"
+                    type="button"
+                    [disabled]="!gameStarted()"
+                    [title]="gameStarted() ? 'Poison Counter' : 'Start the game to enable controls'"
+                    (click)="incrementPoison(entry.index); $event.stopPropagation()"
+                    (mousedown)="startPoisonHold(entry.index, $event)"
+                    (mouseup)="cancelCommanderHold()"
+                    (mouseleave)="cancelCommanderHold()"
+                    (touchstart)="startPoisonHold(entry.index, $event)"
+                    (touchend)="cancelCommanderHold()"
+                    title="Poison Counter"
+                  >
+                    <i class="fas fa-tint"></i>
+                    <span class="counter-badge">{{ entry.slot.poison }}</span>
+                  </button>
+                  @for (opponentIndex of getOpponentIndices(entry.index); track opponentIndex) {
+                    <button
+                      class="counter-icon counter-icon--deck"
+                      type="button"
+                    [disabled]="!gameStarted()"
+                    [title]="gameStarted() ? 'Commander Damage' : 'Start the game to enable controls'"
+                    (click)="incrementCommanderDamage(entry.index, opponentIndex); $event.stopPropagation()"
+                      (mousedown)="startCommanderHold(entry.index, opponentIndex, $event)"
+                      (mouseup)="cancelCommanderHold()"
+                      (mouseleave)="cancelCommanderHold()"
+                      (touchstart)="startCommanderHold(entry.index, opponentIndex, $event)"
+                      (touchend)="cancelCommanderHold()"
+                      title="Commander Damage"
+                      [style.background-color]="getCommanderIconBackground(opponentIndex)"
+                    >
+                      @if (shouldShowCommanderImage(opponentIndex)) {
+                        <img
+                          [src]="getDeckImage(getOpponentSlot(opponentIndex)?.deckId || null)"
+                          [alt]="getOpponentSlot(opponentIndex)?.deckName || 'Deck'"
+                        />
+                      }
+                      <span class="counter-badge">
+                        {{ entry.slot.commanderDamage[opponentIndex] || 0 }}
+                      </span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="play-panel">
+        <button class="panel-btn" (click)="cyclePlayerCount()">
+          <span class="panel-btn__label">Players</span>
+          <span class="panel-btn__value">{{ playerCount() }}</span>
+        </button>
+        <button class="panel-btn" (click)="rollD20()" [disabled]="rolling()">
+          <span class="panel-btn__label">d20</span>
+          <span class="panel-btn__value">Roll</span>
+        </button>
+        @if (!confirmAbortActive()) {
+          <button class="panel-btn panel-btn--danger" (click)="toggleAbortConfirm()">
+            <span class="panel-btn__label">End</span>
+            <span class="panel-btn__value">Game</span>
+          </button>
+        } @else {
+          <button class="panel-btn panel-btn--danger panel-btn--confirm" (click)="confirmAbort()">
+            <span class="panel-btn__label">Confirm</span>
+            <span class="panel-btn__value">End</span>
+          </button>
+        }
+        @if (!gameStarted()) {
+          <button
+            class="panel-btn"
+            [class.panel-btn--primary]="allDecksSelected()"
+            [class.panel-btn--neutral]="!allDecksSelected()"
+            (click)="startGame()"
+            [disabled]="!allDecksSelected() || startingRoll()"
+            [title]="allDecksSelected() ? 'Start the game' : 'Assign decks to all players to start'"
+          >
+            <span class="panel-btn__label">Start</span>
+            <span class="panel-btn__value">Game</span>
+          </button>
+        } @else {
+          @if (!confirmResetActive()) {
+            <button class="panel-btn panel-btn--neutral" (click)="toggleResetConfirm()">
+              <span class="panel-btn__label">Reset</span>
+              <span class="panel-btn__value">Game</span>
+            </button>
+          } @else {
+            <button class="panel-btn panel-btn--neutral panel-btn--confirm" (click)="confirmReset()">
+              <span class="panel-btn__label">Confirm</span>
+              <span class="panel-btn__value">Reset</span>
+            </button>
+          }
+        }
+      </div>
+
+      <div class="play-column play-column--right" [attr.data-count]="playerCount()">
+        @for (entry of rightSlots(); track entry.index) {
+          <div
+            class="play-slot"
+            [class.play-slot--winner]="startingWinnerIndex() === entry.index"
+            [class.play-slot--locked]="gameStarted()"
+            [class.play-slot--eliminated]="isEliminated(entry.index)"
+            [style.background-image]="entry.slot.deckId ? 'url(' + getDeckBackgroundImage(entry.slot.deckId) + ')' : ''"
+            [style.background-color]="entry.slot.deckId ? 'transparent' : getSlotFallbackColor(entry.index)"
+            (click)="openSlotModal(entry.index)"
+          >
+            @if (startingWinnerIndex() === entry.index) {
+              <div class="play-slot__crown">
+                <i class="fas fa-crown"></i>
+              </div>
+            }
+            @if (isEliminated(entry.index)) {
+              <div class="play-slot__skull">
+                <i class="fas fa-skull-crossbones"></i>
+              </div>
+            }
+
+            <div class="play-slot__overlay">
+              <div class="play-slot__deck">
+                @if (entry.slot.deckId) {
+                  <span class="play-slot__deck-name">{{ entry.slot.deckName }}</span>
+                  @if (entry.slot.playerName) {
+                    <span class="play-slot__player">{{ entry.slot.playerName }}</span>
+                  } @else {
+                    <span class="play-slot__player play-slot__player--muted">Tap to add player</span>
+                  }
+                } @else {
+                  <span class="play-slot__deck-name play-slot__deck-name--muted">Tap to choose deck</span>
+                }
+              </div>
+
+              <div class="play-slot__life">
+                <button class="life-btn life-btn--minus" [disabled]="!gameStarted()"
+                        [style.background-color]="getSlotFallbackColor(entry.index)"
+                        [title]="gameStarted() ? '' : 'Start the game to enable controls'"
+                        (mousedown)="startLifeHold(entry.index, -1, $event)"
+                        (mouseup)="cancelLifeHold()"
+                        (mouseleave)="cancelLifeHold()"
+                        (touchstart)="startLifeHold(entry.index, -1, $event)"
+                        (touchend)="cancelLifeHold()"
+                        (click)="decrementLife(entry.index); $event.stopPropagation()">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <span class="life-value">{{ entry.slot.life }}</span>
+                @if (lifeDeltaVisible()[entry.index]) {
+                  <span
+                    class="life-delta"
+                    [class.life-delta--positive]="lifeDelta()[entry.index] > 0"
+                    [class.life-delta--negative]="lifeDelta()[entry.index] < 0"
+                  >
+                    {{ lifeDelta()[entry.index] > 0 ? '+' : '' }}{{ lifeDelta()[entry.index] }}
+                  </span>
+                }
+                <button class="life-btn life-btn--plus" [disabled]="!gameStarted()"
+                        [style.background-color]="getSlotFallbackColor(entry.index)"
+                        [title]="gameStarted() ? '' : 'Start the game to enable controls'"
+                        (mousedown)="startLifeHold(entry.index, 1, $event)"
+                        (mouseup)="cancelLifeHold()"
+                        (mouseleave)="cancelLifeHold()"
+                        (touchstart)="startLifeHold(entry.index, 1, $event)"
+                        (touchend)="cancelLifeHold()"
+                        (click)="incrementLife(entry.index); $event.stopPropagation()">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+
+              <div class="play-slot__bottom">
+                <div class="play-slot__counters">
+                  <button
+                    class="counter-icon counter-icon--poison"
+                    type="button"
+                    [disabled]="!gameStarted()"
+                    [title]="gameStarted() ? 'Poison Counter' : 'Start the game to enable controls'"
+                    (click)="incrementPoison(entry.index); $event.stopPropagation()"
+                    (mousedown)="startPoisonHold(entry.index, $event)"
+                    (mouseup)="cancelCommanderHold()"
+                    (mouseleave)="cancelCommanderHold()"
+                    (touchstart)="startPoisonHold(entry.index, $event)"
+                    (touchend)="cancelCommanderHold()"
+                    title="Poison Counter"
+                  >
+                    <i class="fas fa-tint"></i>
+                    <span class="counter-badge">{{ entry.slot.poison }}</span>
+                  </button>
+                  @for (opponentIndex of getOpponentIndices(entry.index); track opponentIndex) {
+                    <button
+                      class="counter-icon counter-icon--deck"
+                      type="button"
+                    [disabled]="!gameStarted()"
+                    [title]="gameStarted() ? 'Commander Damage' : 'Start the game to enable controls'"
+                    (click)="incrementCommanderDamage(entry.index, opponentIndex); $event.stopPropagation()"
+                      (mousedown)="startCommanderHold(entry.index, opponentIndex, $event)"
+                      (mouseup)="cancelCommanderHold()"
+                      (mouseleave)="cancelCommanderHold()"
+                      (touchstart)="startCommanderHold(entry.index, opponentIndex, $event)"
+                      (touchend)="cancelCommanderHold()"
+                      title="Commander Damage"
+                      [style.background-color]="getCommanderIconBackground(opponentIndex)"
+                    >
+                      @if (shouldShowCommanderImage(opponentIndex)) {
+                        <img
+                          [src]="getDeckImage(getOpponentSlot(opponentIndex)?.deckId || null)"
+                          [alt]="getOpponentSlot(opponentIndex)?.deckName || 'Deck'"
+                        />
+                      }
+                      <span class="counter-badge">
+                        {{ entry.slot.commanderDamage[opponentIndex] || 0 }}
+                      </span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (showSlotModal()) {
+      <div class="modal-overlay" (click)="closeSlotModal()">
+        <div class="modal modal--large card" (click)="$event.stopPropagation()">
+          <div class="modal__header">
+            <h2>Choose deck</h2>
+            <button class="modal__close" (click)="closeSlotModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label>Player name (optional)</label>
+            <input
+              type="text"
+              class="form-control"
+              [value]="activeSlotIndex() !== null ? slots()[activeSlotIndex()!].playerName : ''"
+              (input)="setPlayerName($any($event.target).value)"
+              placeholder="Enter player name"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Search decks</label>
+            <input
+              type="text"
+              class="form-control"
+              [value]="deckSearchTerm()"
+              (input)="deckSearchTerm.set($any($event.target).value)"
+              placeholder="Search by deck name"
+            />
+          </div>
+
+          <div class="deck-picker">
+            @for (deck of getFilteredAvailableDecksForSlot(activeSlotIndex() ?? 0); track deck.id) {
+              <button class="deck-picker__item" (click)="selectDeck(deck)">
+                <img [src]="deck.archidektImageUrl || '/assets/images/deckBG_default.jpg'" [alt]="deck.name" />
+                <span>{{ deck.name }}</span>
+              </button>
+            }
+            @if (getFilteredAvailableDecksForSlot(activeSlotIndex() ?? 0).length === 0) {
+              <p class="text-muted">No decks match your search.</p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (rollVisible()) {
+      <div class="modal-overlay roll-overlay" (click)="closeRollModal()">
+        <div class="roll-overlay__content card" (click)="$event.stopPropagation()">
+          <div class="roll-d20" aria-hidden="true"
+               [class.roll-d20--rolling]="rolling()"
+               [class.roll-d20--settle]="!rolling() && rollResult()">
+            <svg viewBox="0 0 120 120" role="presentation" focusable="false">
+              <defs>
+                <linearGradient id="d20Face" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="rgba(255,255,255,0.2)" />
+                  <stop offset="100%" stop-color="rgba(255,255,255,0.05)" />
+                </linearGradient>
+              </defs>
+              <polygon points="60,6 112,40 96,108 24,108 8,40" class="facet-a" />
+              <polygon points="60,6 112,40 60,40" class="facet-b" />
+              <polygon points="60,6 8,40 60,40" class="facet-b" />
+              <polygon points="60,40 112,40 96,108 60,74" class="facet-metal" />
+              <polygon points="24,108 60,74 60,40" class="facet-a" />
+              <polygon points="96,108 60,74 60,40" class="facet-a" />
+              <line x1="60" y1="6" x2="24" y2="108" />
+              <line x1="60" y1="6" x2="96" y2="108" />
+              <line x1="8" y1="40" x2="112" y2="40" />
+              <line x1="60" y1="6" x2="60" y2="40" />
+              <line x1="24" y1="108" x2="60" y2="40" />
+              <line x1="96" y1="108" x2="60" y2="40" />
+              <line x1="8" y1="40" x2="60" y2="40" />
+              <line x1="112" y1="40" x2="60" y2="40" />
+              <line x1="24" y1="108" x2="60" y2="74" />
+              <line x1="96" y1="108" x2="60" y2="74" />
+              <line x1="60" y1="40" x2="60" y2="108" />
+            </svg>
+          </div>
+          @if (!rolling() && rollResult()) {
+            <span class="roll-overlay__value">{{ rollResult() }}</span>
+          }
+        </div>
+      </div>
+    }
+
+    @if (showPoisonModal()) {
+      <div class="modal-overlay" (click)="closePoisonModal()">
+        <div class="modal modal--confirm card" (click)="$event.stopPropagation()">
+          <div class="modal__header">
+            <h2>Poison Counter</h2>
+            <button class="modal__close" (click)="closePoisonModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          @if (poisonModalSlotIndex() !== null) {
+            <div class="commander-modal__content">
+              <div class="commander-modal__controls">
+                <button class="btn btn--outline" (click)="decrementPoison(poisonModalSlotIndex()!)">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <span class="commander-modal__value">
+                  {{ slots()[poisonModalSlotIndex()!].poison }}
+                </span>
+                <button class="btn btn--primary" (click)="incrementPoison(poisonModalSlotIndex()!)">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <div class="modal__actions">
+                <button class="btn btn--primary" (click)="closePoisonModal()">OK</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (showCommanderModal()) {
+      <div class="modal-overlay" (click)="closeCommanderModal()">
+        <div class="modal modal--confirm card" (click)="$event.stopPropagation()">
+          <div class="modal__header">
+            <h2>Commander Damage taken from</h2>
+            <button class="modal__close" (click)="closeCommanderModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          @if (commanderModalSlotIndex() !== null && commanderModalOpponentIndex() !== null) {
+            <div class="commander-modal__content">
+              <div class="commander-modal__deck">
+                <img
+                  [src]="getDeckImage(getOpponentSlot(commanderModalOpponentIndex()!)?.deckId || null)"
+                  [alt]="getOpponentSlot(commanderModalOpponentIndex()!)?.deckName || 'Deck'"
+                />
+                <span>{{ getOpponentSlot(commanderModalOpponentIndex()!)?.deckName || 'Opponent' }}</span>
+              </div>
+              <div class="commander-modal__controls">
+                <button class="btn btn--outline" (click)="decrementCommanderDamage(commanderModalSlotIndex()!, commanderModalOpponentIndex()!)">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <span class="commander-modal__value">
+                  {{ slots()[commanderModalSlotIndex()!].commanderDamage[commanderModalOpponentIndex()!] || 0 }}
+                </span>
+                <button class="btn btn--primary" (click)="incrementCommanderDamage(commanderModalSlotIndex()!, commanderModalOpponentIndex()!)">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <small class="form-hint">Commander damage also adjusts life totals.</small>
+              <div class="modal__actions">
+                <button class="btn btn--primary" (click)="closeCommanderModal()">OK</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  </div>
+}

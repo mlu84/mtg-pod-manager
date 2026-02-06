@@ -20,6 +20,11 @@ export class UsersController {
     return this.usersService.getProfile(user.id);
   }
 
+  @Get('me/applications')
+  getApplications(@CurrentUser() user: CurrentUserType) {
+    return this.usersService.getApplications(user.id);
+  }
+
   @Patch('me')
   updateProfile(
     @CurrentUser() user: CurrentUserType,

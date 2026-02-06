@@ -44,9 +44,10 @@ export class GamesController {
   @Get('ranking')
   getRanking(
     @Query('groupId') groupId: string,
+    @Query('snapshot') snapshot: string,
     @CurrentUser() user: CurrentUserType,
   ) {
-    return this.gamesService.getRanking(groupId, user.id);
+    return this.gamesService.getRanking(groupId, user.id, snapshot === 'true');
   }
 
   @Get(':id')
