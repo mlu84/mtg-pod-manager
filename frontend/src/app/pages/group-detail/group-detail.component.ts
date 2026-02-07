@@ -98,11 +98,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   editDeckArchidektUrl = '';
   editDeckLoading = signal(false);
   editDeckError = signal<string | null>(null);
-  confirmDelete = signal(false);
-  private deleteConfirmTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Delete group
-  confirmDeleteGroup = signal(false);
   deleteGroupLoading = signal(false);
 
   // Edit group form
@@ -137,6 +134,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   alertModalTitle = '';
   alertModalMessage = '';
   alertModalType: 'error' | 'success' | 'info' = 'error';
+  isSmartphoneViewport = signal(false);
+  showScrollTop = signal(false);
 
   // History filter
   historyFilter = signal<'all' | 'games' | 'events'>('all');
@@ -652,6 +651,13 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor() {}
 
   ngOnInit(): void {
+    this.updateViewportState();
+    this.updateScrollTopVisibility();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.onViewportChange);
+      window.addEventListener('orientationchange', this.onViewportChange);
+      window.addEventListener('scroll', this.onScrollChange);
+    }
     this.groupId = this.route.snapshot.params['id'];
     this.loadStoredPositions();
     this.loadData();
@@ -663,10 +669,38 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.onViewportChange);
+      window.removeEventListener('orientationchange', this.onViewportChange);
+      window.removeEventListener('scroll', this.onScrollChange);
+    }
     if (this.statsChart) {
       this.statsChart.destroy();
       this.statsChart = null;
     }
+  }
+
+  private onViewportChange = (): void => {
+    this.updateViewportState();
+  };
+
+  private onScrollChange = (): void => {
+    this.updateScrollTopVisibility();
+  };
+
+  private updateViewportState(): void {
+    if (typeof window === 'undefined') return;
+    this.isSmartphoneViewport.set(window.innerWidth < 768);
+  }
+
+  private updateScrollTopVisibility(): void {
+    if (typeof window === 'undefined') return;
+    this.showScrollTop.set(window.scrollY > 280);
+  }
+
+  scrollToTop(): void {
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   loadData(): void {
@@ -965,6 +999,14 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Game Modal
   openPlayGame(): void {
+    if (this.isSmartphoneViewport()) {
+      this.showAlert(
+        'Display too small',
+        'New Game is not available on smartphones. Please use Record Game instead.',
+        'info'
+      );
+      return;
+    }
     if (!this.canStartPlayGame()) return;
     this.router.navigate(['/groups', this.groupId, 'play']);
   }
@@ -976,6 +1018,9 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   playGameDisabledReason(): string {
+    if (this.isSmartphoneViewport()) {
+      return 'Display too small for New Game. Please use Record Game.';
+    }
     return this.canStartPlayGame()
       ? 'Start a new live game'
       : 'Add at least two active decks to start a live game';
@@ -1130,7 +1175,6 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       ? `https://archidekt.com/decks/${deck.archidektId}`
       : '';
     this.editDeckError.set(null);
-    this.confirmDelete.set(false);
     this.showEditDeckModal.set(true);
     this.lockBodyScroll();
   }
@@ -1138,7 +1182,6 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   closeEditDeckModal(): void {
     this.showEditDeckModal.set(false);
     this.editingDeck = null;
-    this.confirmDelete.set(false);
     this.editColorDropdownOpen = false;
     this.unlockBodyScroll();
   }
@@ -1199,44 +1242,31 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   requestDeleteDeck(): void {
-    this.confirmDelete.set(true);
-    if (this.deleteConfirmTimer) clearTimeout(this.deleteConfirmTimer);
-    this.deleteConfirmTimer = setTimeout(() => {
-      this.confirmDelete.set(false);
-      this.deleteConfirmTimer = null;
-    }, 3000);
-  }
-
-  cancelDeleteDeck(): void {
-    this.confirmDelete.set(false);
-    if (this.deleteConfirmTimer) {
-      clearTimeout(this.deleteConfirmTimer);
-      this.deleteConfirmTimer = null;
-    }
-  }
-
-  confirmDeleteDeck(): void {
     if (!this.editingDeck) return;
+    this.showConfirmation(
+      'Delete deck',
+      `Delete deck "${this.editingDeck.name}"? This cannot be undone.`,
+      () => this.executeDeleteDeck()
+    );
+  }
 
-    if (this.deleteConfirmTimer) {
-      clearTimeout(this.deleteConfirmTimer);
-      this.deleteConfirmTimer = null;
-    }
-    this.editDeckLoading.set(true);
+  private executeDeleteDeck(): void {
+    if (!this.editingDeck) return;
+    this.confirmModalLoading.set(true);
     this.editDeckError.set(null);
 
     this.apiService.deleteDeck(this.editingDeck.id).subscribe({
       next: () => {
-        this.editDeckLoading.set(false);
+        this.confirmModalLoading.set(false);
+        this.closeConfirmModal();
         this.showEditDeckModal.set(false);
         this.editingDeck = null;
-        this.confirmDelete.set(false);
         this.loadData();
       },
       error: (err) => {
-        this.editDeckLoading.set(false);
-        this.confirmDelete.set(false);
-        this.editDeckError.set(err.error?.message || 'Failed to delete deck');
+        this.confirmModalLoading.set(false);
+        this.closeConfirmModal();
+        this.showAlert('Error', err.error?.message || 'Failed to delete deck');
       },
     });
   }
@@ -1522,24 +1552,28 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Delete Group
   requestDeleteGroup(): void {
-    this.confirmDeleteGroup.set(true);
+    this.showConfirmation(
+      'Delete group',
+      'Delete this group? This cannot be undone.',
+      () => this.executeDeleteGroup()
+    );
   }
 
-  cancelDeleteGroup(): void {
-    this.confirmDeleteGroup.set(false);
-  }
-
-  confirmDeleteGroupAction(): void {
+  private executeDeleteGroup(): void {
     this.deleteGroupLoading.set(true);
+    this.confirmModalLoading.set(true);
 
     this.apiService.deleteGroup(this.groupId).subscribe({
       next: () => {
         this.deleteGroupLoading.set(false);
+        this.confirmModalLoading.set(false);
+        this.closeConfirmModal();
         this.router.navigate(['/groups']);
       },
       error: (err) => {
         this.deleteGroupLoading.set(false);
-        this.confirmDeleteGroup.set(false);
+        this.confirmModalLoading.set(false);
+        this.closeConfirmModal();
         this.showAlert('Error', err.error?.message || 'Failed to delete group');
       },
     });

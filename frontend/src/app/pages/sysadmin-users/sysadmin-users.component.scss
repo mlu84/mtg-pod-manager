@@ -51,6 +51,13 @@
   margin-bottom: var(--spacing-sm);
 }
 
+.group-card__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .group-card__format {
   display: inline-block;
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -58,6 +65,25 @@
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
   color: var(--color-text-muted);
+}
+
+.group-card__meta {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.group-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.group-card--collapsed {
+  padding-bottom: var(--spacing-md);
+
+  .group-card__header {
+    margin-bottom: 0;
+  }
 }
 
 .group-card__description {

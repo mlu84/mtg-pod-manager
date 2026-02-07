@@ -153,6 +153,24 @@
   padding: 0;
 }
 
+.scroll-top-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  color: var(--color-text-dark);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  z-index: 950;
+}
+
 .main-content {
   padding-bottom: var(--spacing-xl);
 }
@@ -222,6 +240,11 @@
   &:hover:not(:disabled) {
     filter: brightness(0.98);
   }
+}
+
+.btn--disabled-soft {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .stats-card {
@@ -1498,5 +1521,255 @@ textarea.form-control {
 
   i {
     font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .content-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr);
+    gap: var(--spacing-lg);
+  }
+
+  .header__content {
+    align-items: flex-start;
+  }
+
+  .header__left {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .header__actions {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .invite-code {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .invite-code__value {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1024px) {
+  .scroll-top-fab {
+    display: inline-flex;
+  }
+
+  .content-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .left-column,
+  .right-column {
+    display: contents;
+  }
+
+  .actions-card {
+    order: 1;
+  }
+
+  .ranking-card {
+    order: 2;
+  }
+
+  .stats-card {
+    order: 3;
+  }
+
+  .history-card {
+    order: 4;
+  }
+
+  .decks-card {
+    order: 5;
+  }
+
+  .members-card {
+    order: 6;
+  }
+
+  .header {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .header__content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .header__left {
+    width: 100%;
+  }
+
+  .header__actions {
+    margin-left: 0;
+    width: 100%;
+    align-items: stretch;
+    padding-top: 0;
+    gap: var(--spacing-xs);
+  }
+
+  .header__actions-buttons {
+    justify-content: flex-start;
+  }
+
+  .actions-card__buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .history-filters {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .history-filters__left {
+    flex-wrap: wrap;
+  }
+
+  .history-filters .btn.btn--danger {
+    width: 100%;
+  }
+
+  .game-item__header {
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+
+  .game-item__date {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .header__left {
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+  }
+
+  .header__image {
+    width: 72px;
+    height: 72px;
+  }
+
+  .header__info {
+    min-width: 0;
+    flex: 1 1 220px;
+  }
+
+  .header__info h1 {
+    font-size: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  .header__description {
+    margin-top: 4px;
+    max-width: 100%;
+  }
+
+  .header__actions-buttons {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .invite-code {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .invite-code__value {
+    max-width: 100%;
+  }
+
+  .actions-card__buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .btn--square {
+    aspect-ratio: auto;
+    min-height: 84px;
+  }
+
+  .card__header {
+    flex-wrap: wrap;
+  }
+
+  .ranking-header__meta .btn {
+    margin-left: 0;
+  }
+
+  .ranking-row__left {
+    width: 62px;
+  }
+
+  .event-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .placement {
+    flex-wrap: wrap;
+  }
+
+  .modal__actions--split {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+
+  .modal__actions--split .danger-actions {
+    width: 100%;
+  }
+
+  .modal__actions--split .danger-actions .btn {
+    width: 100%;
+  }
+
+  .modal__actions--split > .modal__actions {
+    width: 100%;
+    margin-top: 0;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .modal__actions--split > .modal__actions .btn {
+    flex: 1 1 calc(50% - var(--spacing-xs));
+    min-width: 0;
+  }
+
+  .scroll-top-fab {
+    right: 12px;
+    bottom: 12px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 560px) {
+  .main-content {
+    padding-bottom: var(--spacing-lg);
+  }
+
+  .btn--back-vertical {
+    width: 36px;
+    height: 44px;
+  }
+
+  .history-filters__left .btn {
+    flex: 1 1 auto;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
   }
 }

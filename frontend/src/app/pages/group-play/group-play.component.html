@@ -14,15 +14,22 @@
     </div>
   </div>
 } @else {
-  <div class="play-screen">
+  <div
+    class="play-screen"
+    [class.play-screen--compact]="isCompactViewport()"
+    [class.play-screen--portrait]="isCompactViewport() && isPortraitViewport()"
+    [style.--viewport-width.px]="viewportWidth()"
+    [style.--viewport-height.px]="viewportHeight()"
+  >
     <div class="play-layout" [attr.data-count]="playerCount()">
       <div class="play-column play-column--left" [attr.data-count]="playerCount()">
-        @for (entry of leftSlots(); track entry.index) {
+        @for (entry of leftSlots(); track entry.index; let rowIndex = $index) {
           <div
             class="play-slot"
             [class.play-slot--winner]="startingWinnerIndex() === entry.index"
             [class.play-slot--locked]="gameStarted()"
             [class.play-slot--eliminated]="isEliminated(entry.index)"
+            [class.play-slot--mirrored]="isSlotMirrored('left', rowIndex)"
             [style.background-image]="entry.slot.deckId ? 'url(' + getDeckBackgroundImage(entry.slot.deckId) + ')' : ''"
             [style.background-color]="entry.slot.deckId ? 'transparent' : getSlotFallbackColor(entry.index)"
             (click)="openSlotModal(entry.index)"
@@ -146,6 +153,16 @@
           <span class="panel-btn__label">d20</span>
           <span class="panel-btn__value">Roll</span>
         </button>
+        @if (isCompactViewport()) {
+          <button
+            class="panel-btn panel-btn--neutral"
+            [class.panel-btn--primary]="mirroredTopHalf()"
+            (click)="toggleTopHalfMirror()"
+          >
+            <span class="panel-btn__label">Top Side</span>
+            <span class="panel-btn__value">{{ mirroredTopHalf() ? 'Normal' : 'Mirror' }}</span>
+          </button>
+        }
         @if (!confirmAbortActive()) {
           <button class="panel-btn panel-btn--danger" (click)="toggleAbortConfirm()">
             <span class="panel-btn__label">End</span>
@@ -185,12 +202,13 @@
       </div>
 
       <div class="play-column play-column--right" [attr.data-count]="playerCount()">
-        @for (entry of rightSlots(); track entry.index) {
+        @for (entry of rightSlots(); track entry.index; let rowIndex = $index) {
           <div
             class="play-slot"
             [class.play-slot--winner]="startingWinnerIndex() === entry.index"
             [class.play-slot--locked]="gameStarted()"
             [class.play-slot--eliminated]="isEliminated(entry.index)"
+            [class.play-slot--mirrored]="isSlotMirrored('right', rowIndex)"
             [style.background-image]="entry.slot.deckId ? 'url(' + getDeckBackgroundImage(entry.slot.deckId) + ')' : ''"
             [style.background-color]="entry.slot.deckId ? 'transparent' : getSlotFallbackColor(entry.index)"
             (click)="openSlotModal(entry.index)"

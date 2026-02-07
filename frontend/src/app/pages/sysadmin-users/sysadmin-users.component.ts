@@ -21,6 +21,7 @@ export class SysadminUsersComponent implements OnInit {
   page = signal(1);
   total = signal(0);
   readonly pageSize = 5;
+  collapsedGroups = signal<Set<string>>(new Set());
 
   // Rename modal
   showRenameModal = signal(false);
@@ -56,6 +57,7 @@ export class SysadminUsersComponent implements OnInit {
         this.groups.set(result.items);
         this.total.set(result.total);
         this.page.set(result.page);
+        this.collapsedGroups.set(new Set(result.items.map((group) => group.id)));
         this.loading.set(false);
       },
       error: (err) => {
@@ -72,6 +74,20 @@ export class SysadminUsersComponent implements OnInit {
   setPage(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
     this.loadGroups(page);
+  }
+
+  isGroupCollapsed(groupId: string): boolean {
+    return this.collapsedGroups().has(groupId);
+  }
+
+  toggleGroup(groupId: string): void {
+    const next = new Set(this.collapsedGroups());
+    if (next.has(groupId)) {
+      next.delete(groupId);
+    } else {
+      next.add(groupId);
+    }
+    this.collapsedGroups.set(next);
   }
 
   openRenameModal(member: AdminGroupMember): void {

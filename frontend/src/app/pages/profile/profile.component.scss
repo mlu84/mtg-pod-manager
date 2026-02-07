@@ -127,6 +127,21 @@
   }
 }
 
+@media (max-width: 640px) {
+  .detail-row {
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .detail-value--email {
+    min-width: 0;
+    max-width: 60%;
+    text-align: right;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
 .btn--sm {
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: 0.875rem;

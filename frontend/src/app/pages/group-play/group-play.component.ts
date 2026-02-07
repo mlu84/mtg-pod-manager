@@ -50,6 +50,12 @@ export class GroupPlayComponent {
   startingWinnerIndex = signal<number | null>(null);
   gameStarted = signal(false);
   confirmEndActive = signal(false);
+  isCompactViewport = signal(false);
+  isPortraitViewport = signal(false);
+  viewportWidth = signal(0);
+  viewportHeight = signal(0);
+  mirroredTopHalf = signal(false);
+  private orientationLocked = false;
   private endConfirmTimer: ReturnType<typeof setTimeout> | null = null;
   private eliminationOrder: number[] = [];
   lifeDelta = signal<number[]>(Array.from({ length: 6 }).map(() => 0));
@@ -106,8 +112,56 @@ export class GroupPlayComponent {
   });
 
   ngOnInit(): void {
+    this.updateViewportState();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.onViewportChange);
+      window.addEventListener('orientationchange', this.onViewportChange);
+    }
+    this.tryLockLandscape();
     this.groupId = this.route.snapshot.params['id'];
     this.loadGroup();
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.onViewportChange);
+      window.removeEventListener('orientationchange', this.onViewportChange);
+    }
+    if (this.orientationLocked && typeof screen !== 'undefined' && screen.orientation?.unlock) {
+      screen.orientation.unlock();
+      this.orientationLocked = false;
+    }
+  }
+
+  private onViewportChange = (): void => {
+    const wasCompact = this.isCompactViewport();
+    this.updateViewportState();
+    if (!wasCompact && this.isCompactViewport()) {
+      this.tryLockLandscape();
+    }
+  };
+
+  private updateViewportState(): void {
+    if (typeof window === 'undefined') return;
+    this.viewportWidth.set(window.innerWidth);
+    this.viewportHeight.set(window.innerHeight);
+    this.isCompactViewport.set(window.innerWidth < 1200);
+    this.isPortraitViewport.set(window.innerHeight > window.innerWidth);
+  }
+
+  private async tryLockLandscape(): Promise<void> {
+    if (!this.isCompactViewport()) return;
+    if (typeof screen === 'undefined' || !screen.orientation) return;
+    const orientation = screen.orientation as ScreenOrientation & {
+      lock?: (orientation: 'landscape') => Promise<void>;
+    };
+    if (!orientation.lock) return;
+    try {
+      await orientation.lock('landscape');
+      this.orientationLocked = true;
+    } catch {
+      this.orientationLocked = false;
+    }
   }
 
   private loadGroup(): void {
@@ -152,6 +206,16 @@ export class GroupPlayComponent {
   cyclePlayerCount(): void {
     const next = this.playerCount() >= 6 ? 2 : this.playerCount() + 1;
     this.setPlayerCount(next);
+  }
+
+  toggleTopHalfMirror(): void {
+    this.mirroredTopHalf.update((value) => !value);
+  }
+
+  isSlotMirrored(column: 'left' | 'right', rowIndex: number): boolean {
+    if (!this.mirroredTopHalf()) return false;
+    const columnSize = column === 'left' ? this.leftSlots().length : this.rightSlots().length;
+    return rowIndex < Math.ceil(columnSize / 2);
   }
 
   incrementLife(index: number): void {

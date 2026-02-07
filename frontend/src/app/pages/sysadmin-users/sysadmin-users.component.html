@@ -42,46 +42,58 @@
       } @else {
         <div class="groups-list">
           @for (group of groups(); track group.id) {
-            <div class="group-card card">
+            <div class="group-card card" [class.group-card--collapsed]="isGroupCollapsed(group.id)">
               <div class="group-card__header">
-                <div>
+                <div class="group-card__main">
                   <h2>{{ group.name }}</h2>
                   <span class="group-card__format">{{ group.format }}</span>
+                  <span class="group-card__meta">{{ group.members.length }} members</span>
                 </div>
-                <button class="btn btn--danger" (click)="deleteGroup(group)">Delete group</button>
+                <div class="group-card__actions">
+                  <button class="btn btn--outline" (click)="toggleGroup(group.id)">
+                    @if (isGroupCollapsed(group.id)) {
+                      <i class="fas fa-chevron-down"></i> Details
+                    } @else {
+                      <i class="fas fa-chevron-up"></i> Hide
+                    }
+                  </button>
+                  <button class="btn btn--danger" (click)="deleteGroup(group)">Delete group</button>
+                </div>
               </div>
 
-              @if (group.description) {
-                <p class="group-card__description">{{ group.description }}</p>
-              }
-
-              <div class="members-table">
-                <div class="members-table__header">
-                  <span>Name</span>
-                  <span>Email</span>
-                  <span>Status</span>
-                  <span>Actions</span>
-                </div>
-                @for (member of group.members; track member.userId) {
-                  <div class="members-table__row">
-                    <span>{{ member.user.inAppName }}</span>
-                    <span>{{ member.user.email }}</span>
-                    <span>{{ member.role }}</span>
-                    <div class="members-table__actions">
-                      <button class="btn btn--outline" (click)="openRenameModal(member)">Rename</button>
-                      @if (member.role === 'ADMIN') {
-                        <button class="btn btn--outline" (click)="demoteMember(group.id, member)">Demote</button>
-                      } @else {
-                        <button class="btn btn--outline" (click)="promoteMember(group.id, member)">Promote</button>
-                      }
-                      <button class="btn btn--outline btn--danger" (click)="removeMember(group.id, member)">
-                        Remove
-                      </button>
-                      <button class="btn btn--danger" (click)="deleteUser(member)">Delete account</button>
-                    </div>
-                  </div>
+              @if (!isGroupCollapsed(group.id)) {
+                @if (group.description) {
+                  <p class="group-card__description">{{ group.description }}</p>
                 }
-              </div>
+
+                <div class="members-table">
+                  <div class="members-table__header">
+                    <span>Name</span>
+                    <span>Email</span>
+                    <span>Status</span>
+                    <span>Actions</span>
+                  </div>
+                  @for (member of group.members; track member.userId) {
+                    <div class="members-table__row">
+                      <span>{{ member.user.inAppName }}</span>
+                      <span>{{ member.user.email }}</span>
+                      <span>{{ member.role }}</span>
+                      <div class="members-table__actions">
+                        <button class="btn btn--outline" (click)="openRenameModal(member)">Rename</button>
+                        @if (member.role === 'ADMIN') {
+                          <button class="btn btn--outline" (click)="demoteMember(group.id, member)">Demote</button>
+                        } @else {
+                          <button class="btn btn--outline" (click)="promoteMember(group.id, member)">Promote</button>
+                        }
+                        <button class="btn btn--outline btn--danger" (click)="removeMember(group.id, member)">
+                          Remove
+                        </button>
+                        <button class="btn btn--danger" (click)="deleteUser(member)">Delete account</button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           }
         </div>

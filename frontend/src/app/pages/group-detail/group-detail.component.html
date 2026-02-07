@@ -126,7 +126,7 @@
         <!-- Left Column: Ranking & History -->
         <div class="left-column">
           <!-- Ranking -->
-          <section class="card">
+          <section class="card ranking-card">
             <div class="card__header">
               <h2 class="card__title"><i class="fas fa-trophy"></i> Ranking</h2>
               <div class="ranking-header__meta">
@@ -266,7 +266,7 @@
           </section>
 
           <!-- History -->
-          <section class="card">
+          <section class="card history-card">
             <div class="card__header">
               <h2 class="card__title"><i class="fas fa-history"></i> History</h2>
             </div>
@@ -384,7 +384,9 @@
                 <div class="actions-card__buttons">
                   <button class="btn btn--secondary btn--square btn--soft-blue"
                           (click)="openPlayGame()"
-                          [disabled]="!canStartPlayGame()"
+                          [disabled]="!isSmartphoneViewport() && !canStartPlayGame()"
+                          [class.btn--disabled-soft]="isSmartphoneViewport()"
+                          [attr.aria-disabled]="isSmartphoneViewport() ? 'true' : null"
                           [title]="playGameDisabledReason()">
                     <i class="fas fa-play"></i>
                     <span>New Game</span>
@@ -509,7 +511,7 @@
           </section>
 
           <!-- Decks List -->
-            <section class="card">
+            <section class="card decks-card">
               <div class="card__header">
                 <h2 class="card__title"><i class="fas fa-layer-group"></i> Decks</h2>
                 <div class="card__header-actions">
@@ -614,7 +616,7 @@
           </section>
 
           <!-- Members -->
-          <section class="card">
+          <section class="card members-card">
             <div class="card__header">
               <h2 class="card__title"><i class="fas fa-users"></i> Members</h2>
               <button class="card__toggle" (click)="toggleMembersCollapsed()" title="Toggle members">
@@ -640,6 +642,11 @@
         </div>
       </div>
     </main>
+    @if (showScrollTop()) {
+      <button class="scroll-top-fab" (click)="scrollToTop()" title="Back to top" aria-label="Back to top">
+        <i class="fas fa-arrow-up"></i>
+      </button>
+    }
   }
 </div>
 
@@ -1011,19 +1018,11 @@
         </div>
 
           <div class="modal__actions modal__actions--split">
-            @if (confirmDelete()) {
-              <div class="danger-actions">
-                <button type="button" class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteDeck()" [disabled]="editDeckLoading()">
-                  <i class="fas fa-exclamation-triangle"></i> Confirm
-                </button>
-              </div>
-            } @else {
-              <div class="danger-actions">
-                <button type="button" class="btn btn--danger" (click)="requestDeleteDeck(); $event.stopPropagation()" [disabled]="editDeckLoading()">
-                  <i class="fas fa-trash"></i> Delete
-                </button>
-              </div>
-            }
+            <div class="danger-actions">
+              <button type="button" class="btn btn--danger" (click)="requestDeleteDeck(); $event.stopPropagation()" [disabled]="editDeckLoading()">
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </div>
             <div class="modal__actions">
               <button type="button" class="btn btn--outline" (click)="closeEditDeckModal()" [disabled]="editDeckLoading()">
                 Cancel
@@ -1232,20 +1231,10 @@
             <div class="form-group">
               <label>Delete group</label>
               <div class="danger-actions">
-                @if (confirmDeleteGroup()) {
-                  <button type="button" class="btn btn--danger btn--confirm-delete" (click)="confirmDeleteGroupAction()"
-                          [disabled]="deleteGroupLoading()">
-                    <i class="fas fa-exclamation-triangle"></i> Really delete?
-                  </button>
-                  <button type="button" class="btn btn--outline" (click)="cancelDeleteGroup()"
-                          [disabled]="deleteGroupLoading()">
-                    Cancel
-                  </button>
-                } @else {
-                  <button type="button" class="btn btn--danger" (click)="requestDeleteGroup()" title="Delete group">
-                    <i class="fas fa-trash"></i> Delete Group
-                  </button>
-                }
+                <button type="button" class="btn btn--danger" (click)="requestDeleteGroup()" title="Delete group"
+                        [disabled]="deleteGroupLoading() || confirmModalLoading()">
+                  <i class="fas fa-trash"></i> Delete Group
+                </button>
               </div>
               <small class="form-hint">This action permanently deletes the group and all related data.</small>
             </div>
