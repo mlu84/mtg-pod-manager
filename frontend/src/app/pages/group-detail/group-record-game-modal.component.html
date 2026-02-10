@@ -69,7 +69,14 @@
                   <div class="deck-dropdown">
                     @for (deck of getFilteredDecksForSlot(i); track deck.id) {
                       <div class="deck-dropdown__item" (mousedown)="selectDeck.emit({ index: i, deckId: deck.id, deckName: deck.name })">
-                        {{ deck.name }}
+                        <span class="deck-dropdown__name">{{ deck.name }}</span>
+                        @if (deck.colors) {
+                          <span class="deck-dropdown__icons">
+                            @for (symbol of getManaSymbols(deck.colors); track symbol) {
+                              <img [src]="symbol" class="deck-dropdown__icon" alt="mana" />
+                            }
+                          </span>
+                        }
                       </div>
                     } @empty {
                       <div class="deck-dropdown__empty">No decks found</div>

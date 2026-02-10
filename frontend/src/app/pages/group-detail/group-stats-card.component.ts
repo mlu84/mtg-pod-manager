@@ -1,5 +1,6 @@
 import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Deck } from '../../models/group.model';
 
 type StatsCategory = 'colors' | 'decks' | 'players';
 
@@ -18,8 +19,9 @@ export class GroupStatsCardComponent implements OnDestroy {
   @Input({ required: true }) statsDeckId!: string | null;
   @Input({ required: true }) statsDeckSearch!: string;
   @Input({ required: true }) statsDeckDropdownOpen!: boolean;
-  @Input({ required: true }) filteredStatsDecks!: Array<{ id: string; name: string }>;
+  @Input({ required: true }) filteredStatsDecks!: Deck[];
   @Input({ required: true }) getDeckNameById!: (id: string) => string;
+  @Input({ required: true }) getManaSymbols!: (colors: string) => string[];
 
   @Output() toggleCollapsed = new EventEmitter<void>();
   @Output() statsCategoryChange = new EventEmitter<StatsCategory>();

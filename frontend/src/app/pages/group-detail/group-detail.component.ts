@@ -265,7 +265,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Get available decks for a placement slot (excludes already selected decks)
-  getAvailableDecksForSlot(slotIndex: number): { id: string; name: string }[] {
+  getAvailableDecksForSlot(slotIndex: number): Deck[] {
     const selectedDeckIds = this.gamePlacements
       .filter((_, i) => i !== slotIndex)
       .map((p) => p.deckId)
@@ -275,7 +275,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Get filtered decks based on search term
-  getFilteredDecksForSlot(slotIndex: number): { id: string; name: string }[] {
+  getFilteredDecksForSlot(slotIndex: number): Deck[] {
     const availableDecks = this.getAvailableDecksForSlot(slotIndex);
     const searchTerm = (this.deckSearchTerms[slotIndex] || '').toLowerCase().trim();
 

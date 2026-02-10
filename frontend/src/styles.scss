@@ -437,7 +437,7 @@ select.form-control optgroup {
   }
 }
 
-.deck-dropdown {
+  .deck-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
@@ -450,15 +450,43 @@ select.form-control optgroup {
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 
-  &__item {
-    padding: var(--spacing-sm) var(--spacing-md);
-    cursor: pointer;
-    transition: background-color var(--transition-fast);
+    &__item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm) var(--spacing-md);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
 
-    &:hover {
-      background-color: var(--color-bg-light);
+      &:hover {
+        background-color: var(--color-bg-light);
+      }
     }
-  }
+
+    &__name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__icons {
+      display: inline-flex;
+      align-items: center;
+      margin-left: auto;
+    }
+
+    &__icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      filter: drop-shadow(-1px 2px 1px rgba(0, 0, 0, 0.35));
+    }
+
+    &__icon + &__icon {
+      margin-left: -8px;
+    }
 
   &__empty {
     padding: var(--spacing-sm) var(--spacing-md);

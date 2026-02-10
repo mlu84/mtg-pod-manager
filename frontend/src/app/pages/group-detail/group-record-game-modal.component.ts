@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Deck } from '../../models/group.model';
 
 type Placement = { deckId: string; rank: number; playerName: string };
 
@@ -23,7 +24,8 @@ export class GroupRecordGameModalComponent {
   @Input({ required: true }) allDecksSelected!: boolean;
   @Input({ required: true }) getAvailableRanksForSlot!: (index: number) => number[];
   @Input({ required: true }) getDeckNameById!: (deckId: string) => string;
-  @Input({ required: true }) getFilteredDecksForSlot!: (index: number) => Array<{ id: string; name: string }>;
+  @Input({ required: true }) getFilteredDecksForSlot!: (index: number) => Deck[];
+  @Input({ required: true }) getManaSymbols!: (colors: string) => string[];
 
   @Output() close = new EventEmitter<void>();
   @Output() submit = new EventEmitter<void>();
