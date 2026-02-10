@@ -1,0 +1,108 @@
+<section class="card history-card">
+  <div class="card__header">
+    <h2 class="card__title"><i class="fas fa-history"></i> History</h2>
+  </div>
+  <div class="history-filters">
+    <div class="history-filters__left">
+      <button
+        class="btn btn--sm"
+        [class.btn--primary]="historyFilter === 'all'"
+        [class.btn--outline]="historyFilter !== 'all'"
+        (click)="setFilter('all')"
+      >
+        All
+      </button>
+      <button
+        class="btn btn--sm"
+        [class.btn--primary]="historyFilter === 'games'"
+        [class.btn--outline]="historyFilter !== 'games'"
+        (click)="setFilter('games')"
+      >
+        Games
+      </button>
+      <button
+        class="btn btn--sm"
+        [class.btn--primary]="historyFilter === 'events'"
+        [class.btn--outline]="historyFilter !== 'events'"
+        (click)="setFilter('events')"
+      >
+        Events
+      </button>
+    </div>
+    @if (isAdmin && isEmailVerified && gamesLength > 0) {
+      <button class="btn btn--sm btn--danger" (click)="undoLastGame()">
+        <i class="fas fa-undo"></i> Undo Last
+      </button>
+    }
+  </div>
+  @if (filteredHistoryLength === 0) {
+    <p class="text-muted">No activity yet.</p>
+  } @else {
+    <div class="history-list">
+      @for (item of paginatedHistory; track $index) {
+        @if (item.type === 'game') {
+          <div class="game-item">
+            <div class="game-item__header">
+              <span class="game-item__title">Game {{ item.gameNumber }}</span>
+              <span class="game-item__players">{{ item.data.playerCount }} players</span>
+              <span class="game-item__date">{{ formatDate(item.data.playedAt) }}</span>
+            </div>
+            <div class="game-item__placements">
+              @for (placement of item.data.placements; track placement.deck?.id || $index) {
+                <div class="placement">
+                  <span class="placement__rank">#{{ placement.rank }}</span>
+                  <span class="placement__deck">
+                    {{ placement.deck?.name || 'Deleted Deck' }}
+                    @if (placement.deck?.colors) {
+                      <span class="mana-symbols mana-symbols--inline">
+                        @for (symbol of getManaSymbols(placement.deck.colors); track symbol) {
+                          <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                        }
+                      </span>
+                    }
+                    @if (placement.playerName) {
+                      <span class="placement__player">({{ placement.playerName }})</span>
+                    }
+                  </span>
+                  <span class="placement__points">{{ placement.points }} pts</span>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="event-item">
+            <span class="event-item__date">{{ formatDate(item.data.createdAt) }}</span>
+            <span class="event-item__message">{{ item.data.message }}</span>
+          </div>
+        }
+      }
+    </div>
+    @if (historyTotalPages > 1) {
+      <div class="pagination">
+        <button
+          class="pagination__btn"
+          (click)="setPage(historyPage - 1)"
+          [disabled]="historyPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        @for (page of [].constructor(historyTotalPages); track $index) {
+          <button
+            class="pagination__btn"
+            [class.pagination__btn--active]="historyPage === $index + 1"
+            (click)="setPage($index + 1)"
+          >
+            {{ $index + 1 }}
+          </button>
+        }
+        <button
+          class="pagination__btn"
+          (click)="setPage(historyPage + 1)"
+          [disabled]="historyPage === historyTotalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    }
+  }
+</section>

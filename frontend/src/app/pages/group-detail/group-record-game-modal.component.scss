@@ -1,0 +1,28 @@
+.placements-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.placement-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: flex-end;
+  flex-wrap: nowrap;
+
+  .form-group {
+    margin-bottom: 0;
+    min-width: 0;
+
+    &--grow {
+      flex: 1;
+    }
+
+    &:first-child {
+      select {
+        width: 70px;
+      }
+    }
+  }
+}

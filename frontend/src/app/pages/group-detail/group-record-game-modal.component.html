@@ -1,0 +1,128 @@
+<div class="modal-overlay">
+  <div class="modal modal--large card" (click)="$event.stopPropagation(); closeAllDeckDropdowns.emit()">
+    <div class="modal__header">
+      <h2>Record Game</h2>
+      <button class="modal__close" (click)="close.emit()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <p class="game-hint">
+      <i class="fas fa-info-circle"></i>
+      Assign the same rank to multiple players to record a tie.
+    </p>
+    @if (prefilledGame) {
+      <div class="alert alert--success">
+        <i class="fas fa-bolt"></i>
+        Prefilled from a live game. Decks and player count are locked.
+      </div>
+    }
+
+    @if (gameError) {
+      <div class="alert alert--danger">{{ gameError }}</div>
+    }
+    @if (isSeasonPaused) {
+      <div class="alert alert--warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        Season is in pause. Recording is disabled until {{ seasonPauseUntil | date:'dd.MM.yyyy' }}.
+      </div>
+    }
+
+    <form (ngSubmit)="submit.emit()">
+      <div class="placements-list">
+        @for (placement of gamePlacements; track $index; let i = $index) {
+          <div class="placement-row">
+            <div class="form-group">
+              <label>Rank</label>
+              <select
+                class="form-control"
+                [(ngModel)]="placement.rank"
+                [name]="'rank' + i"
+                [disabled]="gameLoading"
+              >
+                @for (rank of getAvailableRanksForSlot(i); track rank) {
+                  <option [value]="rank">{{ rank }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-group form-group--grow deck-search-container" (click)="$event.stopPropagation()">
+              <label>Deck</label>
+              <div class="deck-search">
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="getDeckNameById(placement.deckId)"
+                  (input)="deckSearchInput.emit({ index: i, event: $event })"
+                  (focus)="openDeckDropdown.emit(i)"
+                  (blur)="closeDeckDropdownDelayed.emit(i)"
+                  [placeholder]="placement.deckId ? '' : 'Search deck...'"
+                  [disabled]="gameLoading || prefilledGame"
+                  [name]="'deckSearch' + i"
+                  autocomplete="off"
+                />
+                @if (placement.deckId && !prefilledGame) {
+                  <button type="button" class="deck-search__clear" (click)="clearDeckSelection.emit(i)" [disabled]="gameLoading">
+                    <i class="fas fa-times"></i>
+                  </button>
+                }
+                @if (deckDropdownOpen[i] && !prefilledGame) {
+                  <div class="deck-dropdown">
+                    @for (deck of getFilteredDecksForSlot(i); track deck.id) {
+                      <div class="deck-dropdown__item" (mousedown)="selectDeck.emit({ index: i, deckId: deck.id, deckName: deck.name })">
+                        {{ deck.name }}
+                      </div>
+                    } @empty {
+                      <div class="deck-dropdown__empty">No decks found</div>
+                    }
+                  </div>
+                }
+              </div>
+              <!-- Hidden input for form validation -->
+              <input type="hidden" [(ngModel)]="placement.deckId" [name]="'deck' + i" />
+            </div>
+            <div class="form-group">
+              <label>Player (optional)</label>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="placement.playerName"
+                [name]="'player' + i"
+                placeholder="Guest name"
+                [disabled]="gameLoading"
+                list="memberNamesList"
+                autocomplete="off"
+              />
+            </div>
+            @if (!prefilledGame) {
+              <button type="button" class="btn btn--danger" (click)="removePlayer.emit(i)" [disabled]="gameLoading">
+                <i class="fas fa-trash"></i>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      @if (gamePlacements.length < 6 && !prefilledGame) {
+        <button type="button" class="btn btn--outline btn--block" (click)="addPlayer.emit()" [disabled]="gameLoading">
+          <i class="fas fa-plus"></i> Add Player ({{ gamePlacements.length }}/6)
+        </button>
+      }
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--outline" (click)="close.emit()" [disabled]="gameLoading">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn--primary" [disabled]="gameLoading || gamePlacements.length < 2 || !allDecksSelected || isSeasonPaused">
+          @if (gameLoading) { Recording... } @else { Record Game }
+        </button>
+      </div>
+    </form>
+
+    <!-- Datalist for player name autocomplete -->
+    <datalist id="memberNamesList">
+      @for (name of memberNames; track name) {
+        <option [value]="name"></option>
+      }
+    </datalist>
+  </div>
+</div>

@@ -1,0 +1,48 @@
+.winners-banner {
+  margin-top: var(--spacing-lg);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+  }
+
+  &__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-sm);
+  }
+
+  &__meta {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-md);
+  }
+
+  &__pos {
+    font-weight: 700;
+  }
+
+  &__deck {
+    font-weight: 600;
+  }
+
+  &__owner {
+    color: var(--color-text-muted);
+  }
+}

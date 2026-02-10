@@ -1,0 +1,136 @@
+<section class="card ranking-card">
+  <div class="card__header">
+    <h2 class="card__title"><i class="fas fa-trophy"></i> Ranking</h2>
+    <div class="ranking-header__meta">
+      @if (activeSeasonEndsAt) {
+        <span class="ranking-header__countdown"
+              [class.ranking-header__countdown--warning]="seasonCountdownState === 'warning'"
+              [class.ranking-header__countdown--critical]="seasonCountdownState === 'critical'">
+          {{ seasonCountdown }} ({{ activeSeasonEndsAt | date:'dd.MM.yyyy' }})
+        </span>
+        @if (activeSeasonName) {
+          <span class="ranking-header__season">{{ activeSeasonName }}</span>
+        }
+      }
+      @if (rankingMode === 'previous') {
+        <span class="ranking-header__season">Last season snapshot</span>
+      }
+      @if (snapshotAvailable) {
+        <button class="btn btn--sm btn--outline" (click)="toggleRankingMode()">
+          @if (rankingMode === 'current') {
+            Show previous ranking
+          } @else {
+            Show current ranking
+          }
+        </button>
+        <span class="info-icon" title="Toggle between current and previous season ranking">
+          <i class="fas fa-info-circle"></i>
+        </span>
+      }
+    </div>
+  </div>
+  @if (ranking.length === 0) {
+    <p class="text-muted">No games played yet.</p>
+  } @else {
+    <div class="ranking-list">
+      @for (entry of paginatedRanking; track entry.id) {
+        <div class="ranking-row" [class.inactive]="!entry.isActive">
+          <div class="ranking-row__left">
+            @if (entry.position <= 3) {
+              <span class="ranking-item__trophy"
+                    [class.ranking-item__trophy--first]="entry.position === 1"
+                    [class.ranking-item__trophy--second]="entry.position === 2"
+                    [class.ranking-item__trophy--third]="entry.position === 3">
+                <i class="fas fa-trophy"
+                   [class.trophy--gold]="entry.position === 1"
+                   [class.trophy--silver]="entry.position === 2"
+                   [class.trophy--bronze]="entry.position === 3"></i>
+                <span class="ranking-item__trophy-number">{{ entry.position }}</span>
+              </span>
+            } @else {
+              <span class="ranking-item__position">{{ entry.position }}</span>
+            }
+            <div class="ranking-item__trend">
+              @if (entry.trend === 'up') {
+                <span class="trend trend-up">
+                  <i class="fas fa-caret-up"></i>
+                  <span class="trend__value">{{ entry.positionChange }}</span>
+                </span>
+              } @else if (entry.trend === 'down') {
+                <span class="trend trend-down">
+                  <i class="fas fa-caret-down"></i>
+                  <span class="trend__value">{{ -entry.positionChange }}</span>
+                </span>
+              } @else if (entry.trend === 'new') {
+                <span class="trend trend-new">
+                  <i class="fas fa-star"></i>
+                </span>
+              } @else {
+                <span class="trend trend-same">
+                  <i class="fas fa-minus"></i>
+                </span>
+              }
+            </div>
+          </div>
+          <div class="ranking-item mtg-card-style"
+               [class.ranking-item--first]="entry.position === 1"
+               [class.ranking-item--second]="entry.position === 2"
+               [class.ranking-item--third]="entry.position === 3"
+               [class.ranking-item--other]="entry.position > 3"
+               [style.--color-gradient]="getColorGradient(entry.colors)">
+            <div class="deck-icon">
+              <img [src]="getDeckImageUrl(entry.id) || defaultDeckImage" [alt]="entry.name" class="deck-icon__img" />
+            </div>
+            <div class="ranking-item__info">
+              <span class="ranking-item__name" [title]="entry.name">
+                <span class="ranking-item__name-text">{{ entry.name }}</span>
+                <span class="mana-symbols">
+                  @for (symbol of getManaSymbols(entry.colors); track symbol) {
+                    <img [src]="symbol" class="mana-symbol" alt="mana" />
+                  }
+                </span>
+                @if (getArchidektUrl(entry.id)) {
+                  <a [href]="getArchidektUrl(entry.id)" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
+                    <i class="fas fa-external-link-alt"></i>
+                  </a>
+                }
+              </span>
+              <span class="ranking-item__owner">{{ entry.owner.inAppName }}</span>
+            </div>
+            <div class="ranking-item__stats">
+              <span class="ranking-item__rating">{{ entry.performanceRating }}</span>
+              <span class="ranking-item__games">{{ entry.gamesPlayed }} games</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+    @if (rankingTotalPages > 1) {
+      <div class="pagination">
+        <button
+          class="pagination__btn"
+          (click)="setRankingPage(rankingPage - 1)"
+          [disabled]="rankingPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        @for (page of [].constructor(rankingTotalPages); track $index) {
+          <button
+            class="pagination__btn"
+            [class.pagination__btn--active]="rankingPage === $index + 1"
+            (click)="setRankingPage($index + 1)"
+          >
+            {{ $index + 1 }}
+          </button>
+        }
+        <button
+          class="pagination__btn"
+          (click)="setRankingPage(rankingPage + 1)"
+          [disabled]="rankingPage === rankingTotalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    }
+  }
+</section>

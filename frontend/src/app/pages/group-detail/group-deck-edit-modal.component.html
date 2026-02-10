@@ -1,0 +1,143 @@
+<div class="modal-overlay">
+  <div class="modal card" (click)="$event.stopPropagation(); closeEditColorDropdown.emit()">
+    <div class="modal__header">
+      <h2>Edit Deck</h2>
+      <button class="modal__close" (click)="close.emit()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    @if (editDeckError) {
+      <div class="alert alert--danger">{{ editDeckError }}</div>
+    }
+
+    <form (ngSubmit)="submit.emit()">
+      <div class="form-group">
+        <label for="editDeckName">Deck Name *</label>
+        <input
+          type="text"
+          id="editDeckName"
+          class="form-control"
+          [ngModel]="editDeckName"
+          (ngModelChange)="editDeckNameChange.emit($event)"
+          name="editDeckName"
+          [disabled]="editDeckLoading"
+        />
+      </div>
+
+      <div class="form-group color-select-container" (click)="$event.stopPropagation()">
+        <label>Colors *</label>
+        <div class="color-select">
+          <div
+            class="color-select__trigger form-control"
+            (click)="openEditColorDropdown.emit()"
+            [class.disabled]="editDeckLoading"
+          >
+            @if (editDeckColors) {
+              <span class="color-select__value">
+                <span class="mana-symbols">
+                  @for (symbol of getManaSymbols(editDeckColors); track symbol) {
+                    <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                  }
+                </span>
+                {{ editDeckColors }}
+              </span>
+            } @else {
+              <span class="color-select__placeholder">Select colors</span>
+            }
+            <i class="fas fa-chevron-down color-select__icon"></i>
+          </div>
+          @if (editColorDropdownOpen) {
+            <div class="color-dropdown">
+              @for (color of colorOptions; track color) {
+                <div class="color-dropdown__item" (mousedown)="selectEditColor.emit(color)">
+                  <span class="mana-symbols">
+                    @for (symbol of getManaSymbols(color); track symbol) {
+                      <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                    }
+                  </span>
+                  {{ color }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <input type="hidden" [ngModel]="editDeckColors" (ngModelChange)="editDeckColorsChange.emit($event)" name="editDeckColors" />
+      </div>
+
+      <div class="form-group">
+        <label for="editDeckType">Type (optional)</label>
+        <select
+          id="editDeckType"
+          class="form-control"
+          [ngModel]="editDeckType"
+          (ngModelChange)="editDeckTypeChange.emit($event)"
+          name="editDeckType"
+          [disabled]="editDeckLoading"
+        >
+          <option value="">Select type</option>
+          @for (type of typeOptions; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [ngModel]="editDeckIsActive"
+            (ngModelChange)="editDeckIsActiveChange.emit($event)"
+            name="editDeckIsActive"
+            [disabled]="editDeckLoading"
+          />
+          <span>Active (can be selected for new games)</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="editDeckArchidektUrl">Archidekt Link (optional)</label>
+        <div class="archidekt-input-row">
+          <input
+            type="text"
+            id="editDeckArchidektUrl"
+            class="form-control"
+            [ngModel]="editDeckArchidektUrl"
+            (ngModelChange)="editDeckArchidektUrlChange.emit($event)"
+            name="editDeckArchidektUrl"
+            placeholder="https://archidekt.com/decks/12345678"
+            [disabled]="editDeckLoading"
+          />
+          @if (hasArchidektId) {
+            <button
+              type="button"
+              class="btn btn--outline"
+              (click)="refreshArchidekt.emit()"
+              [disabled]="editDeckLoading"
+              title="Refresh from Archidekt"
+            >
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          }
+        </div>
+        <small class="form-hint">Link or ID of your Archidekt deck (leave empty to remove)</small>
+      </div>
+
+      <div class="modal__actions modal__actions--split">
+        <div class="danger-actions">
+          <button type="button" class="btn btn--danger" (click)="requestDeleteDeck.emit(); $event.stopPropagation()" [disabled]="editDeckLoading">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" (click)="close.emit()" [disabled]="editDeckLoading">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn--primary" [disabled]="editDeckLoading">
+            @if (editDeckLoading) { Saving... } @else { Save Changes }
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

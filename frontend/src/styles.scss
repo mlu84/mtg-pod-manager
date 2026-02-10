@@ -238,10 +238,321 @@ body {
   }
 }
 
+select.form-control option,
+select.form-control optgroup {
+  background-color: var(--color-bg-card);
+  color: var(--color-text);
+}
+
+// Icon button (shared)
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background-color: var(--color-bg-card);
+    color: var(--color-text);
+  }
+
+  &--danger:hover {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: var(--color-danger);
+  }
+}
+
+// Checkbox
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+}
+
+// Color select dropdown (shared)
+.color-select-container {
+  position: relative;
+}
+
+.color-select {
+  position: relative;
+
+  &__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    min-height: 42px;
+
+    &.disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  }
+
+  &__value {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  &__placeholder {
+    color: var(--color-text-muted);
+  }
+
+  &__icon {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+  }
+}
+
+.color-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin-top: 4px;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+
+    &:hover {
+      background-color: var(--color-bg-light);
+    }
+
+    .mana-symbols {
+      margin-left: 0;
+      min-width: 90px;
+    }
+  }
+}
+
+// Chart tooltips (color combo icons)
+.chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: rgba(20, 22, 32, 0.95);
+  color: #e2e2ef;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-size: 0.85rem;
+  z-index: 5;
+}
+
+.chart-tooltip__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.chart-tooltip__icons {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+}
+
+.chart-tooltip__icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  filter: drop-shadow(-1px 2px 1px rgba(0, 0, 0, 0.4));
+}
+
+.chart-tooltip__icon + .chart-tooltip__icon {
+  margin-left: -8px;
+}
+
+.chart-tooltip__value {
+  margin-top: 4px;
+  color: #b6b6c9;
+}
+
 .form-error {
   color: var(--color-danger);
   font-size: 0.875rem;
   margin-top: var(--spacing-xs);
+}
+
+// Deck search dropdowns (shared)
+.deck-search-container {
+  position: relative;
+}
+
+.deck-search {
+  position: relative;
+
+  input {
+    padding-right: 30px;
+  }
+
+  &__clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: var(--color-danger);
+    }
+  }
+}
+
+.deck-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  &__item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+
+    &:hover {
+      background-color: var(--color-bg-light);
+    }
+  }
+
+  &__empty {
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+}
+
+// Smaller mana symbols (used in dropdowns/modals)
+.mana-symbol--sm {
+  width: 14px;
+  height: 14px;
+}
+
+// Card headers (shared)
+.card__header {
+  position: relative;
+  padding-right: 32px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.card__toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.card__header .card__title {
+  margin-right: auto;
+  flex: 1 1 auto;
+}
+
+.card__header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+// Pagination (shared)
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-md);
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-bg-card);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-bg-light);
+      border-color: var(--color-primary);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    &--active {
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+      color: var(--color-text);
+      font-weight: 600;
+    }
+  }
 }
 
 // Cards
@@ -264,9 +575,61 @@ body {
 }
 
 // Modals (global)
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-md);
+}
+
 .modal {
+  width: 100%;
+  max-width: 450px;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
+
+  &--large {
+    max-width: 700px;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1.25rem;
+
+    &:hover {
+      color: var(--color-text);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+
+    &--split {
+      justify-content: space-between;
+      flex-wrap: nowrap;
+    }
+  }
 }
 
 .modal.card {
@@ -274,8 +637,25 @@ body {
   overflow-y: auto;
 }
 
-.modal-overlay {
-  align-items: flex-start;
+.modal__actions .btn {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+// Image upload preview (shared)
+.image-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+
+  &__preview {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg-light);
+  }
 }
 
 // Alerts

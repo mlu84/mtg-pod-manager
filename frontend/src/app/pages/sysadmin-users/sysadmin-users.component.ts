@@ -2,7 +2,7 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/services/api.service';
+import { AdminApiService } from '../../core/services/admin-api.service';
 import { AdminGroup, AdminGroupMember } from '../../models/group.model';
 
 @Component({
@@ -37,7 +37,7 @@ export class SysadminUsersComponent implements OnInit {
   confirmAction: (() => void) | null = null;
   confirmLoading = signal(false);
 
-  private apiService = inject(ApiService);
+  private adminApiService = inject(AdminApiService);
   private router = inject(Router);
 
   totalPages = computed(() =>
@@ -52,7 +52,7 @@ export class SysadminUsersComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.apiService.getAdminGroups(this.searchQuery, page, this.pageSize).subscribe({
+    this.adminApiService.getAdminGroups(this.searchQuery, page, this.pageSize).subscribe({
       next: (result) => {
         this.groups.set(result.items);
         this.total.set(result.total);
@@ -113,7 +113,7 @@ export class SysadminUsersComponent implements OnInit {
     this.renameLoading.set(true);
     this.renameError.set(null);
 
-    this.apiService.adminRenameUser(this.renameTarget.userId, this.renameValue.trim()).subscribe({
+    this.adminApiService.adminRenameUser(this.renameTarget.userId, this.renameValue.trim()).subscribe({
       next: () => {
         this.renameLoading.set(false);
         this.closeRenameModal();
@@ -127,14 +127,14 @@ export class SysadminUsersComponent implements OnInit {
   }
 
   promoteMember(groupId: string, member: AdminGroupMember): void {
-    this.apiService.adminUpdateMemberRole(groupId, member.userId, 'ADMIN').subscribe({
+    this.adminApiService.adminUpdateMemberRole(groupId, member.userId, 'ADMIN').subscribe({
       next: () => this.loadGroups(this.page()),
       error: (err) => this.showConfirmError(err),
     });
   }
 
   demoteMember(groupId: string, member: AdminGroupMember): void {
-    this.apiService.adminUpdateMemberRole(groupId, member.userId, 'MEMBER').subscribe({
+    this.adminApiService.adminUpdateMemberRole(groupId, member.userId, 'MEMBER').subscribe({
       next: () => this.loadGroups(this.page()),
       error: (err) => this.showConfirmError(err),
     });
@@ -150,7 +150,7 @@ export class SysadminUsersComponent implements OnInit {
 
   private executeRemoveMember(groupId: string, userId: string): void {
     this.confirmLoading.set(true);
-    this.apiService.adminRemoveMember(groupId, userId).subscribe({
+    this.adminApiService.adminRemoveMember(groupId, userId).subscribe({
       next: () => {
         this.confirmLoading.set(false);
         this.closeConfirmModal();
@@ -173,7 +173,7 @@ export class SysadminUsersComponent implements OnInit {
 
   private executeDeleteUser(userId: string): void {
     this.confirmLoading.set(true);
-    this.apiService.adminDeleteUser(userId).subscribe({
+    this.adminApiService.adminDeleteUser(userId).subscribe({
       next: () => {
         this.confirmLoading.set(false);
         this.closeConfirmModal();
@@ -196,7 +196,7 @@ export class SysadminUsersComponent implements OnInit {
 
   private executeDeleteGroup(groupId: string): void {
     this.confirmLoading.set(true);
-    this.apiService.adminDeleteGroup(groupId).subscribe({
+    this.adminApiService.adminDeleteGroup(groupId).subscribe({
       next: () => {
         this.confirmLoading.set(false);
         this.closeConfirmModal();
@@ -228,8 +228,14 @@ export class SysadminUsersComponent implements OnInit {
     }
   }
 
-  private showConfirmError(err: any): void {
-    const message = err.error?.message || 'Action failed';
+  private showConfirmError(err: unknown): void {
+    const message =
+      typeof err === 'object' &&
+      err !== null &&
+      'error' in err &&
+      typeof (err as { error?: { message?: string } }).error?.message === 'string'
+        ? (err as { error?: { message?: string } }).error!.message!
+        : 'Action failed';
     this.confirmTitle = 'Error';
     this.confirmMessage = message;
     this.confirmAction = null;

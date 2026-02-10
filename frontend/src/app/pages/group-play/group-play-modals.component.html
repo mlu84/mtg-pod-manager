@@ -1,0 +1,166 @@
+@if (showSlotModal) {
+  <div class="modal-overlay" (click)="closeSlotModal.emit()">
+    <div class="modal modal--large card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Choose deck</h2>
+        <button class="modal__close" (click)="closeSlotModal.emit()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label>Player name (optional)</label>
+        <input
+          type="text"
+          class="form-control"
+          [value]="activeSlotIndex !== null ? slots[activeSlotIndex]?.playerName : ''"
+          (input)="playerNameChange.emit($any($event.target).value)"
+          placeholder="Enter player name"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Search decks</label>
+        <input
+          type="text"
+          class="form-control"
+          [value]="deckSearchTerm"
+          (input)="searchTermChange.emit($any($event.target).value)"
+          placeholder="Search by deck name"
+        />
+      </div>
+
+      <div class="deck-picker">
+        @for (deck of filteredDecks; track deck.id) {
+          <button class="deck-picker__item" (click)="selectDeck.emit(deck)">
+            <img [src]="deck.archidektImageUrl || '/assets/images/deckBG_default.jpg'" [alt]="deck.name" />
+            <span>{{ deck.name }}</span>
+          </button>
+        }
+        @if (filteredDecks.length === 0) {
+          <p class="text-muted">No decks match your search.</p>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+@if (showRollModal) {
+  <div class="modal-overlay roll-overlay" (click)="closeRollModal.emit()">
+    <div class="roll-overlay__content card" (click)="$event.stopPropagation()">
+      <div
+        class="roll-d20"
+        aria-hidden="true"
+        [class.roll-d20--rolling]="rolling"
+        [class.roll-d20--settle]="!rolling && rollResult"
+      >
+        <svg viewBox="0 0 120 120" role="presentation" focusable="false">
+          <defs>
+            <linearGradient id="d20Face" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.2)" />
+              <stop offset="100%" stop-color="rgba(255,255,255,0.05)" />
+            </linearGradient>
+          </defs>
+          <polygon points="60,6 112,40 96,108 24,108 8,40" class="facet-a" />
+          <polygon points="60,6 112,40 60,40" class="facet-b" />
+          <polygon points="60,6 8,40 60,40" class="facet-b" />
+          <polygon points="60,40 112,40 96,108 60,74" class="facet-metal" />
+          <polygon points="24,108 60,74 60,40" class="facet-a" />
+          <polygon points="96,108 60,74 60,40" class="facet-a" />
+          <line x1="60" y1="6" x2="24" y2="108" />
+          <line x1="60" y1="6" x2="96" y2="108" />
+          <line x1="8" y1="40" x2="112" y2="40" />
+          <line x1="60" y1="6" x2="60" y2="40" />
+          <line x1="24" y1="108" x2="60" y2="40" />
+          <line x1="96" y1="108" x2="60" y2="40" />
+          <line x1="8" y1="40" x2="60" y2="40" />
+          <line x1="112" y1="40" x2="60" y2="40" />
+          <line x1="24" y1="108" x2="60" y2="74" />
+          <line x1="96" y1="108" x2="60" y2="74" />
+          <line x1="60" y1="40" x2="60" y2="108" />
+        </svg>
+      </div>
+      @if (!rolling && rollResult) {
+        <span class="roll-overlay__value">{{ rollResult }}</span>
+      }
+    </div>
+  </div>
+}
+
+@if (showPoisonModal) {
+  <div class="modal-overlay" (click)="closePoisonModal.emit()">
+    <div class="modal modal--confirm card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Poison Counter</h2>
+        <button class="modal__close" (click)="closePoisonModal.emit()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      @if (poisonSlotIndex !== null) {
+        <div class="commander-modal__content">
+          <div class="commander-modal__controls">
+            <button class="btn btn--outline" (click)="decrementPoison.emit(poisonSlotIndex!)">
+              <i class="fas fa-minus"></i>
+            </button>
+            <span class="commander-modal__value">
+              {{ activeSlots[poisonSlotIndex!]?.poison || 0 }}
+            </span>
+            <button class="btn btn--primary" (click)="incrementPoison.emit(poisonSlotIndex!)">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div class="modal__actions">
+            <button class="btn btn--primary" (click)="closePoisonModal.emit()">OK</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+@if (showCommanderModal) {
+  <div class="modal-overlay" (click)="closeCommanderModal.emit()">
+    <div class="modal modal--confirm card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Commander Damage taken from</h2>
+        <button class="modal__close" (click)="closeCommanderModal.emit()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      @if (commanderSlotIndex !== null && commanderOpponentIndex !== null) {
+        <div class="commander-modal__content">
+          <div class="commander-modal__deck">
+            <img
+              [src]="getDeckImage(getOpponentSlot(commanderOpponentIndex!)?.deckId || null)"
+              [alt]="getOpponentSlot(commanderOpponentIndex!)?.deckName || 'Deck'"
+            />
+            <span>{{ getOpponentSlot(commanderOpponentIndex!)?.deckName || 'Opponent' }}</span>
+          </div>
+          <div class="commander-modal__controls">
+            <button
+              class="btn btn--outline"
+              (click)="decrementCommanderDamage.emit({ slotIndex: commanderSlotIndex!, opponentIndex: commanderOpponentIndex! })"
+            >
+              <i class="fas fa-minus"></i>
+            </button>
+            <span class="commander-modal__value">
+              {{
+                activeSlots[commanderSlotIndex!]?.commanderDamage?.[commanderOpponentIndex!] || 0
+              }}
+            </span>
+            <button
+              class="btn btn--primary"
+              (click)="incrementCommanderDamage.emit({ slotIndex: commanderSlotIndex!, opponentIndex: commanderOpponentIndex! })"
+            >
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <small class="form-hint">Commander damage also adjusts life totals.</small>
+          <div class="modal__actions">
+            <button class="btn btn--primary" (click)="closeCommanderModal.emit()">OK</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

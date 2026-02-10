@@ -1,0 +1,111 @@
+<div class="modal-overlay">
+  <div class="modal card" (click)="$event.stopPropagation(); closeColorDropdown.emit()">
+    <div class="modal__header">
+      <h2>Add New Deck</h2>
+      <button class="modal__close" (click)="close.emit()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    @if (deckError) {
+      <div class="alert alert--danger">{{ deckError }}</div>
+    }
+
+    <form (ngSubmit)="submit.emit()">
+      <div class="form-group">
+        <label for="deckName">Deck Name *</label>
+        <input
+          type="text"
+          id="deckName"
+          class="form-control"
+          [ngModel]="deckName"
+          (ngModelChange)="deckNameChange.emit($event)"
+          name="deckName"
+          placeholder="e.g., Atraxa Superfriends"
+          [disabled]="deckLoading"
+        />
+      </div>
+
+      <div class="form-group color-select-container" (click)="$event.stopPropagation()">
+        <label>Colors *</label>
+        <div class="color-select">
+          <div
+            class="color-select__trigger form-control"
+            (click)="openColorDropdown.emit()"
+            [class.disabled]="deckLoading"
+          >
+            @if (deckColors) {
+              <span class="color-select__value">
+                <span class="mana-symbols">
+                  @for (symbol of getManaSymbols(deckColors); track symbol) {
+                    <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                  }
+                </span>
+                {{ deckColors }}
+              </span>
+            } @else {
+              <span class="color-select__placeholder">Select colors</span>
+            }
+            <i class="fas fa-chevron-down color-select__icon"></i>
+          </div>
+          @if (colorDropdownOpen) {
+            <div class="color-dropdown">
+              @for (color of colorOptions; track color) {
+                <div class="color-dropdown__item" (mousedown)="selectColor.emit(color)">
+                  <span class="mana-symbols">
+                    @for (symbol of getManaSymbols(color); track symbol) {
+                      <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+                    }
+                  </span>
+                  {{ color }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <input type="hidden" [ngModel]="deckColors" (ngModelChange)="deckColorsChange.emit($event)" name="deckColors" />
+      </div>
+
+      <div class="form-group">
+        <label for="deckType">Type (optional)</label>
+        <select
+          id="deckType"
+          class="form-control"
+          [ngModel]="deckType"
+          (ngModelChange)="deckTypeChange.emit($event)"
+          name="deckType"
+          [disabled]="deckLoading"
+        >
+          <option value="">Select type</option>
+          @for (type of typeOptions; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="deckArchidektUrl">Archidekt Link (optional)</label>
+        <input
+          type="text"
+          id="deckArchidektUrl"
+          class="form-control"
+          [ngModel]="deckArchidektUrl"
+          (ngModelChange)="deckArchidektUrlChange.emit($event)"
+          name="deckArchidektUrl"
+          placeholder="https://archidekt.com/decks/12345678"
+          [disabled]="deckLoading"
+        />
+        <small class="form-hint">Link or ID of your Archidekt deck</small>
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--outline" (click)="close.emit()" [disabled]="deckLoading">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn--primary" [disabled]="deckLoading">
+          @if (deckLoading) { Adding... } @else { Add Deck }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+<section class="card">
+  <div class="card__header">
+    <h2 class="card__title"><i class="fas fa-users"></i> Members</h2>
+    <button class="card__toggle" (click)="toggleCollapsed.emit()" title="Toggle members">
+      <i class="fas" [class.fa-chevron-down]="membersCollapsed" [class.fa-chevron-up]="!membersCollapsed"></i>
+    </button>
+  </div>
+  @if (!membersCollapsed) {
+    <div class="members-list">
+      @for (member of members; track member.userId) {
+        <div class="member-item">
+          <div class="member-item__info">
+            <span class="member-item__name">{{ member.user.inAppName }}</span>
+            @if (member.role === 'ADMIN') {
+              <span class="member-item__badge">Admin</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>

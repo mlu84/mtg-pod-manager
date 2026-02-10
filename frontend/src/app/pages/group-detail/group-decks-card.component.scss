@@ -1,0 +1,195 @@
+.decks-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+
+  > i {
+    position: absolute;
+    left: var(--spacing-sm);
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  input {
+    padding-left: calc(var(--spacing-sm) * 2 + 1rem);
+    padding-right: calc(var(--spacing-sm) * 2 + 1rem);
+  }
+
+  &__clear {
+    position: absolute;
+    right: var(--spacing-sm);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: var(--color-text);
+    }
+  }
+}
+
+.decks-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  overflow: hidden;
+  width: 100%;
+}
+
+.deck-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: calc(var(--spacing-xs) / 2) var(--spacing-sm);
+  overflow: hidden;
+
+  &.inactive {
+    opacity: 0.6;
+  }
+
+  &__info {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  &__name {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    width: 100%;
+    overflow: hidden;
+  }
+
+  &__name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  &__badge {
+    display: inline-block;
+    padding: 2px var(--spacing-xs);
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #1a1613;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+
+    .btn-icon {
+      color: rgba(26, 22, 19, 0.7);
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+        color: #1a1613;
+      }
+    }
+  }
+
+  &__owner {
+    font-size: 0.875rem;
+    color: rgba(26, 22, 19, 0.7);
+    white-space: nowrap;
+  }
+}
+
+// Shared deck visuals (local to this card)
+.deck-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+
+  &__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.mtg-card-style {
+  --border-width: 4px;
+  position: relative;
+  background: linear-gradient(135deg, #D4C4A8 0%, #C9B896 50%, #BEA876 100%);
+  border-radius: var(--radius-md);
+  color: #1A1613;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: var(--border-width);
+    border-radius: inherit;
+    background: var(--color-gradient, #A8A495);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+.mana-symbols {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: var(--spacing-xs);
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.mana-symbol {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  filter: drop-shadow(-1px 2px 1px rgba(0, 0, 0, 0.4));
+}
+
+.archidekt-link {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--spacing-xs);
+  color: rgba(26, 22, 19, 0.5);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+  flex-shrink: 0;
+
+  &:hover {
+    color: #D3202A;
+  }
+
+  i {
+    font-size: 0.75rem;
+  }
+}

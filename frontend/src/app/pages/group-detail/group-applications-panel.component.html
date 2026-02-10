@@ -1,0 +1,53 @@
+<div class="members-applications">
+  <h3>Members</h3>
+  <div class="members-list">
+    @for (member of members; track member.userId) {
+      <div class="member-item">
+        <div class="member-item__info">
+          <span class="member-item__name">{{ member.user.inAppName }}</span>
+          @if (member.role === 'ADMIN') {
+            <span class="member-item__badge">Admin</span>
+          }
+        </div>
+        <div class="member-item__actions">
+          @if (member.role === 'MEMBER') {
+            <button class="btn btn--outline" (click)="promote.emit(member.userId)">Promote</button>
+            @if (member.userId !== currentUserId) {
+              <button class="btn btn--outline btn--danger" (click)="remove.emit(member.userId)">Remove</button>
+            }
+          } @else {
+            <button class="btn btn--outline"
+                    (click)="demote.emit(member.userId)"
+                    [disabled]="adminCount <= 1"
+                    title="At least one admin must remain">
+              Demote
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<div class="members-applications">
+  <h3>Open Applications</h3>
+  @if (applicationsLoading) {
+    <p class="text-muted">Loading applications...</p>
+  } @else if (applicationsError) {
+    <p class="text-muted">{{ applicationsError }}</p>
+  } @else if (applications.length === 0) {
+    <p class="text-muted">No open applications.</p>
+  } @else {
+    <div class="applications-list">
+      @for (app of applications; track app.userId) {
+        <div class="application-row">
+          <span class="application-row__name">{{ app.user.inAppName }}</span>
+          <div class="application-row__actions">
+            <button class="btn btn--outline" (click)="reject.emit(app.userId)" [disabled]="applicationActionLoading">Reject</button>
+            <button class="btn btn--primary" (click)="accept.emit(app.userId)" [disabled]="applicationActionLoading">Accept</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

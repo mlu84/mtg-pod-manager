@@ -2,8 +2,9 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { GroupsApiService } from '../../core/services/groups-api.service';
+import { UsersApiService } from '../../core/services/users-api.service';
 import {
   Group,
   GroupSearchResult,
@@ -72,7 +73,8 @@ export class GroupsComponent implements OnInit {
 
   readonly defaultGroupImage = '/assets/images/deckBG_default.jpg';
 
-  private apiService = inject(ApiService);
+  private groupsApiService = inject(GroupsApiService);
+  private usersApiService = inject(UsersApiService);
   private authService = inject(AuthService);
   private router = inject(Router);
 
@@ -98,7 +100,7 @@ export class GroupsComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.apiService.getGroups().subscribe({
+    this.groupsApiService.getGroups().subscribe({
       next: (groups) => {
         this.groups.set(groups);
         this.loading.set(false);
@@ -135,7 +137,7 @@ export class GroupsComponent implements OnInit {
     this.createLoading.set(true);
     this.createError.set(null);
 
-    this.apiService
+    this.groupsApiService
       .createGroup({
         name: this.newGroupName,
         format: this.newGroupFormat,
@@ -173,7 +175,7 @@ export class GroupsComponent implements OnInit {
     this.joinLoading.set(true);
     this.joinError.set(null);
 
-    this.apiService.joinGroup(this.inviteCode).subscribe({
+    this.groupsApiService.joinGroup(this.inviteCode).subscribe({
       next: (result) => {
         this.joinLoading.set(false);
         this.showJoinModal.set(false);
@@ -204,7 +206,7 @@ export class GroupsComponent implements OnInit {
     this.applicationsLoading.set(true);
     this.applicationsError.set(null);
 
-    this.apiService.getMyApplications().subscribe({
+    this.usersApiService.getMyApplications().subscribe({
       next: (apps) => {
         this.myApplications.set(apps);
         this.applicationsLoading.set(false);
@@ -229,7 +231,7 @@ export class GroupsComponent implements OnInit {
     this.searchLoading.set(true);
     this.searchError.set(null);
 
-    this.apiService.searchGroups(query, page, this.searchPageSize).subscribe({
+    this.groupsApiService.searchGroups(query, page, this.searchPageSize).subscribe({
       next: (result) => {
         this.searchResults.set(result.items);
         this.searchTotal.set(result.total);
@@ -272,7 +274,7 @@ export class GroupsComponent implements OnInit {
     this.searchLoading.set(true);
     this.searchError.set(null);
 
-    this.apiService.applyToGroup(groupId).subscribe({
+    this.groupsApiService.applyToGroup(groupId).subscribe({
       next: () => {
         this.searchLoading.set(false);
         this.loadMyApplications();

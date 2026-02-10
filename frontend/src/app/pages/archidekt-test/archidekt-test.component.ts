@@ -4,6 +4,46 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { ErrorReportingService } from '../../core/services/error-reporting.service';
+
+interface ArchidektCardEntry {
+  categories?: string[];
+  card?: {
+    oracleCard?: {
+      name?: string;
+      colorIdentity?: string[];
+    };
+  };
+}
+
+interface ArchidektDescription {
+  ops?: Array<{ insert?: string }>;
+}
+
+interface ArchidektNamedItem {
+  name?: string;
+}
+
+interface ArchidektOwner {
+  username?: string;
+}
+
+interface ArchidektDeckResponse {
+  id: number;
+  name: string;
+  deckFormat?: number;
+  owner?: ArchidektOwner;
+  createdAt?: string;
+  updatedAt?: string;
+  viewCount?: number;
+  cards?: ArchidektCardEntry[];
+  categories?: ArchidektNamedItem[];
+  deckTags?: ArchidektNamedItem[];
+  private?: boolean;
+  description?: ArchidektDescription;
+}
+
+type ArchidektApiResponse = ArchidektDeckResponse | { error: string };
 
 @Component({
   selector: 'app-archidekt-test',
@@ -16,7 +56,7 @@ export class ArchidektTestComponent {
   deckUrl = '';
   loading = signal(false);
   error = signal<string | null>(null);
-  rawData = signal<any>(null);
+  rawData = signal<ArchidektDeckResponse | null>(null);
 
   // Extracted useful data
   deckInfo = signal<{
@@ -36,7 +76,11 @@ export class ArchidektTestComponent {
     description: string;
   } | null>(null);
 
-  constructor(private router: Router, private http: HttpClient) {}
+  constructor(
+    private router: Router,
+    private http: HttpClient,
+    private errorReporting: ErrorReportingService,
+  ) {}
 
   goBack(): void {
     this.router.navigate(['/groups']);
@@ -74,9 +118,9 @@ export class ArchidektTestComponent {
     // Use backend proxy to avoid CORS issues
     const apiUrl = `${environment.apiUrl}/archidekt/decks/${deckId}`;
 
-    this.http.get<any>(apiUrl).subscribe({
+    this.http.get<ArchidektApiResponse>(apiUrl).subscribe({
       next: (data) => {
-        if (data.error) {
+        if ('error' in data) {
           this.error.set(data.error);
           this.loading.set(false);
           return;
@@ -85,21 +129,29 @@ export class ArchidektTestComponent {
         this.extractUsefulData(data);
         this.loading.set(false);
       },
-      error: (err) => {
-        console.error('API Error:', err);
+      error: (err: unknown) => {
+        const httpError =
+          typeof err === 'object' && err !== null
+            ? (err as {
+                status?: number;
+                message?: string;
+                error?: { message?: string };
+              })
+            : undefined;
+        this.errorReporting.report(err, 'archidekt-test.fetchDeck');
         this.error.set(
-          err.status === 404
+          httpError?.status === 404
             ? 'Deck not found. Please check the URL.'
-            : err.status === 401
+            : httpError?.status === 401
             ? 'Please log in to use this feature.'
-            : `Failed to fetch deck: ${err.error?.message || err.message}`
+            : `Failed to fetch deck: ${httpError?.error?.message || httpError?.message || 'Unknown error'}`
         );
         this.loading.set(false);
       },
     });
   }
 
-  private extractUsefulData(data: any): void {
+  private extractUsefulData(data: ArchidektDeckResponse): void {
     // Find commanders (cards in "Commander" category or with commander flag)
     const commanders: string[] = [];
     const allColors = new Set<string>();
@@ -127,7 +179,7 @@ export class ArchidektTestComponent {
     let descriptionText = '';
     if (data.description?.ops) {
       descriptionText = data.description.ops
-        .map((op: any) => op.insert || '')
+        .map((op) => op.insert || '')
         .join('')
         .trim();
     }
@@ -154,16 +206,19 @@ export class ArchidektTestComponent {
     this.deckInfo.set({
       id: data.id,
       name: data.name,
-      format: formatMap[data.deckFormat] || `Format ${data.deckFormat}`,
+      format:
+        data.deckFormat !== undefined
+          ? formatMap[data.deckFormat] || `Format ${data.deckFormat}`
+          : 'Unknown',
       owner: data.owner?.username || 'Unknown',
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
+      createdAt: data.createdAt || '',
+      updatedAt: data.updatedAt || '',
       viewCount: data.viewCount || 0,
       cardCount: data.cards?.length || 0,
       commanderNames: commanders,
       colorIdentity: Array.from(allColors),
-      categories: data.categories?.map((c: any) => c.name) || [],
-      tags: data.deckTags?.map((t: any) => t.name) || [],
+      categories: data.categories?.map((c) => c.name || '').filter(Boolean) || [],
+      tags: data.deckTags?.map((t) => t.name || '').filter(Boolean) || [],
       isPrivate: data.private || false,
       description: descriptionText,
     });
@@ -187,7 +242,7 @@ export class ArchidektTestComponent {
 
   formatDate(dateString: string): string {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('de-DE', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

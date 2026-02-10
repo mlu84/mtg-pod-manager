@@ -1,0 +1,123 @@
+<div
+  class="play-slot"
+  [class.play-slot--winner]="isWinner"
+  [class.play-slot--locked]="isLocked"
+  [class.play-slot--eliminated]="isEliminated"
+  [class.play-slot--mirrored]="isMirrored"
+  [style.background-image]="slot.deckId ? 'url(' + getDeckBackgroundImage(slot.deckId) + ')' : ''"
+  [style.background-color]="slot.deckId ? 'transparent' : getSlotFallbackColor(index)"
+  (click)="handleOpenSlot()"
+>
+  @if (isWinner) {
+    <div class="play-slot__crown">
+      <i class="fas fa-crown"></i>
+    </div>
+  }
+  @if (isEliminated) {
+    <div class="play-slot__skull">
+      <i class="fas fa-skull-crossbones"></i>
+    </div>
+  }
+
+  <div class="play-slot__overlay">
+    <div class="play-slot__deck">
+      @if (slot.deckId) {
+        <span class="play-slot__deck-name">{{ slot.deckName }}</span>
+        @if (slot.playerName) {
+          <span class="play-slot__player">{{ slot.playerName }}</span>
+        } @else {
+          <span class="play-slot__player play-slot__player--muted">Tap to add player</span>
+        }
+      } @else {
+        <span class="play-slot__deck-name play-slot__deck-name--muted">Tap to choose deck</span>
+      }
+    </div>
+    <div class="play-slot__life">
+      <button
+        class="life-btn life-btn--minus"
+        [disabled]="!isLocked"
+        [style.background-color]="getSlotFallbackColor(index)"
+        [title]="isLocked ? '' : 'Start the game to enable controls'"
+        (mousedown)="handleStartLifeHold(-1, $event)"
+        (mouseup)="handleCancelLifeHold($event)"
+        (mouseleave)="handleCancelLifeHold($event)"
+        (touchstart)="handleStartLifeHold(-1, $event)"
+        (touchend)="handleCancelLifeHold($event)"
+        (click)="handleDecrementLife($event)"
+      >
+        <i class="fas fa-minus"></i>
+      </button>
+      <span class="life-value">{{ slot.life }}</span>
+      @if (lifeDeltaVisible) {
+        <span
+          class="life-delta"
+          [class.life-delta--positive]="lifeDelta > 0"
+          [class.life-delta--negative]="lifeDelta < 0"
+        >
+          {{ lifeDelta > 0 ? '+' : '' }}{{ lifeDelta }}
+        </span>
+      }
+      <button
+        class="life-btn life-btn--plus"
+        [disabled]="!isLocked"
+        [style.background-color]="getSlotFallbackColor(index)"
+        [title]="isLocked ? '' : 'Start the game to enable controls'"
+        (mousedown)="handleStartLifeHold(1, $event)"
+        (mouseup)="handleCancelLifeHold($event)"
+        (mouseleave)="handleCancelLifeHold($event)"
+        (touchstart)="handleStartLifeHold(1, $event)"
+        (touchend)="handleCancelLifeHold($event)"
+        (click)="handleIncrementLife($event)"
+      >
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+
+    <div class="play-slot__bottom">
+      <div class="play-slot__counters">
+        <button
+          class="counter-icon counter-icon--poison"
+          type="button"
+          [disabled]="!isLocked"
+          [title]="isLocked ? 'Poison Counter' : 'Start the game to enable controls'"
+          (click)="handleIncrementPoison($event)"
+          (mousedown)="handleStartPoisonHold($event)"
+          (mouseup)="handleCancelHold($event)"
+          (mouseleave)="handleCancelHold($event)"
+          (touchstart)="handleStartPoisonHold($event)"
+          (touchend)="handleCancelHold($event)"
+          title="Poison Counter"
+        >
+          <i class="fas fa-tint"></i>
+          <span class="counter-badge">{{ slot.poison }}</span>
+        </button>
+        @for (opponentIndex of getOpponentIndices(); track opponentIndex) {
+          <button
+            class="counter-icon counter-icon--deck"
+            type="button"
+            [disabled]="!isLocked"
+            [title]="isLocked ? 'Commander Damage' : 'Start the game to enable controls'"
+            (click)="handleIncrementCommanderDamage(opponentIndex, $event)"
+            (mousedown)="handleStartCommanderHold(opponentIndex, $event)"
+            (mouseup)="handleCancelHold($event)"
+            (mouseleave)="handleCancelHold($event)"
+            (touchstart)="handleStartCommanderHold(opponentIndex, $event)"
+            (touchend)="handleCancelHold($event)"
+            title="Commander Damage"
+            [style.background-color]="getCommanderIconBackground(opponentIndex)"
+          >
+            @if (shouldShowCommanderImage(opponentIndex)) {
+              <img
+                [src]="getDeckImage(getOpponentSlot(opponentIndex)?.deckId || null)"
+                [alt]="getOpponentSlot(opponentIndex)?.deckName || 'Deck'"
+              />
+            }
+            <span class="counter-badge">
+              {{ slot.commanderDamage[opponentIndex] || 0 }}
+            </span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</div>

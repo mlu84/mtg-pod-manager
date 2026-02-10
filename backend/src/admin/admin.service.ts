@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, SystemRole } from '@prisma/client';
+import { SystemRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 
@@ -185,7 +185,7 @@ export class AdminService {
     await this.eventsService.log(
       groupId,
       role === 'ADMIN' ? 'MEMBER_PROMOTED' : 'MEMBER_DEMOTED',
-      `${membership.user.inAppName} wurde ${role === 'ADMIN' ? 'zum Admin bef\u00f6rdert' : 'zum Mitglied degradiert'}`,
+      `${membership.user.inAppName} was ${role === 'ADMIN' ? 'promoted to admin' : 'demoted to member'}`,
     );
 
     return { message: 'Member role updated' };
@@ -229,7 +229,7 @@ export class AdminService {
     await this.eventsService.log(
       groupId,
       'MEMBER_REMOVED',
-      `${membership.user.inAppName} wurde aus der Gruppe entfernt`,
+      `${membership.user.inAppName} was removed from the group`,
     );
 
     return { message: 'Member removed' };
@@ -285,7 +285,7 @@ export class AdminService {
         this.eventsService.log(
           m.groupId,
           'USER_ACCOUNT_DELETED',
-          `${user.inAppName} wurde als Benutzer gel\u00f6scht`,
+          `User ${user.inAppName} was deleted`,
         ),
       ),
     );

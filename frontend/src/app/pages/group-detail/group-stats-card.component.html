@@ -1,0 +1,97 @@
+<section class="card stats-card">
+  <div class="card__header">
+    <h2 class="card__title"><i class="fas fa-chart-line"></i> Statistics</h2>
+    <button class="card__toggle" (click)="toggleCollapsed.emit()" title="Toggle statistics">
+      <i class="fas" [class.fa-chevron-down]="statsCollapsed" [class.fa-chevron-up]="!statsCollapsed"></i>
+    </button>
+  </div>
+  @if (!statsCollapsed) {
+    <div class="stats-chart">
+      @if (statsMessage) {
+        <p class="text-muted">{{ statsMessage }}</p>
+      } @else {
+        <canvas #statsChart></canvas>
+      }
+    </div>
+    <div class="stats-controls">
+      <div class="stats-buttons">
+        <button class="btn btn--sm"
+                [class.btn--primary]="statsCategory === 'colors'"
+                [class.btn--outline]="statsCategory !== 'colors'"
+                (click)="statsCategoryChange.emit('colors')">
+          Color data
+        </button>
+        <button class="btn btn--sm"
+                [class.btn--primary]="statsCategory === 'decks'"
+                [class.btn--outline]="statsCategory !== 'decks'"
+                (click)="statsCategoryChange.emit('decks')">
+          Deck data
+        </button>
+        <button class="btn btn--sm"
+                [class.btn--primary]="statsCategory === 'players'"
+                [class.btn--outline]="statsCategory !== 'players'"
+                (click)="statsCategoryChange.emit('players')">
+          Player data
+        </button>
+      </div>
+
+      <div class="stats-selects">
+        @if (statsCategory === 'colors') {
+            <select class="form-control"
+                   [value]="statsOption"
+                   (change)="statsOptionChange.emit($any($event.target).value)">
+              <option value="colors_distribution">Color popularity (all time)</option>
+              <option value="colors_combo_distribution">Color combinations (all time)</option>
+              <option value="colors_perf">Avg performance by color</option>
+              <option value="colors_perf_combo">Avg perf. by color combination</option>
+              <option value="colors_deck_types">Deck Types (season)</option>
+            </select>
+        } @else if (statsCategory === 'decks') {
+          <div class="deck-search">
+            <input
+              type="text"
+              class="form-control"
+              [value]="statsDeckId ? getDeckNameById(statsDeckId) : statsDeckSearch"
+              (input)="handleDeckSearchInput($event)"
+              (focus)="openStatsDeckDropdown.emit()"
+              (blur)="closeStatsDeckDropdownDelayed.emit()"
+              [placeholder]="statsDeckId ? '' : 'Search deck...'"
+              autocomplete="off"
+            />
+            @if (statsDeckId) {
+              <button type="button" class="deck-search__clear" (click)="clearStatsDeckSelection.emit()">
+                <i class="fas fa-times"></i>
+              </button>
+            }
+            @if (statsDeckDropdownOpen) {
+              <div class="deck-dropdown">
+                @for (deck of filteredStatsDecks; track deck.id) {
+                  <div class="deck-dropdown__item" (mousedown)="selectStatsDeck.emit(deck.id)">
+                    {{ deck.name }}
+                  </div>
+                } @empty {
+                  <div class="deck-dropdown__empty">No decks found</div>
+                }
+              </div>
+            }
+          </div>
+          <select class="form-control"
+                  [value]="statsOption"
+                  (change)="statsOptionChange.emit($any($event.target).value)">
+            <option value="decks_perf_trend">Performance trend (last 10 games)</option>
+            <option value="decks_rank_trend">Rank trend (last 10 games)</option>
+            <option value="decks_games_played">Games played vs others</option>
+          </select>
+        } @else {
+          <select class="form-control"
+                  [value]="statsOption"
+                  (change)="statsOptionChange.emit($any($event.target).value)">
+            <option value="players_games">Games played by player</option>
+            <option value="players_perf">Avg deck performance by player</option>
+            <option value="players_colors">Favorite colors by player</option>
+          </select>
+        }
+      </div>
+    </div>
+  }
+</section>

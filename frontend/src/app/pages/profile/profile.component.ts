@@ -2,8 +2,8 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { UsersApiService } from '../../core/services/users-api.service';
 import { UserProfile } from '../../models/user.model';
 
 @Component({
@@ -25,7 +25,7 @@ export class ProfileComponent implements OnInit {
   editError = signal<string | null>(null);
   editSuccess = signal(false);
 
-  private apiService = inject(ApiService);
+  private usersApiService = inject(UsersApiService);
   private authService = inject(AuthService);
   private router = inject(Router);
 
@@ -37,7 +37,7 @@ export class ProfileComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.apiService.getProfile().subscribe({
+    this.usersApiService.getProfile().subscribe({
       next: (profile) => {
         this.profile.set(profile);
         this.editName = profile.inAppName;
@@ -81,7 +81,7 @@ export class ProfileComponent implements OnInit {
     this.editError.set(null);
     this.editSuccess.set(false);
 
-    this.apiService.updateProfile({ inAppName: this.editName.trim() }).subscribe({
+    this.usersApiService.updateProfile({ inAppName: this.editName.trim() }).subscribe({
       next: (profile) => {
         this.profile.set(profile);
         this.editLoading.set(false);
@@ -102,7 +102,7 @@ export class ProfileComponent implements OnInit {
 
   formatDate(dateString: string | null): string {
     if (!dateString) return 'Not verified';
-    return new Date(dateString).toLocaleDateString('de-DE', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

@@ -1,31 +1,30 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { ApiService } from '../../core/services/api.service';
+import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
 import { Deck, GroupDetail } from '../../models/group.model';
-
-type PlaySlot = {
-  deckId: string | null;
-  deckName: string;
-  playerName: string;
-  life: number;
-  poison: number;
-  commanderDamage: number[];
-};
+import { GroupPlayModalsComponent } from './group-play-modals.component';
+import { GroupPlayPanelComponent } from './group-play-panel.component';
+import { GroupPlaySlotComponent } from './group-play-slot.component';
+import { PlaySlot } from './group-play.models';
 
 @Component({
   selector: 'app-group-play',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    GroupPlaySlotComponent,
+    GroupPlayPanelComponent,
+    GroupPlayModalsComponent,
+  ],
   templateUrl: './group-play.component.html',
   styleUrl: './group-play.component.scss',
 })
 export class GroupPlayComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private apiService = inject(ApiService);
+  private groupDetailApiService = inject(GroupDetailApiService);
   readonly defaultDeckImage = '/assets/images/deckBG_default.jpg';
 
   groupId = '';
@@ -55,6 +54,9 @@ export class GroupPlayComponent {
   viewportWidth = signal(0);
   viewportHeight = signal(0);
   mirroredTopHalf = signal(false);
+  isCommanderFormat = computed(
+    () => (this.group()?.format || '').toLowerCase() === 'commander'
+  );
   private orientationLocked = false;
   private endConfirmTimer: ReturnType<typeof setTimeout> | null = null;
   private eliminationOrder: number[] = [];
@@ -168,9 +170,10 @@ export class GroupPlayComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    this.apiService.getGroup(this.groupId).subscribe({
+    this.groupDetailApiService.getGroup(this.groupId).subscribe({
       next: (group) => {
         this.group.set(group);
+        this.playerCount.set(this.isCommanderFormat() ? 4 : 2);
         this.initializeSlots();
         this.loading.set(false);
       },
@@ -195,7 +198,7 @@ export class GroupPlayComponent {
   }
 
   private getStartingLife(): number {
-    return this.group()?.format?.toLowerCase() === 'commander' ? 40 : 20;
+    return this.isCommanderFormat() ? 40 : 20;
   }
 
   setPlayerCount(count: number): void {
@@ -250,8 +253,7 @@ export class GroupPlayComponent {
     this.updateEliminations();
   }
 
-  startLifeHold(index: number, delta: number, event: Event): void {
-    event.stopPropagation();
+  startLifeHold(index: number, delta: number): void {
     if (this.lifeHoldTimer) clearTimeout(this.lifeHoldTimer);
     if (this.lifeHoldInterval) clearInterval(this.lifeHoldInterval);
     this.lifeHoldTriggered = false;
@@ -405,41 +407,6 @@ export class GroupPlayComponent {
     this.router.navigate(['/groups', this.groupId]);
   }
 
-  getDeckImage(deckId: string | null): string {
-    if (!deckId) return '';
-    const deck = this.group()?.decks?.find((d) => d.id === deckId);
-    return deck?.archidektImageUrl || '/assets/images/deckBG_default.jpg';
-  }
-
-  getDeckBackgroundImage(deckId: string | null): string {
-    if (!deckId) return '';
-    const deck = this.group()?.decks?.find((d) => d.id === deckId);
-    return deck?.archidektImageUrl || '';
-  }
-
-  getCommanderIconBackground(opponentIndex: number): string {
-    const deck = this.getOpponentSlot(opponentIndex)?.deckId
-      ? this.group()?.decks?.find((d) => d.id === this.getOpponentSlot(opponentIndex)?.deckId)
-      : null;
-    if (!deck) return this.getSlotFallbackColor(opponentIndex);
-    if (!deck.archidektImageUrl || deck.archidektImageUrl === this.defaultDeckImage) {
-      return this.getSlotFallbackColor(opponentIndex);
-    }
-    return 'transparent';
-  }
-
-  shouldShowCommanderImage(opponentIndex: number): boolean {
-    const deck = this.getOpponentSlot(opponentIndex)?.deckId
-      ? this.group()?.decks?.find((d) => d.id === this.getOpponentSlot(opponentIndex)?.deckId)
-      : null;
-    return Boolean(deck?.archidektImageUrl && deck.archidektImageUrl !== this.defaultDeckImage);
-  }
-
-  getSlotFallbackColor(index: number): string {
-    const palette = ['#9b2c2c', '#b25c1a', '#b88a12', '#2f7a4f', '#2b5c8a', '#5b3c9b'];
-    return palette[index] || '#2b5c8a';
-  }
-
   getAvailableDecksForSlot(index: number): Deck[] {
     const selected = new Set(
       this.activeSlots()
@@ -454,17 +421,6 @@ export class GroupPlayComponent {
     const decks = this.getAvailableDecksForSlot(index);
     if (!term) return decks;
     return decks.filter((deck) => deck.name.toLowerCase().includes(term));
-  }
-
-  getOpponentIndices(index: number): number[] {
-    return this.activeSlots()
-      .map((_, i) => i)
-      .filter((i) => i !== index);
-  }
-
-  getOpponentSlot(index: number): PlaySlot | null {
-    const slots = this.activeSlots();
-    return slots[index] || null;
   }
 
   incrementCommanderDamage(slotIndex: number, opponentIndex: number): void {
@@ -547,8 +503,7 @@ export class GroupPlayComponent {
     this.updateEliminations();
   }
 
-  startCommanderHold(slotIndex: number, opponentIndex: number, event: Event): void {
-    event.stopPropagation();
+  startCommanderHold(slotIndex: number, opponentIndex: number): void {
     if (this.holdTimer) clearTimeout(this.holdTimer);
     this.holdTriggered = false;
     this.holdTimer = setTimeout(() => {
@@ -576,8 +531,7 @@ export class GroupPlayComponent {
     this.commanderModalOpponentIndex.set(null);
   }
 
-  startPoisonHold(slotIndex: number, event: Event): void {
-    event.stopPropagation();
+  startPoisonHold(slotIndex: number): void {
     if (this.holdTimer) clearTimeout(this.holdTimer);
     this.holdTriggered = false;
     this.holdTimer = setTimeout(() => {

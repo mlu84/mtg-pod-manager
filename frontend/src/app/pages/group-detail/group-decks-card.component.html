@@ -1,0 +1,103 @@
+<section class="card decks-card">
+  <div class="card__header">
+    <h2 class="card__title"><i class="fas fa-layer-group"></i> Decks</h2>
+    <div class="card__header-actions">
+      @if (isEmailVerified) {
+          <button class="btn btn--secondary btn--sm card__icon-button" (click)="addDeck.emit()" title="Add deck">
+            Add New
+          </button>
+      }
+      <button class="card__toggle" (click)="toggleCollapsed.emit()" title="Toggle decks">
+        <i class="fas" [class.fa-chevron-down]="decksCollapsed" [class.fa-chevron-up]="!decksCollapsed"></i>
+      </button>
+    </div>
+  </div>
+  @if (!decksCollapsed) {
+    @if (decksLength === 0) {
+      <p class="text-muted">No decks added yet.</p>
+    } @else {
+      <div class="decks-search">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Search decks..."
+          [value]="decksSearchTerm"
+          (input)="decksSearchChange.emit($any($event.target).value)"
+          autocomplete="off"
+        />
+        @if (decksSearchTerm) {
+          <button class="decks-search__clear" (click)="decksSearchChange.emit('')">
+            <i class="fas fa-times"></i>
+          </button>
+        }
+      </div>
+      @if (filteredDecks.length === 0) {
+        <p class="text-muted">No decks match your search.</p>
+      } @else {
+      <div class="decks-list">
+        @for (deck of paginatedDecks; track deck.id) {
+          <div class="deck-item mtg-card-style" [class.inactive]="!deck.isActive" [style.--color-gradient]="getColorGradient(deck.colors)">
+            <div class="deck-icon">
+              <img [src]="deck.archidektImageUrl || defaultDeckImage" [alt]="deck.name" class="deck-icon__img" />
+            </div>
+            <div class="deck-item__info">
+              <span class="deck-item__name" [title]="deck.name">
+                <span class="deck-item__name-text">{{ deck.name }}</span>
+                <span class="mana-symbols">
+                  @for (symbol of getManaSymbols(deck.colors); track symbol) {
+                    <img [src]="symbol" class="mana-symbol" alt="mana" />
+                  }
+                </span>
+                @if (deck.archidektId) {
+                  <a [href]="'https://archidekt.com/decks/' + deck.archidektId" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
+                    <i class="fas fa-external-link-alt"></i>
+                  </a>
+                }
+              </span>
+              @if (!deck.isActive) {
+                <span class="deck-item__badge">Inactive</span>
+              }
+            </div>
+            <div class="deck-item__actions">
+              <span class="deck-item__owner">{{ deck.owner.inAppName }}</span>
+              @if (canEditDeck(deck) && isEmailVerified) {
+                <button class="btn-icon" (click)="editDeck.emit(deck)" title="Edit deck">
+                  <i class="fas fa-edit"></i>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      @if (decksTotalPages > 1) {
+        <div class="pagination">
+          <button
+            class="pagination__btn"
+            (click)="decksPageChange.emit(decksPage - 1)"
+            [disabled]="decksPage === 1"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          @for (page of [].constructor(decksTotalPages); track $index) {
+            <button
+              class="pagination__btn"
+              [class.pagination__btn--active]="decksPage === $index + 1"
+              (click)="decksPageChange.emit($index + 1)"
+            >
+              {{ $index + 1 }}
+            </button>
+          }
+          <button
+            class="pagination__btn"
+            (click)="decksPageChange.emit(decksPage + 1)"
+            [disabled]="decksPage === decksTotalPages"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      }
+      }
+    }
+  }
+</section>

@@ -1,13 +1,59 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
-import { CreateGameDto, GamePlacementDto } from './dto/create-game.dto';
+import { CreateGameDto } from './dto/create-game.dto';
 import { GroupsService } from '../groups/groups.service';
+import { GamesScoringService } from './games-scoring.service';
+import { GroupsMembershipService } from '../groups/groups-membership.service';
+
+type GameDeckRef = {
+  id: string;
+  name: string;
+  colors: string | null;
+};
+
+type GameUserRef = {
+  id: string;
+  inAppName: string;
+};
+
+type GamePlacementForResponse = {
+  rank: number;
+  points: number;
+  playerName: string | null;
+  deletedDeckName?: string | null;
+  deck: GameDeckRef | null;
+  user?: GameUserRef | null;
+};
+
+type GameForResponse = {
+  id: string;
+  playedAt: Date;
+  playerCount: number;
+  placements: GamePlacementForResponse[];
+};
+
+type DeletedDeckRef = {
+  id: null;
+  name: string;
+  colors: null;
+  isDeleted: true;
+};
+
+type FormattedGamePlacement = {
+  rank: number;
+  points: number;
+  playerName: string | null;
+  deck: GameDeckRef | DeletedDeckRef;
+  user?: GameUserRef | null;
+};
+
+type FormattedGameResponse = {
+  id: string;
+  playedAt: Date;
+  playerCount: number;
+  placements: FormattedGamePlacement[];
+};
 
 @Injectable()
 export class GamesService {
@@ -15,28 +61,18 @@ export class GamesService {
     private prisma: PrismaService,
     private eventsService: EventsService,
     private groupsService: GroupsService,
+    private scoringService: GamesScoringService,
+    private membershipService: GroupsMembershipService,
   ) {}
 
   async create(createGameDto: CreateGameDto, userId: string) {
     await this.groupsService.ensureSeasonUpToDate(createGameDto.groupId);
 
-    // Verify user is admin of the group
-    const membership = await this.prisma.usersOnGroups.findUnique({
-      where: {
-        userId_groupId: {
-          userId,
-          groupId: createGameDto.groupId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('You are not a member of this group');
-    }
-
-    if (membership.role !== 'ADMIN') {
-      throw new ForbiddenException('Only admins can record games');
-    }
+    await this.membershipService.ensureAdmin(
+      createGameDto.groupId,
+      userId,
+      'Only admins can record games',
+    );
 
     const group = await this.prisma.group.findUnique({
       where: { id: createGameDto.groupId },
@@ -61,6 +97,7 @@ export class GamesService {
         groupId: createGameDto.groupId,
       },
     });
+    const deckById = new Map(decks.map((deck) => [deck.id, deck]));
 
     if (decks.length !== uniqueDeckIds.length) {
       throw new BadRequestException('One or more decks not found in this group');
@@ -74,11 +111,11 @@ export class GamesService {
     }
 
     // Validate rank configuration (tie rules, bounds)
-    this.validateRankConfiguration(createGameDto.placements);
+    this.scoringService.validateRankConfiguration(createGameDto.placements);
 
     // Calculate points for each placement
     const playerCount = createGameDto.placements.length;
-    const placementsWithPoints = this.calculatePoints(
+    const placementsWithPoints = this.scoringService.calculatePoints(
       createGameDto.placements,
       playerCount,
     );
@@ -99,7 +136,7 @@ export class GamesService {
               rank: p.rank,
               points: p.points,
               playerName: p.playerName,
-              userId: decks.find((d) => d.id === p.deckId)?.ownerId,
+              userId: deckById.get(p.deckId)?.ownerId,
             })),
           },
         },
@@ -123,8 +160,11 @@ export class GamesService {
 
       // Update performance ratings for each deck
       for (const placement of placementsWithPoints) {
-        const deck = decks.find((d) => d.id === placement.deckId)!;
-        const newPerformance = this.calculateNewPerformance(
+        const deck = deckById.get(placement.deckId);
+        if (!deck) {
+          throw new BadRequestException('One or more decks not found in this group');
+        }
+        const newPerformance = this.scoringService.calculateNewPerformance(
           deck.performanceRating,
           deck.gamesPlayed,
           placement.points,
@@ -144,30 +184,18 @@ export class GamesService {
 
     // Log event
     const winnerDeck = game.placements.find((p) => p.rank === 1);
-    const winnerName = winnerDeck?.deck?.name || 'Unbekannt';
+    const winnerName = winnerDeck?.deck?.name || 'Unknown';
     await this.eventsService.log(
       createGameDto.groupId,
       'GAME_RECORDED',
-      `Spiel erfasst (${playerCount} Spieler) - Sieger: ${winnerName}`,
+      `Game recorded (${playerCount} players) - Winner: ${winnerName}`,
     );
 
     return this.formatGameResponse(game);
   }
 
   async findAllInGroup(groupId: string, userId: string, limit = 20) {
-    // Verify user is a member of the group
-    const membership = await this.prisma.usersOnGroups.findUnique({
-      where: {
-        userId_groupId: {
-          userId,
-          groupId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('You are not a member of this group');
-    }
+    await this.membershipService.getMembershipOrThrow(userId, groupId);
 
     const games = await this.prisma.game.findMany({
       where: { groupId },
@@ -237,41 +265,17 @@ export class GamesService {
       throw new NotFoundException('Game not found');
     }
 
-    // Verify user is a member of the group
-    const membership = await this.prisma.usersOnGroups.findUnique({
-      where: {
-        userId_groupId: {
-          userId,
-          groupId: game.groupId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('You are not a member of this group');
-    }
+    await this.membershipService.getMembershipOrThrow(userId, game.groupId);
 
     return this.formatGameResponse(game);
   }
 
   async undoLastGame(groupId: string, userId: string) {
-    // Verify user is admin of the group
-    const membership = await this.prisma.usersOnGroups.findUnique({
-      where: {
-        userId_groupId: {
-          userId,
-          groupId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('You are not a member of this group');
-    }
-
-    if (membership.role !== 'ADMIN') {
-      throw new ForbiddenException('Only admins can undo games');
-    }
+    await this.membershipService.ensureAdmin(
+      groupId,
+      userId,
+      'Only admins can undo games',
+    );
 
     // Find the last game
     const lastGame = await this.prisma.game.findFirst({
@@ -296,7 +300,7 @@ export class GamesService {
         const deck = placement.deck;
         // Only update deck stats if the deck still exists (wasn't deleted)
         if (deck) {
-          const previousPerformance = this.calculatePreviousPerformance(
+          const previousPerformance = this.scoringService.calculatePreviousPerformance(
             deck.performanceRating,
             deck.gamesPlayed,
             placement.points,
@@ -327,7 +331,7 @@ export class GamesService {
     await this.eventsService.log(
       groupId,
       'GAME_UNDONE',
-      `Letztes Spiel wurde rückgängig gemacht`,
+      `Last game was undone`,
     );
 
     return { message: 'Last game has been undone successfully' };
@@ -335,19 +339,7 @@ export class GamesService {
 
   async getRanking(groupId: string, userId: string, snapshot = false) {
     await this.groupsService.ensureSeasonUpToDate(groupId);
-    // Verify user is a member of the group
-    const membership = await this.prisma.usersOnGroups.findUnique({
-      where: {
-        userId_groupId: {
-          userId,
-          groupId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('You are not a member of this group');
-    }
+    await this.membershipService.getMembershipOrThrow(userId, groupId);
 
     if (snapshot) {
       return this.groupsService.getLastSeasonRanking(groupId);
@@ -376,7 +368,7 @@ export class GamesService {
       colors: deck.colors,
       type: deck.type,
       owner: deck.owner,
-      performanceRating: this.roundToOneDecimal(deck.performanceRating),
+      performanceRating: this.scoringService.roundToOneDecimal(deck.performanceRating),
       gamesPlayed: deck.gamesPlayed,
       isActive: deck.isActive,
     }));
@@ -384,138 +376,28 @@ export class GamesService {
 
   // === Helper Methods ===
 
-  private calculatePoints(
-    placements: GamePlacementDto[],
-    playerCount: number,
-  ): (GamePlacementDto & { points: number })[] {
-    // Group placements by rank to handle ties
-    const rankGroups = new Map<number, GamePlacementDto[]>();
-    for (const p of placements) {
-      if (!rankGroups.has(p.rank)) {
-        rankGroups.set(p.rank, []);
-      }
-      rankGroups.get(p.rank)!.push(p);
-    }
-
-    // Calculate base points for each position
-    // Formula: ((playerCount - position) / (playerCount - 1)) * 100
-    const positionPoints = new Map<number, number>();
-    for (let pos = 1; pos <= playerCount; pos++) {
-      const points = ((playerCount - pos) / (playerCount - 1)) * 100;
-      positionPoints.set(pos, points);
-    }
-
-    // For tied ranks, calculate average of the positions they occupy
-    const result: (GamePlacementDto & { points: number })[] = [];
-    let currentPosition = 1;
-
-    const sortedRanks = [...rankGroups.keys()].sort((a, b) => a - b);
-    for (const rank of sortedRanks) {
-      const group = rankGroups.get(rank)!;
-      const positionsOccupied = group.length;
-
-      // Sum points for all positions this tied group occupies
-      let totalPoints = 0;
-      for (let i = 0; i < positionsOccupied; i++) {
-        totalPoints += positionPoints.get(currentPosition + i) || 0;
-      }
-      const averagePoints = totalPoints / positionsOccupied;
-
-      for (const p of group) {
-        result.push({
-          ...p,
-          points: this.roundToOneDecimal(averagePoints),
-        });
-      }
-
-      currentPosition += positionsOccupied;
-    }
-
-    return result;
-  }
-
-  private calculateNewPerformance(
-    currentPerformance: number,
-    gamesPlayed: number,
-    newPoints: number,
-  ): number {
-    // Formula: (currentPerformance * gamesPlayed + newPoints) / (gamesPlayed + 1)
-    const newPerformance =
-      (currentPerformance * gamesPlayed + newPoints) / (gamesPlayed + 1);
-    return this.roundToOneDecimal(newPerformance);
-  }
-
-  private calculatePreviousPerformance(
-    currentPerformance: number,
-    gamesPlayed: number,
-    lastPoints: number,
-  ): number {
-    // Reverse the formula to get previous performance
-    if (gamesPlayed <= 1) {
-      return 0;
-    }
-    const previousPerformance =
-      (currentPerformance * gamesPlayed - lastPoints) / (gamesPlayed - 1);
-    return this.roundToOneDecimal(Math.max(0, previousPerformance));
-  }
-
-  private roundToOneDecimal(value: number): number {
-    return Math.round(value * 10) / 10;
-  }
-
-  private formatGameResponse(game: any) {
+  private formatGameResponse(game: GameForResponse): FormattedGameResponse {
     return {
       id: game.id,
       playedAt: game.playedAt,
       playerCount: game.playerCount,
-      placements: game.placements.map((p: any) => ({
-        rank: p.rank,
-        points: this.roundToOneDecimal(p.points),
-        playerName: p.playerName,
-        deck: p.deck || {
+      placements: game.placements.map((p) => {
+        const deletedDeck: DeletedDeckRef = {
           id: null,
           name: p.deletedDeckName || 'Deleted Deck',
           colors: null,
           isDeleted: true,
-        },
-        user: p.user,
-      })),
+        };
+
+        return {
+          rank: p.rank,
+          points: this.scoringService.roundToOneDecimal(p.points),
+          playerName: p.playerName,
+          deck: p.deck ?? deletedDeck,
+          user: p.user,
+        };
+      }),
     };
-  }
-
-  private validateRankConfiguration(placements: GamePlacementDto[]): void {
-    const playerCount = placements.length;
-    const sortedRanks = placements
-      .map((p) => p.rank)
-      .sort((a, b) => a - b);
-
-    let expectedMinRank = 1;
-
-    for (let i = 0; i < sortedRanks.length; i++) {
-      const rank = sortedRanks[i];
-
-      if (!Number.isInteger(rank)) {
-        throw new BadRequestException('Rank must be an integer');
-      }
-
-      // Rank must be at least expectedMinRank
-      if (rank < expectedMinRank) {
-        throw new BadRequestException('Invalid rank configuration');
-      }
-
-      // Rank must not exceed total player count
-      if (rank > playerCount) {
-        throw new BadRequestException('Rank cannot exceed player count');
-      }
-
-      // Count ties at this rank and calculate next expected rank
-      let tieCount = 1;
-      while (i + 1 < sortedRanks.length && sortedRanks[i + 1] === rank) {
-        tieCount++;
-        i++;
-      }
-      expectedMinRank = rank + tieCount;
-    }
   }
 
 }

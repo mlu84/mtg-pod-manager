@@ -12,7 +12,15 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, SystemRole } from '@prisma/client';
+
+type AuthenticatedUser = {
+  id: string;
+  email: string;
+  inAppName: string;
+  systemRole: SystemRole;
+  emailVerified: Date | null;
+};
 
 @Injectable()
 export class AuthService {
@@ -95,12 +103,15 @@ export class AuthService {
     };
   }
 
-  private async validateUser(email: string, pass: string): Promise<any> {
+  private async validateUser(
+    email: string,
+    pass: string,
+  ): Promise<AuthenticatedUser | null> {
     const user = await this.usersService.findOne({ email });
     if (user && (await bcrypt.compare(pass, user.password))) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
-      return result;
+      return result as AuthenticatedUser;
     }
     return null;
   }

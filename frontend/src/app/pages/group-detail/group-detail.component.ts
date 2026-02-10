@@ -1,27 +1,93 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, signal, computed, inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, signal, computed, inject, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiService } from '../../core/services/api.service';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
+import { GroupHistoryCardComponent } from './group-history-card.component';
+import { GroupRankingCardComponent } from './group-ranking-card.component';
+import { GroupWinnersBannerComponent } from './group-winners-banner.component';
+import { GroupActionsCardComponent } from './group-actions-card.component';
+import { GroupStatsCardComponent } from './group-stats-card.component';
+import { GroupDecksCardComponent } from './group-decks-card.component';
+import { GroupMembersCardComponent } from './group-members-card.component';
+import { GroupApplicationsPanelComponent } from './group-applications-panel.component';
+import { GroupHeaderComponent } from './group-header.component';
+import { GroupDeckCreateModalComponent } from './group-deck-create-modal.component';
+import { GroupDeckEditModalComponent } from './group-deck-edit-modal.component';
+import { GroupRecordGameModalComponent } from './group-record-game-modal.component';
+import { GroupSettingsModalComponent } from './group-settings-modal.component';
 import { GroupDetail, Deck, GroupApplication } from '../../models/group.model';
 import { Game, RankingEntry, RankingEntryWithTrend, GroupEvent } from '../../models/game.model';
 import { VALID_COLORS, VALID_DECK_TYPES } from './deck-constants';
+import { isValidRankConfiguration } from './rank-utils';
+import {
+  buildBarChart,
+  buildLineAndBarChart,
+  buildLineChart,
+  createBaseChartOptions,
+} from './chart-utils';
+import { buildHistoryItems, filterHistoryItems } from './history-utils';
+import { getDeckRankSeries, getDeckSeries } from './stats-series-utils';
+import {
+  buildRankingWithTrends,
+  hasRankingChanged,
+  mapToPositionRecord,
+  toPositionMap,
+  toPositionRecord,
+} from './ranking-trend-utils';
+import {
+  getRankingStorageKey,
+  loadRankingStoredState,
+  saveRankingStoredState,
+} from './ranking-storage-utils';
+import {
+  getColorComboName,
+  getColorGradient as toColorGradient,
+  getManaIconPath,
+  getManaSymbols as toManaSymbols,
+  getSortedColors as toSortedColors,
+} from './color-utils';
+import {
+  filterDecks,
+  filterStatsDecks,
+  getDecksTotalPages,
+  paginateDecks,
+  sortDecksByName,
+} from './deck-list-utils';
 import Chart from 'chart.js/auto';
-import { ChartConfiguration, ChartDataset, ChartOptions } from 'chart.js';
+import { ChartConfiguration } from 'chart.js';
 
 @Component({
   selector: 'app-group-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    GroupHistoryCardComponent,
+    GroupRankingCardComponent,
+    GroupWinnersBannerComponent,
+    GroupActionsCardComponent,
+    GroupStatsCardComponent,
+    GroupDecksCardComponent,
+    GroupMembersCardComponent,
+    GroupApplicationsPanelComponent,
+    GroupHeaderComponent,
+    GroupDeckCreateModalComponent,
+    GroupDeckEditModalComponent,
+    GroupRecordGameModalComponent,
+    GroupSettingsModalComponent,
+  ],
   templateUrl: './group-detail.component.html',
   styleUrl: './group-detail.component.scss',
 })
 export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('statsChart') statsChartRef?: ElementRef<HTMLCanvasElement>;
+  private statsChartRef?: ElementRef<HTMLCanvasElement>;
   private statsChart: Chart | null = null;
   private viewInitialized = false;
   private colorIconCache = new Map<string, HTMLImageElement>();
+  private pendingRecordGameFromDraft = false;
   private colorIconPlugin = {
     id: 'colorIconPlugin',
     afterDraw: (chart: Chart) => {
@@ -30,15 +96,16 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const ctx = chart.ctx;
       const labels = chart.data.labels || [];
 
-      labels.forEach((label: any, index: number) => {
+      labels.forEach((label: unknown, index: number) => {
         const labelText = String(label);
         const colors = labelText === 'Colorless' || labelText === 'C'
           ? ['C']
           : labelText.split('');
         const iconSize = 16;
+        const verticalStep = iconSize * 0.5;
         const isCombo = colors.length > 1;
         const totalWidth = isCombo ? iconSize : colors.length * iconSize;
-        const totalHeight = isCombo ? colors.length * iconSize : iconSize;
+        const totalHeight = isCombo ? iconSize + (colors.length - 1) * verticalStep : iconSize;
         const startX = xScale.getPixelForTick(index) - totalWidth / 2;
         const startY = xScale.bottom + 4;
 
@@ -49,7 +116,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           }
           if (icon?.complete) {
             const x = startX;
-            const y = isCombo ? startY + i * iconSize : startY;
+            const y = isCombo ? startY + i * verticalStep : startY;
             ctx.drawImage(icon, x, y, iconSize, iconSize);
           }
         });
@@ -189,41 +256,12 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     for (let testRank = 1; testRank <= count; testRank++) {
       const allRanks = [...otherRanks, testRank].sort((a, b) => a - b);
-      if (this.isValidRankConfiguration(allRanks)) {
+      if (isValidRankConfiguration(allRanks)) {
         availableRanks.push(testRank);
       }
     }
 
     return availableRanks;
-  }
-
-  // Check if a rank configuration is valid (respects tie rules)
-  private isValidRankConfiguration(sortedRanks: number[]): boolean {
-    let expectedMinRank = 1;
-
-    for (let i = 0; i < sortedRanks.length; i++) {
-      const rank = sortedRanks[i];
-
-      // Rank must match expectedMinRank (no gaps allowed)
-      if (rank !== expectedMinRank) {
-        return false;
-      }
-
-      // Rank must not exceed total player count
-      if (rank > sortedRanks.length) {
-        return false;
-      }
-
-      // Count ties at this rank and calculate next expected rank
-      let tieCount = 1;
-      while (i + 1 < sortedRanks.length && sortedRanks[i + 1] === rank) {
-        tieCount++;
-        i++;
-      }
-      expectedMinRank = rank + tieCount;
-    }
-
-    return true;
   }
 
   // Get available decks for a placement slot (excludes already selected decks)
@@ -323,7 +361,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private apiService = inject(ApiService);
+  private groupDetailApiService = inject(GroupDetailApiService);
   private authService = inject(AuthService);
 
   isAdmin = computed(() => this.group()?.userRole === 'ADMIN');
@@ -371,116 +409,23 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (diffDays <= 7) return 'warning';
     return 'normal';
   });
-  winnersBannerInfo = computed(() => {
-    const banner = this.group()?.winnersBanner;
-    if (!banner) return null;
-    const endedAt = new Date(banner.endedAt);
-    return `Season ended ${endedAt.toLocaleDateString('de-DE')}`;
-  });
-
   // Default deck image when no Archidekt image is available
   readonly defaultDeckImage = '/assets/images/deckBG_default.jpg';
   readonly defaultGroupImage = '/assets/images/deckBG_default.jpg';
 
-  // MTG color definitions for border gradients
-  readonly mtgColors: Record<string, string> = {
-    W: '#F9FAF4',
-    U: '#0E68AB',
-    B: '#150B00',
-    R: '#D3202A',
-    G: '#00733E',
-  };
-
-  // Canonical WUBRG order
-  readonly colorOrder = ['W', 'U', 'B', 'R', 'G'];
-
-  // Mapping from color combination names to WUBRG codes
-  readonly colorNameMapping: Record<string, string> = {
-    // Colorless
-    'colorless': '',
-    // Mono colors
-    'mono-white': 'W',
-    'mono-blue': 'U',
-    'mono-black': 'B',
-    'mono-red': 'R',
-    'mono-green': 'G',
-    // Guilds (2 colors)
-    'azorius': 'WU',
-    'dimir': 'UB',
-    'rakdos': 'BR',
-    'gruul': 'RG',
-    'selesnya': 'GW',
-    'orzhov': 'WB',
-    'izzet': 'UR',
-    'golgari': 'BG',
-    'boros': 'RW',
-    'simic': 'GU',
-    // Shards & Wedges (3 colors)
-    'bant': 'GWU',
-    'esper': 'WUB',
-    'grixis': 'UBR',
-    'jund': 'BRG',
-    'naya': 'RGW',
-    'abzan': 'WBG',
-    'jeskai': 'URW',
-    'sultai': 'BGU',
-    'mardu': 'RWB',
-    'temur': 'GUR',
-    // Nephilim (4 colors - named by missing color)
-    'growth': 'GWUB',      // without Red
-    'artifice': 'WUBR',    // without Green
-    'aggression': 'UBRG',  // without White
-    'altruism': 'RGWU',    // without Black
-    'chaos': 'BRGW',       // without Blue
-    // 5 colors
-    'wubrg': 'WUBRG',
-  };
-
   // Get sorted colors in WUBRG order
   getSortedColors(colors: string): string[] {
-    const lowerColors = colors.toLowerCase();
-
-    // First try to match known color combination names
-    const mappedColors = this.colorNameMapping[lowerColors];
-    if (mappedColors !== undefined) {
-      const colorChars = mappedColors.toUpperCase().split('');
-      return this.colorOrder.filter((c) => colorChars.includes(c));
-    }
-
-    // Fallback: try to extract individual color letters (for legacy data like "WUB")
-    const colorChars = colors.toUpperCase().split('');
-    return this.colorOrder.filter((c) => colorChars.includes(c));
+    return toSortedColors(colors);
   }
 
   // Get CSS gradient for deck border based on colors
   getColorGradient(colors: string): string {
-    const sortedColors = this.getSortedColors(colors);
-
-    if (sortedColors.length === 0) {
-      return '#A8A495'; // Default gold/neutral
-    }
-
-    if (sortedColors.length === 1) {
-      return this.mtgColors[sortedColors[0]];
-    }
-
-    // Create gradient with color stops
-    const stops = sortedColors.map((color, index) => {
-      const percentage = (index / (sortedColors.length - 1)) * 100;
-      return `${this.mtgColors[color]} ${percentage}%`;
-    });
-
-    return `linear-gradient(to right, ${stops.join(', ')})`;
+    return toColorGradient(colors);
   }
 
   // Get mana symbol paths for display
   getManaSymbols(colors: string): string[] {
-    const sortedColors = this.getSortedColors(colors);
-    // If no colors (colorless), return the colorless symbol
-    if (sortedColors.length === 0) {
-      return ['/assets/images/mana-c.svg'];
-    }
-    return sortedColors.map((c) => `/assets/images/mana-${c.toLowerCase()}.svg`);
+    return toManaSymbols(colors);
   }
 
   // Ranking pagination
@@ -509,27 +454,15 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   filteredDecks = computed(() => {
     const decks = this.sortedDecks();
-    const searchTerm = this.decksSearchTerm().toLowerCase().trim();
-
-    if (!searchTerm) {
-      return decks;
-    }
-
-    return decks.filter((deck) =>
-      deck.name.toLowerCase().includes(searchTerm) ||
-      deck.owner.inAppName.toLowerCase().includes(searchTerm) ||
-      deck.colors.toLowerCase().includes(searchTerm)
-    );
+    return filterDecks(decks, this.decksSearchTerm());
   });
 
   decksTotalPages = computed(() =>
-    Math.ceil(this.filteredDecks().length / this.decksPageSize)
+    getDecksTotalPages(this.filteredDecks().length, this.decksPageSize)
   );
 
   paginatedDecks = computed(() => {
-    const decks = this.filteredDecks();
-    const start = (this.decksPage() - 1) * this.decksPageSize;
-    return decks.slice(start, start + this.decksPageSize);
+    return paginateDecks(this.filteredDecks(), this.decksPage(), this.decksPageSize);
   });
 
   setDecksPage(page: number): void {
@@ -545,17 +478,11 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   sortedDecks = computed(() => {
     const decks = this.group()?.decks || [];
-    return [...decks].sort((a, b) => a.name.localeCompare(b.name));
+    return sortDecksByName(decks);
   });
 
   filteredStatsDecks = computed(() => {
-    const term = this.statsDeckSearch().toLowerCase().trim();
-    if (!term) return this.sortedDecks();
-    return this.sortedDecks().filter((deck) =>
-      deck.name.toLowerCase().includes(term) ||
-      deck.owner.inAppName.toLowerCase().includes(term) ||
-      deck.colors.toLowerCase().includes(term)
-    );
+    return filterStatsDecks(this.sortedDecks(), this.statsDeckSearch());
   });
 
   // History pagination
@@ -590,62 +517,20 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Combined history of games and events, sorted by date
-  history = computed(() => {
-    const retentionDays = this.group()?.historyRetentionDays ?? 30;
-    const cutoff = new Date(
-      Date.now() - retentionDays * 24 * 60 * 60 * 1000,
-    );
-    const items: { type: 'game' | 'event'; date: Date; data: Game | GroupEvent; gameNumber?: number }[] = [];
-
-    // Games are sorted by playedAt descending, so calculate game numbers
-    const gamesList = this.games().filter(
-      (game) => new Date(game.playedAt) >= cutoff
-    );
-    const totalGames = gamesList.length;
-
-    // Add games with their number (oldest = 1, newest = totalGames)
-    for (let i = 0; i < gamesList.length; i++) {
-      const game = gamesList[i];
-      items.push({
-        type: 'game',
-        date: new Date(game.playedAt),
-        data: game,
-        gameNumber: totalGames - i, // Newest game has highest number
-      });
-    }
-
-    // Add events (exclude GAME_RECORDED and GAME_UNDONE since games are shown separately)
-    for (const event of this.events()) {
-      if (new Date(event.createdAt) < cutoff) {
-        continue;
-      }
-      if (event.type !== 'GAME_RECORDED' && event.type !== 'GAME_UNDONE') {
-        items.push({
-          type: 'event',
-          date: new Date(event.createdAt),
-          data: event,
-        });
-      }
-    }
-
-    // Sort by date descending
-    items.sort((a, b) => b.date.getTime() - a.date.getTime());
-
-    return items;
-  });
+  history = computed(() =>
+    buildHistoryItems(
+      this.games(),
+      this.events(),
+      this.group()?.historyRetentionDays ?? 30,
+    )
+  );
 
   // Filtered history based on selected filter
   filteredHistory = computed(() => {
     const filter = this.historyFilter();
     const items = this.history();
 
-    if (filter === 'all') {
-      return items;
-    } else if (filter === 'games') {
-      return items.filter((item) => item.type === 'game');
-    } else {
-      return items.filter((item) => item.type === 'event');
-    }
+    return filterHistoryItems(items, filter);
   });
 
   constructor() {}
@@ -659,6 +544,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       window.addEventListener('scroll', this.onScrollChange);
     }
     this.groupId = this.route.snapshot.params['id'];
+    this.pendingRecordGameFromDraft =
+      this.route.snapshot.queryParamMap.get('openRecordGame') === '1';
     this.loadStoredPositions();
     this.loadData();
   }
@@ -703,36 +590,51 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  loadData(): void {
+  async loadData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
-    this.apiService.getGroup(this.groupId).toPromise()
-      .then((group) => {
-        this.group.set(group!);
-        const gamesLimit = this.getGamesLoadLimit(group || null);
-        return Promise.all([
-          this.apiService.getGames(this.groupId, gamesLimit).toPromise(),
-          this.apiService.getEvents(this.groupId).toPromise(),
-        ]).then(([games, events]) => ({ group, games, events }));
-      })
-      .then(({ group, games, events }) => {
-        this.games.set(games!);
-        this.events.set(events!);
-        if (group?.userRole === 'ADMIN') {
-          this.loadGroupApplications();
-        } else {
-          this.groupApplications.set([]);
+    try {
+      const group = await firstValueFrom(this.groupDetailApiService.getGroup(this.groupId));
+      this.group.set(group);
+
+      const gamesLimit = this.getGamesLoadLimit(group);
+      const [games, events] = await Promise.all([
+        firstValueFrom(this.groupDetailApiService.getGames(this.groupId, gamesLimit)),
+        firstValueFrom(this.groupDetailApiService.getEvents(this.groupId)),
+      ]);
+
+      this.games.set(games);
+      this.events.set(events);
+
+      if (group.userRole === 'ADMIN') {
+        this.loadGroupApplications();
+      } else {
+        this.groupApplications.set([]);
+      }
+
+      this.loadRanking(this.rankingMode() === 'previous');
+      if (this.pendingRecordGameFromDraft || sessionStorage.getItem('playGameRecordDraft')) {
+        const opened = this.openRecordGameFromDraft();
+        this.pendingRecordGameFromDraft = false;
+        this.clearOpenRecordGameQueryParam();
+        if (!opened) {
+          this.showAlert('Error', 'Could not load the live game draft.');
         }
-        this.loadRanking(this.rankingMode() === 'previous');
-        this.openRecordGameFromDraft();
-        this.loading.set(false);
-        this.renderStatsChart();
-      })
-      .catch((err) => {
-        this.error.set(err.error?.message || 'Failed to load group');
-        this.loading.set(false);
-      });
+      }
+      this.renderStatsChart();
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' &&
+        err !== null &&
+        'error' in err &&
+        typeof (err as { error?: { message?: string } }).error?.message === 'string'
+          ? (err as { error?: { message?: string } }).error!.message!
+          : 'Failed to load group';
+      this.error.set(message);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   private getGamesLoadLimit(group: GroupDetail | null): number {
@@ -745,7 +647,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.applicationsLoading.set(true);
     this.applicationsError.set(null);
 
-    this.apiService.getGroupApplications(this.groupId).subscribe({
+    this.groupDetailApiService.getGroupApplications(this.groupId).subscribe({
       next: (apps) => {
         this.groupApplications.set(apps);
         this.applicationsLoading.set(false);
@@ -758,7 +660,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadRanking(snapshot = false): void {
-    this.apiService.getRanking(this.groupId, snapshot).subscribe({
+    this.groupDetailApiService.getRanking(this.groupId, snapshot).subscribe({
       next: (ranking) => {
         if (snapshot) {
           this.ranking.set(
@@ -768,33 +670,18 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         const isFirstLoad = this.storedCurrentPositions.size === 0;
-        const rankingChanged = !isFirstLoad && this.hasRankingChanged(ranking);
+        const rankingChanged =
+          !isFirstLoad && hasRankingChanged(ranking, this.storedCurrentPositions);
 
         if (rankingChanged) {
           this.baselinePositions = new Map(this.storedCurrentPositions);
         }
 
-        const rankingWithTrends: RankingEntryWithTrend[] = ranking.map((entry) => {
-          if (isFirstLoad) {
-            return { ...entry, trend: 'same' as const, positionChange: 0 };
-          }
-
-          const baselinePosition = this.baselinePositions.get(entry.id);
-          let trend: 'up' | 'down' | 'same' | 'new' = 'same';
-          let positionChange = 0;
-
-          if (baselinePosition === undefined) {
-            trend = 'new';
-          } else if (entry.position < baselinePosition) {
-            trend = 'up';
-            positionChange = baselinePosition - entry.position;
-          } else if (entry.position > baselinePosition) {
-            trend = 'down';
-            positionChange = baselinePosition - entry.position;
-          }
-
-          return { ...entry, trend, positionChange };
-        });
+        const rankingWithTrends: RankingEntryWithTrend[] = buildRankingWithTrends(
+          ranking,
+          this.baselinePositions,
+          isFirstLoad,
+        );
 
         if (isFirstLoad || rankingChanged) {
           this.savePositions(ranking, isFirstLoad);
@@ -809,84 +696,38 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private getStorageKey(): string {
-    return `ranking-positions-${this.groupId}`;
+    return getRankingStorageKey(this.groupId);
   }
 
   private loadStoredPositions(): void {
-    try {
-      const stored = localStorage.getItem(this.getStorageKey());
-      if (stored) {
-        const data = JSON.parse(stored);
-        if (data.baseline) {
-          this.baselinePositions = new Map(Object.entries(data.baseline).map(
-            ([k, v]) => [k, v as number]
-          ));
-        }
-        if (data.current) {
-          this.storedCurrentPositions = new Map(Object.entries(data.current).map(
-            ([k, v]) => [k, v as number]
-          ));
-        }
-      }
-    } catch {
-      this.baselinePositions = new Map();
-      this.storedCurrentPositions = new Map();
-    }
+    const state = loadRankingStoredState(localStorage, this.getStorageKey());
+    this.baselinePositions = state.baselinePositions;
+    this.storedCurrentPositions = state.currentPositions;
   }
 
   private savePositions(ranking: RankingEntry[], isFirstLoad: boolean): void {
-    const currentPositions: Record<string, number> = {};
-    ranking.forEach((entry) => {
-      currentPositions[entry.id] = entry.position;
-    });
+    const currentPositions = toPositionRecord(ranking);
 
     let baselineToSave: Record<string, number>;
 
     if (isFirstLoad) {
       // On first load, baseline = current (so no trends are shown initially)
       baselineToSave = { ...currentPositions };
-      this.baselinePositions = new Map(
-        Object.entries(baselineToSave).map(([k, v]) => [k, v as number])
-      );
+      this.baselinePositions = toPositionMap(baselineToSave);
     } else {
       // On subsequent saves (ranking changed), use the in-memory baseline
-      baselineToSave = {};
-      this.baselinePositions.forEach((pos, id) => {
-        baselineToSave[id] = pos;
-      });
+      baselineToSave = mapToPositionRecord(this.baselinePositions);
     }
 
-    localStorage.setItem(this.getStorageKey(), JSON.stringify({
-      baseline: baselineToSave,
-      current: currentPositions,
-      timestamp: Date.now(),
-    }));
+    saveRankingStoredState(
+      localStorage,
+      this.getStorageKey(),
+      baselineToSave,
+      currentPositions,
+    );
 
     // Update in-memory current positions
-    this.storedCurrentPositions = new Map(
-      Object.entries(currentPositions).map(([k, v]) => [k, v as number])
-    );
-  }
-
-  private hasRankingChanged(ranking: RankingEntry[]): boolean {
-    // If no stored current positions, this is first load - initialize but don't show trends
-    if (this.storedCurrentPositions.size === 0) {
-      return true;
-    }
-
-    // Check if any position changed compared to stored current
-    if (ranking.length !== this.storedCurrentPositions.size) {
-      return true;
-    }
-
-    for (const entry of ranking) {
-      const storedPos = this.storedCurrentPositions.get(entry.id);
-      if (storedPos === undefined || storedPos !== entry.position) {
-        return true;
-      }
-    }
-
-    return false;
+    this.storedCurrentPositions = toPositionMap(currentPositions);
   }
 
   goBack(): void {
@@ -975,7 +816,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.deckLoading.set(true);
     this.deckError.set(null);
 
-    this.apiService
+    this.groupDetailApiService
       .createDeck({
         name: this.deckName,
         colors: this.deckColors,
@@ -1026,15 +867,15 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       : 'Add at least two active decks to start a live game';
   }
 
-  private openRecordGameFromDraft(): void {
+  private openRecordGameFromDraft(): boolean {
     const draft = sessionStorage.getItem('playGameRecordDraft');
-    if (!draft) return;
+    if (!draft) return false;
     try {
       const data = JSON.parse(draft) as {
         groupId: string;
         placements: { deckId: string; rank: number; playerName?: string }[];
       };
-      if (data.groupId !== this.groupId) return;
+      if (data.groupId !== this.groupId) return false;
       this.gamePlacements = data.placements
         .filter((p) => p.deckId)
         .map((p) => ({
@@ -1050,8 +891,21 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showGameModal.set(true);
       this.lockBodyScroll();
       sessionStorage.removeItem('playGameRecordDraft');
+      return true;
     } catch {
       sessionStorage.removeItem('playGameRecordDraft');
+      return false;
+    }
+  }
+
+  private clearOpenRecordGameQueryParam(): void {
+    if (this.route.snapshot.queryParamMap.has('openRecordGame')) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { openRecordGame: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
     }
   }
 
@@ -1116,7 +970,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.gameLoading.set(true);
     this.gameError.set(null);
 
-    this.apiService
+    this.groupDetailApiService
       .createGame({
         groupId: this.groupId,
         placements: this.gamePlacements.map((p) => ({
@@ -1150,7 +1004,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   private executeUndoLastGame(): void {
     this.confirmModalLoading.set(true);
 
-    this.apiService.undoLastGame(this.groupId).subscribe({
+    this.groupDetailApiService.undoLastGame(this.groupId).subscribe({
       next: () => {
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
@@ -1199,7 +1053,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.editDeckLoading.set(true);
     this.editDeckError.set(null);
 
-    this.apiService
+    this.groupDetailApiService
       .updateDeck(this.editingDeck.id, {
         name: this.editDeckName,
         colors: this.editDeckColors,
@@ -1228,7 +1082,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.editDeckLoading.set(true);
     this.editDeckError.set(null);
 
-    this.apiService.refreshDeckArchidekt(this.editingDeck.id).subscribe({
+    this.groupDetailApiService.refreshDeckArchidekt(this.editingDeck.id).subscribe({
       next: (updatedDeck) => {
         this.editDeckLoading.set(false);
         this.editingDeck = updatedDeck;
@@ -1255,7 +1109,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.confirmModalLoading.set(true);
     this.editDeckError.set(null);
 
-    this.apiService.deleteDeck(this.editingDeck.id).subscribe({
+    this.groupDetailApiService.deleteDeck(this.editingDeck.id).subscribe({
       next: () => {
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
@@ -1282,7 +1136,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   promoteMember(member: { userId: string; user: { inAppName: string } }): void {
-    this.apiService.updateMemberRole(this.groupId, member.userId, 'ADMIN').subscribe({
+    this.groupDetailApiService.updateMemberRole(this.groupId, member.userId, 'ADMIN').subscribe({
       next: () => this.loadData(),
       error: (err) => {
         this.showAlert('Error', err.error?.message || 'Failed to promote member');
@@ -1291,7 +1145,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   demoteMember(member: { userId: string; user: { inAppName: string } }): void {
-    this.apiService.updateMemberRole(this.groupId, member.userId, 'MEMBER').subscribe({
+    this.groupDetailApiService.updateMemberRole(this.groupId, member.userId, 'MEMBER').subscribe({
       next: () => this.loadData(),
       error: (err) => {
         this.showAlert('Error', err.error?.message || 'Failed to demote member');
@@ -1299,12 +1153,30 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  promoteMemberById(userId: string): void {
+    const member = this.group()?.members.find((m) => m.userId === userId);
+    if (!member) return;
+    this.promoteMember(member);
+  }
+
+  demoteMemberById(userId: string): void {
+    const member = this.group()?.members.find((m) => m.userId === userId);
+    if (!member) return;
+    this.demoteMember(member);
+  }
+
+  removeMemberById(userId: string): void {
+    const member = this.group()?.members.find((m) => m.userId === userId);
+    if (!member) return;
+    this.removeMember(member);
+  }
+
   private executeRemoveMember(): void {
     if (!this.memberToRemove) return;
 
     this.confirmModalLoading.set(true);
 
-    this.apiService.removeMember(this.groupId, this.memberToRemove.userId).subscribe({
+    this.groupDetailApiService.removeMember(this.groupId, this.memberToRemove.userId).subscribe({
       next: () => {
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
@@ -1321,7 +1193,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   acceptApplication(userId: string): void {
     if (this.applicationActionLoading()) return;
     this.applicationActionLoading.set(true);
-    this.apiService.acceptGroupApplication(this.groupId, userId).subscribe({
+    this.groupDetailApiService.acceptGroupApplication(this.groupId, userId).subscribe({
       next: () => {
         this.applicationActionLoading.set(false);
         this.loadData();
@@ -1336,7 +1208,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   rejectApplication(userId: string): void {
     if (this.applicationActionLoading()) return;
     this.applicationActionLoading.set(true);
-    this.apiService.rejectGroupApplication(this.groupId, userId).subscribe({
+    this.groupDetailApiService.rejectGroupApplication(this.groupId, userId).subscribe({
       next: () => {
         this.applicationActionLoading.set(false);
         this.loadData();
@@ -1360,7 +1232,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   private executeRegenerateInviteCode(): void {
     this.confirmModalLoading.set(true);
 
-    this.apiService.regenerateInviteCode(this.groupId).subscribe({
+    this.groupDetailApiService.regenerateInviteCode(this.groupId).subscribe({
       next: (result) => {
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
@@ -1444,7 +1316,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.editGroupLoading.set(true);
     this.editGroupError.set(null);
 
-    this.apiService
+    this.groupDetailApiService
       .updateGroup(this.groupId, {
         name: this.editGroupName,
         description: this.editGroupDescription || undefined,
@@ -1466,7 +1338,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupSettingsLoading.set(true);
     this.groupSettingsError.set(null);
 
-    this.apiService
+    this.groupDetailApiService
       .updateGroup(this.groupId, {
         historyRetentionDays: this.editHistoryRetentionDays,
         activeSeasonName: this.editSeasonName || undefined,
@@ -1497,7 +1369,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private executeSeasonReset(): void {
     this.seasonResetLoading.set(true);
-    this.apiService.resetSeason(this.groupId).subscribe({
+    this.groupDetailApiService.resetSeason(this.groupId).subscribe({
       next: () => {
         this.seasonResetLoading.set(false);
         this.closeConfirmModal();
@@ -1533,7 +1405,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupImageUploading.set(true);
     this.groupImageError.set(null);
 
-    this.apiService.uploadGroupImage(this.groupId, this.groupImageFile).subscribe({
+    this.groupDetailApiService.uploadGroupImage(this.groupId, this.groupImageFile).subscribe({
       next: (result) => {
         this.groupImageUploading.set(false);
         const currentGroup = this.group();
@@ -1563,7 +1435,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.deleteGroupLoading.set(true);
     this.confirmModalLoading.set(true);
 
-    this.apiService.deleteGroup(this.groupId).subscribe({
+    this.groupDetailApiService.deleteGroup(this.groupId).subscribe({
       next: () => {
         this.deleteGroupLoading.set(false);
         this.confirmModalLoading.set(false);
@@ -1580,7 +1452,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('de-DE', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -1630,7 +1502,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   dismissWinnersBanner(): void {
-    this.apiService.dismissSeasonBanner(this.groupId).subscribe({
+    this.groupDetailApiService.dismissSeasonBanner(this.groupId).subscribe({
       next: () => this.loadData(),
       error: () => this.loadData(),
     });
@@ -1655,6 +1527,19 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       setTimeout(() => this.renderStatsChart(), 0);
     }
+  }
+
+  onStatsChartReady(ref: ElementRef<HTMLCanvasElement> | null): void {
+    if (!ref) {
+      this.statsChartRef = undefined;
+      if (this.statsChart) {
+        this.statsChart.destroy();
+        this.statsChart = null;
+      }
+      return;
+    }
+    this.statsChartRef = ref;
+    this.renderStatsChart();
   }
 
   toggleRankingMode(): void {
@@ -1701,12 +1586,11 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.renderStatsChart();
   }
 
-  onStatsDeckSearchInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
+  onStatsDeckSearchChange(value: string): void {
     if (this.statsDeckId()) {
       this.statsDeckId.set(null);
     }
-    this.statsDeckSearch.set(input.value);
+    this.statsDeckSearch.set(value);
     this.statsDeckDropdownOpen.set(true);
   }
 
@@ -1813,7 +1697,9 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           values,
           'Deck count',
           true,
-          true
+          true,
+          undefined,
+          true,
         );
       }
 
@@ -1861,7 +1747,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           labels.push('Unknown');
           values.push(unknownCount);
         }
-        const config = this.buildBarChart(labels, values, 'Deck count');
+        const config = buildBarChart(labels, values, 'Deck count');
         if (config.options?.scales && config.options.scales['y']) {
           config.options.scales['y'].ticks = {
             ...config.options.scales['y'].ticks,
@@ -1888,7 +1774,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
       const labels = sorted.map((d) => d.label);
       const values = sorted.map((d) => d.value);
-      return this.buildColorBarChart(labels, values, 'Avg performance', false, true);
+      return this.buildColorBarChart(labels, values, 'Avg performance', false, true, undefined, true);
     }
 
   private buildDeckChart(option: string): ChartConfiguration | null {
@@ -1923,28 +1809,32 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         d.id === selectedId ? '#ff6b35' : '#b6b6c9'
       );
 
-      return this.buildBarChart(labels, counts, 'Games played', {
+      return buildBarChart(labels, counts, 'Games played', {
         datasetColors: barColors,
         tickColors: labelColors,
       });
     }
 
-    const series = this.getDeckSeries(deckId);
+    const series = getDeckSeries(this.getSeasonGames(), deckId);
     if (series.length === 0) {
       this.statsMessage.set('No games found for this deck.');
       return null;
     }
     const labels = series.map((item) =>
-      new Date(item.game.playedAt).toLocaleDateString('de-DE', {
+      new Date(item.game.playedAt).toLocaleDateString('en-US', {
         day: '2-digit',
         month: '2-digit',
       })
     );
 
     if (option === 'decks_rank_trend') {
-      const rankSeries = this.getDeckRankSeries(deckId);
+      const rankSeries = getDeckRankSeries(
+        this.getSeasonGames(),
+        this.group()?.decks || [],
+        deckId,
+      );
       const data = rankSeries.map((item) => item.rank);
-      return this.buildLineChart(labels, [
+      return buildLineChart(labels, [
         {
           label: 'Rank',
           data,
@@ -1967,7 +1857,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const total = item.game.placements.reduce((sum, p) => sum + p.points, 0);
       return Number((total / item.game.placements.length).toFixed(1));
     });
-    return this.buildLineChart(labels, [
+    return buildLineChart(labels, [
       {
         label: 'Deck points',
         data: points,
@@ -2033,163 +1923,60 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         if (o.ratings.length === 0) return 0;
         return Number((o.ratings.reduce((s, r) => s + r, 0) / o.ratings.length).toFixed(1));
       });
-      return this.buildLineAndBarChart(labels, values, groupAvg);
+      return buildLineAndBarChart(labels, values, groupAvg);
+    }
+
+    if (option === 'players_colors') {
+      const colorOrder = ['W', 'U', 'B', 'R', 'G', 'C'];
+      const colorPalette: Record<string, string> = {
+        W: '#f9faf4',
+        U: '#0e68ab',
+        B: '#150b00',
+        R: '#d3202a',
+        G: '#00733e',
+        C: '#ccc2c0',
+      };
+
+      const currentUserId = this.currentUserId();
+      const targetMember = group.members.find((m) => m.userId === currentUserId)
+        ?? group.members[0];
+      if (!targetMember) {
+        this.statsMessage.set('No members available for statistics.');
+        return null;
+      }
+
+      const targetDecks = decks.filter((deck) => deck.owner.id === targetMember.userId);
+      if (targetDecks.length === 0) {
+        this.statsMessage.set('No decks available for this player.');
+        return null;
+      }
+
+      const counts = colorOrder.map((color) => {
+        let total = 0;
+        for (const deck of targetDecks) {
+          const colors = this.getSortedColors(deck.colors);
+          const deckColors = colors.length === 0 ? ['C'] : colors;
+          if (deckColors.includes(color)) {
+            total += 1;
+          }
+        }
+        return total;
+      });
+
+      const datasetColors = colorOrder.map((color) => colorPalette[color] || '#7f5af0');
+      return this.buildColorBarChart(
+        colorOrder,
+        counts,
+        'Deck count',
+        true,
+        false,
+        datasetColors,
+      );
     }
 
     // default: games played
     const values = [...ownerMap.values()].map((o) => o.games);
-    return this.buildBarChart(labels, values, 'Games played');
-  }
-
-  private getDeckSeries(deckId: string) {
-    const games = [...this.getSeasonGames()].sort(
-      (a, b) => new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime()
-    );
-    const series = games
-      .map((game) => {
-        const placement = game.placements.find((p) => p.deck?.id === deckId);
-        return placement ? { game, placement } : null;
-      })
-      .filter((item): item is { game: Game; placement: Game['placements'][0] } => !!item);
-
-    return series.slice(-10);
-  }
-
-  private getDeckRankSeries(deckId: string): { game: Game; rank: number }[] {
-    const games = [...this.getSeasonGames()].sort(
-      (a, b) => new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime()
-    );
-    const decks = this.group()?.decks || [];
-    const stats = new Map<string, { name: string; games: number; performance: number }>();
-    for (const deck of decks) {
-      stats.set(deck.id, { name: deck.name, games: 0, performance: 0 });
-    }
-
-    const rankByGameId = new Map<string, number>();
-    for (const game of games) {
-      for (const placement of game.placements) {
-        const deck = placement.deck;
-        if (!deck?.id) continue;
-        const entry = stats.get(deck.id);
-        if (!entry) continue;
-        entry.performance = this.calculateNewPerformance(
-          entry.performance,
-          entry.games,
-          placement.points
-        );
-        entry.games += 1;
-      }
-
-      const ranked = [...stats.entries()].sort((a, b) => {
-        const aStats = a[1];
-        const bStats = b[1];
-        if (bStats.performance !== aStats.performance) {
-          return bStats.performance - aStats.performance;
-        }
-        if (bStats.games !== aStats.games) {
-          return bStats.games - aStats.games;
-        }
-        return aStats.name.localeCompare(bStats.name);
-      });
-
-      const position = ranked.findIndex(([id]) => id === deckId);
-      if (position >= 0) {
-        rankByGameId.set(game.id, position + 1);
-      }
-    }
-
-    return this.getDeckSeries(deckId)
-      .map((item) => {
-        const rank = rankByGameId.get(item.game.id);
-        return rank ? { game: item.game, rank } : null;
-      })
-      .filter((item): item is { game: Game; rank: number } => !!item);
-  }
-
-  private calculateNewPerformance(
-    currentPerformance: number,
-    gamesPlayed: number,
-    newPoints: number
-  ): number {
-    const newPerformance =
-      (currentPerformance * gamesPlayed + newPoints) / (gamesPlayed + 1);
-    return this.roundToOneDecimal(newPerformance);
-  }
-
-  private roundToOneDecimal(value: number): number {
-    return Math.round(value * 10) / 10;
-  }
-
-  private buildBarChart(
-    labels: string[],
-    data: number[],
-    label: string,
-    options?: { datasetColors?: string[]; tickColors?: string[] },
-  ): ChartConfiguration {
-    const chartOptions = this.baseChartOptions();
-    if (options?.tickColors && chartOptions.scales && chartOptions.scales['x']) {
-      chartOptions.scales['x'].ticks = {
-        ...chartOptions.scales['x'].ticks,
-        color: (ctx: { index: number }) => options.tickColors?.[ctx.index] || '#b6b6c9',
-      };
-    }
-
-    return {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label,
-            data,
-            backgroundColor: options?.datasetColors || '#7f5af0',
-          },
-        ],
-      },
-      options: chartOptions,
-    };
-  }
-
-  private buildLineChart(
-    labels: string[],
-    datasets: ChartDataset<'line', number[]>[],
-    overrides: ChartOptions = {},
-  ): ChartConfiguration {
-    return {
-      type: 'line',
-      data: { labels, datasets },
-      options: {
-        ...this.baseChartOptions(),
-        elements: {
-          line: { tension: 0.2 },
-        },
-        ...overrides,
-      },
-    };
-  }
-
-  private buildLineAndBarChart(labels: string[], data: number[], avg: number): ChartConfiguration {
-    return {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Avg performance',
-            data,
-            backgroundColor: '#7f5af0',
-          } as ChartDataset<'bar', number[]>,
-          {
-            type: 'line',
-            label: 'Group average',
-            data: labels.map(() => Number(avg.toFixed(1))),
-            borderColor: '#00b5a8',
-            backgroundColor: 'rgba(0,181,168,0.2)',
-          } as ChartDataset<'line', number[]>,
-        ],
-      },
-      options: this.baseChartOptions(),
-    };
+    return buildBarChart(labels, values, 'Games played');
   }
 
     private buildColorBarChart(
@@ -2198,8 +1985,10 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       label: string,
       integerAxis = false,
       monoPrefixSingles = false,
+      datasetColors?: string[],
+      tooltipIcons = false,
     ): ChartConfiguration {
-      const options = this.baseChartOptions();
+      const options = createBaseChartOptions();
     const maxIconCount = Math.max(
       ...labels.map((l) => (l === 'Colorless' ? 1 : String(l).length)),
       1
@@ -2218,14 +2007,21 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         };
       }
       if (!options.plugins) options.plugins = {};
-      options.plugins.tooltip = {
-        callbacks: {
-          title: (items) =>
-            items.length
-              ? this.getColorComboName(String(items[0].label), monoPrefixSingles)
-              : '',
-        },
-      };
+      if (tooltipIcons) {
+        options.plugins.tooltip = {
+          enabled: false,
+          external: (context) => this.renderColorComboTooltip(context, monoPrefixSingles),
+        };
+      } else {
+        options.plugins.tooltip = {
+          callbacks: {
+            title: (items) =>
+              items.length
+                ? getColorComboName(String(items[0].label), monoPrefixSingles)
+                : '',
+          },
+        };
+      }
 
       return {
         type: 'bar',
@@ -2235,7 +2031,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           {
             label,
             data,
-            backgroundColor: '#7f5af0',
+            backgroundColor: datasetColors || '#7f5af0',
           },
         ],
         },
@@ -2244,75 +2040,71 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       };
     }
 
-    private getColorComboName(label: string, monoPrefixSingles = false): string {
-      const normalized = label.replace(/\s+/g, '').toUpperCase();
-      if (normalized === 'COLORLESS' || normalized === 'C') return 'Colorless';
-      const colorLetters = normalized.replace(/[^WUBRG]/g, '');
-      const sortedLetters =
-        colorLetters.length > 0
-          ? this.colorOrder.filter((c) => colorLetters.includes(c)).join('')
-          : normalized;
-      const monoMap: Record<string, string> = {
-        W: monoPrefixSingles ? 'Mono-White' : 'White',
-        U: monoPrefixSingles ? 'Mono-Blue' : 'Blue',
-        B: monoPrefixSingles ? 'Mono-Black' : 'Black',
-        R: monoPrefixSingles ? 'Mono-Red' : 'Red',
-        G: monoPrefixSingles ? 'Mono-Green' : 'Green',
-      };
-      if (monoMap[sortedLetters]) return monoMap[sortedLetters];
-      const comboMap: Record<string, string> = {
-        WU: 'Azorius',
-        UB: 'Dimir',
-        BR: 'Rakdos',
-        RG: 'Gruul',
-        WG: 'Selesnya',
-        WB: 'Orzhov',
-        UR: 'Izzet',
-        BG: 'Golgari',
-        WR: 'Boros',
-        UG: 'Simic',
-        WUB: 'Esper',
-        UBR: 'Grixis',
-        BRG: 'Jund',
-        WRG: 'Naya',
-        WUG: 'Bant',
-        WBG: 'Abzan',
-        WUR: 'Jeskai',
-        BUG: 'Sultai',
-        WBR: 'Mardu',
-        URG: 'Temur',
-        WUBR: 'Yore-Tiller',
-        UBRG: 'Glint-Eye',
-        WBRG: 'Dune-Brood',
-        WURG: 'Ink-Treader',
-        WUBG: 'Witch-Maw',
-        WUBRG: 'Five-color',
-      };
-      return comboMap[sortedLetters] || label;
+  private renderColorComboTooltip(
+    context: { chart: Chart; tooltip: any },
+    monoPrefixSingles: boolean,
+  ): void {
+    const { chart, tooltip } = context;
+    const tooltipEl = this.getOrCreateColorComboTooltip(chart);
+
+    if (!tooltip || tooltip.opacity === 0) {
+      tooltipEl.style.opacity = '0';
+      return;
     }
 
-  private baseChartOptions(): ChartOptions {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: {
-            color: '#e2e2ef',
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: { color: '#b6b6c9' },
-          grid: { color: 'rgba(255,255,255,0.05)' },
-        },
-        y: {
-          ticks: { color: '#b6b6c9' },
-          grid: { color: 'rgba(255,255,255,0.05)' },
-        },
-      },
-    };
+    const dataPoint = tooltip.dataPoints?.[0];
+    if (!dataPoint) return;
+
+    const rawLabel = String(dataPoint.label ?? '');
+    const title = getColorComboName(rawLabel, monoPrefixSingles);
+    const icons = this.getColorIconPathsForLabel(rawLabel);
+    const valueLabel = dataPoint.dataset?.label ? `${dataPoint.dataset.label}: ` : '';
+    const value = dataPoint.formattedValue ?? '';
+
+    const iconsHtml = icons
+      .map((src) => `<img class="chart-tooltip__icon" src="${src}" alt="" />`)
+      .join('');
+
+    tooltipEl.innerHTML = `
+      <div class="chart-tooltip__title">
+        <span class="chart-tooltip__name">${title}</span>
+        <span class="chart-tooltip__icons">${iconsHtml}</span>
+      </div>
+      <div class="chart-tooltip__value">${valueLabel}${value}</div>
+    `;
+
+    tooltipEl.style.opacity = '1';
+    tooltipEl.style.left = `${tooltip.caretX}px`;
+    tooltipEl.style.top = `${tooltip.caretY}px`;
+  }
+
+  private getOrCreateColorComboTooltip(chart: Chart): HTMLDivElement {
+    const parent = chart.canvas.parentNode as HTMLElement | null;
+    if (!parent) {
+      const fallback = document.createElement('div');
+      return fallback;
+    }
+
+    if (getComputedStyle(parent).position === 'static') {
+      parent.style.position = 'relative';
+    }
+
+    let tooltipEl = parent.querySelector<HTMLDivElement>('.chart-tooltip--color-combo');
+    if (!tooltipEl) {
+      tooltipEl = document.createElement('div');
+      tooltipEl.className = 'chart-tooltip chart-tooltip--color-combo';
+      tooltipEl.style.opacity = '0';
+      parent.appendChild(tooltipEl);
+    }
+    return tooltipEl;
+  }
+
+  private getColorIconPathsForLabel(label: string): string[] {
+    const sorted = this.getSortedColors(label);
+    if (sorted.length === 0) {
+      return [getManaIconPath('C')];
+    }
+    return sorted.map((color) => getManaIconPath(color));
   }
 
   private getColorIcon(color: string): HTMLImageElement {
@@ -2321,15 +2113,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       return this.colorIconCache.get(key)!;
     }
     const img = new Image();
-    const map: Record<string, string> = {
-      W: '/assets/images/mana-w.svg',
-      U: '/assets/images/mana-u.svg',
-      B: '/assets/images/mana-b.svg',
-      R: '/assets/images/mana-r.svg',
-      G: '/assets/images/mana-g.svg',
-      C: '/assets/images/mana-c.svg',
-    };
-    img.src = map[key] || map['C'];
+    img.src = getManaIconPath(key);
     this.colorIconCache.set(key, img);
     return img;
   }

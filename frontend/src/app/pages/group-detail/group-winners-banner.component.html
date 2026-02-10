@@ -1,0 +1,30 @@
+<div class="winners-banner card">
+  <div class="winners-banner__header">
+    <h3>
+      Congratulations to the Winners
+      @if (banner.seasonName) {
+        of season {{ banner.seasonName }}
+      }
+    </h3>
+    <button class="btn-icon" (click)="dismiss.emit()" title="Dismiss">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  @if (info) {
+    <p class="winners-banner__meta">{{ info }}</p>
+  }
+  <div class="winners-banner__list">
+    @for (winner of banner.winners; track winner.position) {
+      <div class="winners-banner__item">
+        <span class="winners-banner__pos">#{{ winner.position }}</span>
+        <span class="winners-banner__deck">{{ winner.deckName }}</span>
+        <span class="winners-banner__owner">{{ winner.ownerName }}</span>
+        <span class="mana-symbols mana-symbols--inline">
+          @for (symbol of getManaSymbols(winner.colors); track symbol) {
+            <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />
+          }
+        </span>
+      </div>
+    }
+  </div>
+</div>

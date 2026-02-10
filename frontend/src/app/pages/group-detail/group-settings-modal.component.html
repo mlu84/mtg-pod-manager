@@ -1,0 +1,161 @@
+<div class="modal-overlay">
+  <div class="modal card" (click)="$event.stopPropagation()">
+    <div class="modal__header">
+      <h2>Group Settings</h2>
+      <button class="modal__close" (click)="close.emit()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    @if (groupSettingsError) {
+      <div class="alert alert--danger">{{ groupSettingsError }}</div>
+    }
+
+    <form (ngSubmit)="submit.emit()">
+      <div class="form-group">
+        <label>Group image</label>
+        @if (groupImageError) {
+          <div class="alert alert--danger">{{ groupImageError }}</div>
+        }
+        <div class="image-upload">
+          <img
+            class="image-upload__preview"
+            [src]="groupImagePreview || group.imageUrl || defaultGroupImage"
+            [alt]="group.name"
+          />
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            (change)="groupImageSelected.emit($event)"
+            [disabled]="groupImageUploading"
+          />
+          <button
+            type="button"
+            class="btn btn--outline"
+            (click)="uploadGroupImage.emit()"
+            [disabled]="groupImageUploading"
+          >
+            @if (groupImageUploading) { Uploading... } @else { Upload Image }
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editHistoryRetention">History retention</label>
+        <select
+          id="editHistoryRetention"
+          class="form-control"
+          [ngModel]="editHistoryRetentionDays"
+          (ngModelChange)="editHistoryRetentionDaysChange.emit($event)"
+          name="editHistoryRetentionDays"
+          [disabled]="groupSettingsLoading"
+        >
+          <option [ngValue]="7">1 week</option>
+          <option [ngValue]="30">1 month</option>
+          <option [ngValue]="365">1 year</option>
+        </select>
+        <small class="form-hint">Older games and system events are hidden from the history view.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="editSeasonName">Season name (optional)</label>
+        <input
+          type="text"
+          id="editSeasonName"
+          class="form-control"
+          [ngModel]="editSeasonName"
+          (ngModelChange)="editSeasonNameChange.emit($event)"
+          name="editSeasonName"
+          [disabled]="groupSettingsLoading"
+          placeholder="Active Season"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editSeasonStart">Season start
+          <span class="info-icon" title="Used to scope season statistics and snapshots">
+            <i class="fas fa-info-circle"></i>
+          </span>
+        </label>
+        <input
+          type="date"
+          id="editSeasonStart"
+          class="form-control"
+          [ngModel]="editSeasonStartAt"
+          (ngModelChange)="editSeasonStartAtChange.emit($event)"
+          name="editSeasonStartAt"
+          [disabled]="groupSettingsLoading"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editSeasonEnd">Season end
+          <span class="info-icon" title="Season ends on this date and will auto-reset">
+            <i class="fas fa-info-circle"></i>
+          </span>
+        </label>
+        <input
+          type="date"
+          id="editSeasonEnd"
+          class="form-control"
+          [ngModel]="editSeasonEndsAt"
+          (ngModelChange)="editSeasonEndsAtChange.emit($event)"
+          name="editSeasonEndsAt"
+          [disabled]="groupSettingsLoading"
+        />
+        <small class="form-hint">Maximum season length is 1 year.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="editSeasonPauseDays">Pause after season (days)
+          <span class="info-icon" title="Recording games is disabled during the pause">
+            <i class="fas fa-info-circle"></i>
+          </span>
+        </label>
+        <input
+          type="number"
+          id="editSeasonPauseDays"
+          class="form-control"
+          [ngModel]="editSeasonPauseDays"
+          (ngModelChange)="editSeasonPauseDaysChange.emit($event)"
+          name="editSeasonPauseDays"
+          [disabled]="groupSettingsLoading"
+          min="0"
+          max="365"
+        />
+      </div>
+
+      <div class="form-group">
+        <button type="button" class="btn btn--danger" (click)="requestSeasonReset.emit()" [disabled]="!canResetSeason">
+          Reset Season Now
+        </button>
+        <span class="info-icon" title="Creates a snapshot of the current ranking and resets deck stats">
+          <i class="fas fa-info-circle"></i>
+        </span>
+        @if (!canResetSeason) {
+          <small class="form-hint">Set season start and end to enable reset.</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label>Delete group</label>
+        <div class="danger-actions">
+          <button type="button" class="btn btn--danger" (click)="requestDeleteGroup.emit()" title="Delete group"
+                  [disabled]="deleteGroupLoading || confirmModalLoading">
+            <i class="fas fa-trash"></i> Delete Group
+          </button>
+        </div>
+        <small class="form-hint">This action permanently deletes the group and all related data.</small>
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--outline" (click)="close.emit()" [disabled]="groupSettingsLoading">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn--primary" [disabled]="groupSettingsLoading">
+          @if (groupSettingsLoading) { Saving... } @else { Save Changes }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

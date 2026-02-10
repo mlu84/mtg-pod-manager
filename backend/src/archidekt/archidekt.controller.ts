@@ -1,9 +1,12 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Logger, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SysAdminGuard } from '../auth/guards/sysadmin.guard';
 
 @Controller('archidekt')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SysAdminGuard)
 export class ArchidektController {
+  private readonly logger = new Logger(ArchidektController.name);
+
   @Get('decks/:id')
   async getDeck(@Param('id') id: string) {
     const deckId = parseInt(id, 10);
@@ -31,7 +34,8 @@ export class ArchidektController {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Archidekt API error:', error);
+      const details = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Archidekt API error: ${details}`);
       return { error: 'Failed to fetch deck from Archidekt' };
     }
   }

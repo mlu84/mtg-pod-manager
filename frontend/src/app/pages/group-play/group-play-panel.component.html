@@ -1,0 +1,56 @@
+<div class="play-panel">
+  <button class="panel-btn" (click)="cyclePlayerCount.emit()">
+    <span class="panel-btn__label">Players</span>
+    <span class="panel-btn__value">{{ playerCount }}</span>
+  </button>
+  <button class="panel-btn" (click)="rollD20.emit()" [disabled]="rolling">
+    <span class="panel-btn__label">d20</span>
+    <span class="panel-btn__value">Roll</span>
+  </button>
+  @if (isCompactViewport) {
+    <button
+      class="panel-btn panel-btn--neutral"
+      [class.panel-btn--primary]="mirroredTopHalf"
+      (click)="toggleTopHalfMirror.emit()"
+    >
+      <span class="panel-btn__label">Top Side</span>
+      <span class="panel-btn__value">{{ mirroredTopHalf ? 'Normal' : 'Mirror' }}</span>
+    </button>
+  }
+  @if (!confirmAbortActive) {
+    <button class="panel-btn panel-btn--danger" (click)="toggleAbortConfirm.emit()">
+      <span class="panel-btn__label">End</span>
+      <span class="panel-btn__value">Game</span>
+    </button>
+  } @else {
+    <button class="panel-btn panel-btn--danger panel-btn--confirm" (click)="confirmAbort.emit()">
+      <span class="panel-btn__label">Confirm</span>
+      <span class="panel-btn__value">End</span>
+    </button>
+  }
+  @if (!gameStarted) {
+    <button
+      class="panel-btn"
+      [class.panel-btn--primary]="allDecksSelected"
+      [class.panel-btn--neutral]="!allDecksSelected"
+      (click)="startGame.emit()"
+      [disabled]="!allDecksSelected || startingRoll"
+      [title]="allDecksSelected ? 'Start the game' : 'Assign decks to all players to start'"
+    >
+      <span class="panel-btn__label">Start</span>
+      <span class="panel-btn__value">Game</span>
+    </button>
+  } @else {
+    @if (!confirmResetActive) {
+      <button class="panel-btn panel-btn--neutral" (click)="toggleResetConfirm.emit()">
+        <span class="panel-btn__label">Reset</span>
+        <span class="panel-btn__value">Game</span>
+      </button>
+    } @else {
+      <button class="panel-btn panel-btn--neutral panel-btn--confirm" (click)="confirmReset.emit()">
+        <span class="panel-btn__label">Confirm</span>
+        <span class="panel-btn__value">Reset</span>
+      </button>
+    }
+  }
+</div>
