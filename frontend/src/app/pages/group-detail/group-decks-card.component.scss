@@ -37,7 +37,7 @@
 .decks-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: calc(var(--spacing-xs) + 1px);
   overflow: hidden;
   width: 100%;
 }
@@ -134,7 +134,7 @@
 }
 
 .mtg-card-style {
-  --border-width: 4px;
+  --border-width: 2px;
   position: relative;
   background: linear-gradient(135deg, #D4C4A8 0%, #C9B896 50%, #BEA876 100%);
   border-radius: var(--radius-md);

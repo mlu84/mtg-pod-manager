@@ -1,32 +1,20 @@
 # MTG Pod-Manager Current Findings
 
-1. “New Game” darf Icons für Commander Damage ausschließlich dann anzeigen, wenn das Format der Spielgruppe “Commander” ist. Ansonsten sind die Buttons ausgeblendet  
-2. “New Game” bei Gruppen, die nicht das Format “Commander” besitzen, startet als default Einstellung mit 2 Spielern, nicht mit 4\.  
-3. Donate mit festem Betrag?  
-4. Neue Statistik \- Lieblingsfarben eines Spielers (welche Einzelfarben kommen wie oft in den eigenen Decks vor?)  
-5. Die Farbsymbole in den farbstatistiken “color combinations (all time)” und “avg performance by color combination” sind aktuell vertikal gestacked. ich hätte gerne, dass sich die symbole zu 50% überlappen, um platz zu sparen. die vertikale anordnung soll gleich bleiben, ebenso wie die shadows.  
-6. Die collapsable Pfeile der cards müssen wieder zurück nach oben rechts der card verschoben werden (css wie vor dem refactor)  
-7. “group-settings” button öffnet das modal nicht  
-8. “add-new” button in der decks card öffnet das modal nicht  
-9. “record game” button öffnet das modal nicht  
-10. in der “new game” fullscreen ansicht muss das config-panel zwischen den arealen vertikal zentriert werden  
-11. in der “new game” fullscreen ansicht, wenn ein spiel beendet wurde, öffnet sich das “record game” modal mit vorausgefüllten parametern nicht  
-12. die suchbaren dropdown menüs für die deckauswahl sind im UI kaputt: der x-button aus dem suchfeld ist nicht im input feld sondern dahinter/darunter. der hintergrund der options scheint verschwunden zu sein. der pfeil zum aufklappen/zuklappen des dropdowns ist so hoch wie die liste der options. der scrollbalken bei langen listen scheint nicht angezeigt zu werden
-
-AKTUELL:
-
-1. “Add new deck” modal \- die farbsymbole in der colors dropdown sind riesig und nicht so groß wie die farbicons sein sollten  
-2. das Styling der liste der decks in der decks card ist kaputt  
-3. das Styling im “Record Game” Modal ist kaputt  
-4. die “Cancel” und “Save changes” Buttons im Edit Deck Modal sind zu hoch (angleichen an button standards in der app)  
-5. im “group settings” modal wird das group image in originalgröße angezeigt. das muss wieder auf die vorrige größe reduziert werden  
-6. “record game” modal mit prefilled data formular ist nicht korrekt gestyled (rank, deck und player formularfelder sind untereinander statt nebeneinander angeordnet)  
-7. die collapse buttons in den cards sollen bitte wieder mit dem entsprechenden font awesome icon gestyled sein wie vor dem refactor (chevron-up und chevron-down)
-
-8. options in dropdown menus sind noch nicht korrekt gestyled. diese muessen wie vor dem refactoring gestyled sein (betrifft z.B. den hintergrund der options)
-9. "refresh" button im edit deck modal (archidekt link) muss hinter das eingabefeld fuer den link, nicht in eigene zeile
-10. "delete" button und "cancel" und "save changes" sind nicht auf einer ebene. bei kleinen aufloesungen kommt der "delete" button in eine reihe weiter unten
-11. "add new" button in der decks card muss wieder in die gleiche reihe wie der card titel
-12. die edit buttons auf der oberflaeche haben ihr styling verloren aus vor dem refactor. das muss wiederhergestellt werden
-13. legende "[player] deck count" entfernen in statistik player data - favorite colors by player
-14. statistik color data - avg color combinations (all time) und avg performance by color combinations: chart balken mouseover sollen hinter dem farbkombinations-namen noch die dazugehoerigen icons der enthaltenen farben anzeigen wie in der x-achsen beschriftung. icons bitte horizontal hinter dem namen auflisten (ebenfalls zu 50% ueberlappend)
+1. Edit deck modal “delete” “cancel” und “save changes” button immernoch nicht korrekt auf einer linie angeordnet. delete steht weiter oben als die beiden anderen buttons  
+2. abstand zwischen checkbox und label im edit deck modal “inactive” checkbox ist zu klein, bitte erhöhen (außerdem kann es sein, dass hier das styling verloren gegangen ist? sie wirkt so vanilla browser mäßig und etwas out-of-place)  
+3. fullscreen “new game” ansicht: wenn man schnell hintereinander würfelt, wird die anzeigedauer der animation und des würfelergebnisses immer kürzer  
+4. fullscreen “new game” ansicht: wenn das spiel gestartet wurde kann man die decks nicht mehr ändern. der text: “tap to add player” kann ausgeblendet werden, solange keine decks ausgewählt werden können  
+5. fullscreen “new game” ansicht: solange das spiel nicht gestartet wurde, dürfen die poison counter, commander damage und “+” und “-” buttons nicht benutzt werden können. das betrifft sowohl die click events als auch die click and hold events. letztere sind aktuell möglich, obwohl das spiel noch nicht gestartet wurde  
+6. Group Settings Modal: Season Start Datum darf frühestens heute sein, es kann nicht in der Vergangenheit liegen  
+7. Group Settings Modal: Season Start und Season End Info Buttons müssen bei kleinen Viewports (Tablets und Smartphones) clickbar sein für den Infotext  
+8. Group Settings Modal: Season End Datum maximal ein Jahr in der Zukunft  
+9. bei manchen Inputs (exakter Grund unbekannt) auf verschiedenen Oberflächen scheint die Webseite die Fähigkeit zu verlieren, scrollbar zu sein  
+10. Wird der Button “show previous ranking” angeklickt, erscheint ein info-tag namens “last season snapshot”. dieser text kann entfernt werden. statt dessen ändert sich der titel der card von “Ranking” auf “Last Season Ranking”. Der Button “show current ranking” ändert dies wieder zurück auf “Ranking”  
+11. der Infobutton neben dem Umschaltbutton “show previous ranking” und “show current ranking” muss bei kleinen Viewports (Tablets und Smartphones) clickbar sein, um die infomeldung anzuzeigen  
+12. die card “Congratulations to the Winners of season” benötigt den üblichen abstand zwischen cards äquivalent zu den anderen cards der app. aktuell ist dieser abstand unten nicht existent  
+13. die card “Congratulations to the Winners of season” stellt aktuell die Plätze mit \#1, \#2 und \#3 dar. Statt dessen soll wie in der Rangliste der Pokal verwendet werden. Diese Icons werden ohne Ranglisten Zahl dargestellt. Nur das Icon. Der Goldpokal ist am größten, der Bronzepokal am kleinsten.   
+14. die card “Congratulations to the Winners of season” zeigt den text “Season ended” gefolgt vom Datum des Season-Endes. Dieses wird aktuell im amerikanischen Datumsformat dargestellt. Dies soll geändert werden auf ein lokalisiertes Datum. Also [z.B. DD.MM](http://z.B.DD.MM).YYYY in Europa, [MM.DD](http://MM.DD).YYYY in Amerika usw. Diese Regelung betrifft alle Daten der Webseite und muss an allen Stellen verwendet werden, wo ein Datum auftaucht (z.B. auch in der Historie)  
+15. in der card “Congratulations to the Winners of season” kann der Titel bitte größer werden (so groß wie der Titel im Seitenkopf)  
+16. wird eine neue Season gestartet oder die Rangliste zurückgesetzt (alle Decks haben ein Performance Rating von 0), dürfen keine Trendpfeile und Nummern in der Rangliste angezeigt werden. Die initiale Platzierung der Decks kann gerne von der vorigen Season übernommen werden.  
+17. wenn eine neue Season gestartet wird, kommt in der Historie nicht die Meldung “Season was reset” sondern “Season \[Name der Season\] has started”  
+18. äquivalent zum vorigen Punkt, wenn eine Season beendet wurde erscheint die Historienmeldung “Season \[Name der vergangenen Season\] has ended”
