@@ -17,4 +17,4 @@
 15. in der card “Congratulations to the Winners of season” kann der Titel bitte größer werden (so groß wie der Titel im Seitenkopf)  
 16. wird eine neue Season gestartet oder die Rangliste zurückgesetzt (alle Decks haben ein Performance Rating von 0), dürfen keine Trendpfeile und Nummern in der Rangliste angezeigt werden. Die initiale Platzierung der Decks kann gerne von der vorigen Season übernommen werden.  
 17. wenn eine neue Season gestartet wird, kommt in der Historie nicht die Meldung “Season was reset” sondern “Season \[Name der Season\] has started”  
-18. äquivalent zum vorigen Punkt, wenn eine Season beendet wurde erscheint die Historienmeldung “Season \[Name der vergangenen Season\] has ended”
+18. äquivalent zum vorigen Punkt, wenn eine Season beendet wurde erscheint die Historienmeldung “Season \[Name der vergangenen Season\] has ended”19. im Tablet/Smartphone Modus: wenn das Display rotiert und wieder zur\u00fcck rotiert wird, gehen manche Abst\u00e4nde zum Displayrand kaputt. wirkt als ob der Viewport nicht mehr korrekt erkannt wird

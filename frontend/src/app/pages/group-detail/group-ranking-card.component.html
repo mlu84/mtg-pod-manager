@@ -1,19 +1,16 @@
 <section class="card ranking-card">
   <div class="card__header">
-    <h2 class="card__title"><i class="fas fa-trophy"></i> Ranking</h2>
+    <h2 class="card__title"><i class="fas fa-trophy"></i> {{ rankingMode === 'previous' ? 'Last Season Ranking' : 'Ranking' }}</h2>
     <div class="ranking-header__meta">
       @if (activeSeasonEndsAt) {
         <span class="ranking-header__countdown"
               [class.ranking-header__countdown--warning]="seasonCountdownState === 'warning'"
               [class.ranking-header__countdown--critical]="seasonCountdownState === 'critical'">
-          {{ seasonCountdown }} ({{ activeSeasonEndsAt | date:'dd.MM.yyyy' }})
+          {{ seasonCountdown }} ({{ formatDate(activeSeasonEndsAt) }})
         </span>
         @if (activeSeasonName) {
           <span class="ranking-header__season">{{ activeSeasonName }}</span>
         }
-      }
-      @if (rankingMode === 'previous') {
-        <span class="ranking-header__season">Last season snapshot</span>
       }
       @if (snapshotAvailable) {
         <button class="btn btn--sm btn--outline" (click)="toggleRankingMode()">
@@ -23,9 +20,14 @@
             Show current ranking
           }
         </button>
-        <span class="info-icon" title="Toggle between current and previous season ranking">
+        <button
+          type="button"
+          class="info-icon"
+          data-tooltip="Toggle between current and previous season ranking"
+          aria-label="Toggle between current and previous season ranking"
+        >
           <i class="fas fa-info-circle"></i>
-        </span>
+        </button>
       }
     </div>
   </div>
@@ -50,27 +52,29 @@
             } @else {
               <span class="ranking-item__position">{{ entry.position }}</span>
             }
-            <div class="ranking-item__trend">
-              @if (entry.trend === 'up') {
-                <span class="trend trend-up">
-                  <i class="fas fa-caret-up"></i>
-                  <span class="trend__value">{{ entry.positionChange }}</span>
-                </span>
-              } @else if (entry.trend === 'down') {
-                <span class="trend trend-down">
-                  <i class="fas fa-caret-down"></i>
-                  <span class="trend__value">{{ -entry.positionChange }}</span>
-                </span>
-              } @else if (entry.trend === 'new') {
-                <span class="trend trend-new">
-                  <i class="fas fa-star"></i>
-                </span>
-              } @else {
-                <span class="trend trend-same">
-                  <i class="fas fa-minus"></i>
-                </span>
-              }
-            </div>
+            @if (showTrends) {
+              <div class="ranking-item__trend">
+                @if (entry.trend === 'up') {
+                  <span class="trend trend-up">
+                    <i class="fas fa-caret-up"></i>
+                    <span class="trend__value">{{ entry.positionChange }}</span>
+                  </span>
+                } @else if (entry.trend === 'down') {
+                  <span class="trend trend-down">
+                    <i class="fas fa-caret-down"></i>
+                    <span class="trend__value">{{ -entry.positionChange }}</span>
+                  </span>
+                } @else if (entry.trend === 'new') {
+                  <span class="trend trend-new">
+                    <i class="fas fa-star"></i>
+                  </span>
+                } @else {
+                  <span class="trend trend-same">
+                    <i class="fas fa-minus"></i>
+                  </span>
+                }
+              </div>
+            }
           </div>
           <div class="ranking-item mtg-card-style"
                [class.ranking-item--first]="entry.position === 1"

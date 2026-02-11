@@ -13,6 +13,7 @@ export class GroupActionsCardComponent {
   @Input({ required: true }) isAdmin!: boolean;
   @Input({ required: true }) isSeasonPaused!: boolean;
   @Input() seasonPauseUntil: string | null | undefined;
+  @Input({ required: true }) formatDate!: (date: string) => string;
   @Input({ required: true }) isSmartphoneViewport!: boolean;
   @Input({ required: true }) canStartPlayGame!: boolean;
   @Input() playGameDisabledReason: string | null | undefined;

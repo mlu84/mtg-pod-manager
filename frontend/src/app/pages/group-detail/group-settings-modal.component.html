@@ -73,9 +73,14 @@
 
       <div class="form-group">
         <label for="editSeasonStart">Season start
-          <span class="info-icon" title="Used to scope season statistics and snapshots">
+          <button
+            type="button"
+            class="info-icon"
+            data-tooltip="Used to scope season statistics and snapshots"
+            aria-label="Used to scope season statistics and snapshots"
+          >
             <i class="fas fa-info-circle"></i>
-          </span>
+          </button>
         </label>
         <input
           type="date"
@@ -85,14 +90,20 @@
           (ngModelChange)="editSeasonStartAtChange.emit($event)"
           name="editSeasonStartAt"
           [disabled]="groupSettingsLoading"
+          [attr.min]="minSeasonStart"
         />
       </div>
 
       <div class="form-group">
         <label for="editSeasonEnd">Season end
-          <span class="info-icon" title="Season ends on this date and will auto-reset">
+          <button
+            type="button"
+            class="info-icon"
+            data-tooltip="Season ends on this date and will auto-reset"
+            aria-label="Season ends on this date and will auto-reset"
+          >
             <i class="fas fa-info-circle"></i>
-          </span>
+          </button>
         </label>
         <input
           type="date"
@@ -102,15 +113,21 @@
           (ngModelChange)="editSeasonEndsAtChange.emit($event)"
           name="editSeasonEndsAt"
           [disabled]="groupSettingsLoading"
+          [attr.max]="maxSeasonEnd"
         />
         <small class="form-hint">Maximum season length is 1 year.</small>
       </div>
 
       <div class="form-group">
         <label for="editSeasonPauseDays">Pause after season (days)
-          <span class="info-icon" title="Recording games is disabled during the pause">
+          <button
+            type="button"
+            class="info-icon"
+            data-tooltip="Recording games is disabled during the pause"
+            aria-label="Recording games is disabled during the pause"
+          >
             <i class="fas fa-info-circle"></i>
-          </span>
+          </button>
         </label>
         <input
           type="number"
@@ -129,9 +146,14 @@
         <button type="button" class="btn btn--danger" (click)="requestSeasonReset.emit()" [disabled]="!canResetSeason">
           Reset Season Now
         </button>
-        <span class="info-icon" title="Creates a snapshot of the current ranking and resets deck stats">
+        <button
+          type="button"
+          class="info-icon"
+          data-tooltip="Creates a snapshot of the current ranking and resets deck stats"
+          aria-label="Creates a snapshot of the current ranking and resets deck stats"
+        >
           <i class="fas fa-info-circle"></i>
-        </span>
+        </button>
         @if (!canResetSeason) {
           <small class="form-hint">Set season start and end to enable reset.</small>
         }

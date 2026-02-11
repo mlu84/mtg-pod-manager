@@ -1,5 +1,6 @@
 .winners-banner {
   margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
 
   &__header {
     display: flex;
@@ -9,7 +10,7 @@
 
     h3 {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: 1.75rem;
     }
   }
 
@@ -34,8 +35,37 @@
     border-radius: var(--radius-md);
   }
 
-  &__pos {
-    font-weight: 700;
+  &__trophy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    color: #c0c0c0;
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  &__trophy--gold {
+    width: 34px;
+    height: 34px;
+    color: #ffd700;
+    font-size: 1.7rem;
+  }
+
+  &__trophy--silver {
+    width: 28px;
+    height: 28px;
+    color: #c0c0c0;
+    font-size: 1.4rem;
+  }
+
+  &__trophy--bronze {
+    width: 20px;
+    height: 20px;
+    color: #cd7f32;
+    font-size: 1.05rem;
   }
 
   &__deck {

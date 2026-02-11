@@ -14,12 +14,14 @@ export class GroupRankingCardComponent {
   @Input({ required: true }) activeSeasonName!: string | null | undefined;
   @Input({ required: true }) seasonCountdown!: string | null;
   @Input({ required: true }) seasonCountdownState!: 'normal' | 'warning' | 'critical';
+  @Input({ required: true }) formatDate!: (date: string) => string;
   @Input({ required: true }) rankingMode!: 'current' | 'previous';
   @Input({ required: true }) snapshotAvailable!: boolean;
   @Input({ required: true }) ranking!: RankingEntryWithTrend[];
   @Input({ required: true }) paginatedRanking!: RankingEntryWithTrend[];
   @Input({ required: true }) rankingPage!: number;
   @Input({ required: true }) rankingTotalPages!: number;
+  @Input({ required: true }) showTrends!: boolean;
   @Input({ required: true }) defaultDeckImage!: string;
   @Input({ required: true }) getColorGradient!: (colors: string) => string;
   @Input({ required: true }) getDeckImageUrl!: (deckId: string) => string | null;

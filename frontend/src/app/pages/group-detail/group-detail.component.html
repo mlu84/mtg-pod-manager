@@ -1,4 +1,4 @@
-<div class="group-detail-page">
+<div class="group-detail-page" [style.--viewport-width.px]="viewportWidth()" [style.--viewport-height.px]="viewportHeight()">
   @if (loading()) {
     <div class="loading-container">
       <div class="spinner"></div>
@@ -52,11 +52,13 @@
             [paginatedRanking]="paginatedRanking()"
             [rankingPage]="rankingPage()"
             [rankingTotalPages]="rankingTotalPages()"
+            [showTrends]="showRankingTrends()"
             [defaultDeckImage]="defaultDeckImage"
             [getColorGradient]="getColorGradient.bind(this)"
             [getDeckImageUrl]="getDeckImageUrl.bind(this)"
             [getManaSymbols]="getManaSymbols.bind(this)"
             [getArchidektUrl]="getArchidektUrl.bind(this)"
+            [formatDate]="formatDate.bind(this)"
             (rankingModeToggle)="toggleRankingMode()"
             (rankingPageChange)="setRankingPage($event)"
           />
@@ -91,6 +93,7 @@
             [isSmartphoneViewport]="isSmartphoneViewport()"
             [canStartPlayGame]="canStartPlayGame()"
             [playGameDisabledReason]="playGameDisabledReason()"
+            [formatDate]="formatDate.bind(this)"
             (playGame)="openPlayGame()"
             (recordGame)="openGameModal()"
           />
@@ -191,9 +194,10 @@
     [gameLoading]="gameLoading()"
     [gameError]="gameError()"
     [prefilledGame]="prefilledGame()"
-    [isSeasonPaused]="isSeasonPaused()"
-    [seasonPauseUntil]="group()!.seasonPauseUntil"
-    [deckDropdownOpen]="deckDropdownOpen"
+      [isSeasonPaused]="isSeasonPaused()"
+      [seasonPauseUntil]="group()!.seasonPauseUntil"
+      [formatDate]="formatDate.bind(this)"
+      [deckDropdownOpen]="deckDropdownOpen"
     [memberNames]="memberNames()"
     [allDecksSelected]="allDecksSelected()"
     [getAvailableRanksForSlot]="getAvailableRanksForSlot.bind(this)"

@@ -92,7 +92,8 @@ body {
   .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md);
+    padding-left: calc(var(--spacing-md) + env(safe-area-inset-left, 0px));
+    padding-right: calc(var(--spacing-md) + env(safe-area-inset-right, 0px));
   }
 
   .donate-inline {
@@ -650,12 +651,14 @@ select.form-control optgroup {
   &__actions {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: var(--spacing-md);
     margin-top: var(--spacing-lg);
 
     &--split {
       justify-content: space-between;
       flex-wrap: nowrap;
+      align-items: center;
     }
   }
 }
@@ -668,6 +671,17 @@ select.form-control optgroup {
 .modal__actions .btn {
   white-space: nowrap;
   line-height: 1.2;
+}
+
+.modal__actions--split > .modal__actions {
+  margin-top: 0;
+}
+
+.danger-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: nowrap;
 }
 
 // Image upload preview (shared)

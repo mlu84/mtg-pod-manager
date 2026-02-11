@@ -17,7 +17,9 @@ export type EventType =
   | 'APPLICATION_REJECTED'
   | 'GAME_RECORDED'
   | 'GAME_UNDONE'
-  | 'SEASON_RESET';
+  | 'SEASON_RESET'
+  | 'SEASON_STARTED'
+  | 'SEASON_ENDED';
 
 @Injectable()
 export class EventsService {

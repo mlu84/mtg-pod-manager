@@ -58,6 +58,7 @@ import {
 } from './deck-list-utils';
 import Chart from 'chart.js/auto';
 import { ChartConfiguration } from 'chart.js';
+import { formatLocalDate } from '../../core/utils/date-utils';
 
 @Component({
   selector: 'app-group-detail',
@@ -131,6 +132,9 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = signal(true);
   error = signal<string | null>(null);
   rankingMode = signal<'current' | 'previous'>('current');
+  showRankingTrends = computed(() =>
+    this.ranking().some((entry) => entry.performanceRating > 0)
+  );
 
   // For trend calculation: baseline = positions before last game, current = positions after last game
   private baselinePositions = new Map<string, number>();
@@ -203,6 +207,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   alertModalType: 'error' | 'success' | 'info' = 'error';
   isSmartphoneViewport = signal(false);
   showScrollTop = signal(false);
+  viewportWidth = signal(0);
+  viewportHeight = signal(0);
 
   // History filter
   historyFilter = signal<'all' | 'games' | 'events'>('all');
@@ -542,6 +548,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       window.addEventListener('resize', this.onViewportChange);
       window.addEventListener('orientationchange', this.onViewportChange);
       window.addEventListener('scroll', this.onScrollChange);
+      window.visualViewport?.addEventListener('resize', this.onViewportChange);
+      window.visualViewport?.addEventListener('scroll', this.onViewportChange);
     }
     this.groupId = this.route.snapshot.params['id'];
     this.pendingRecordGameFromDraft =
@@ -560,6 +568,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       window.removeEventListener('resize', this.onViewportChange);
       window.removeEventListener('orientationchange', this.onViewportChange);
       window.removeEventListener('scroll', this.onScrollChange);
+      window.visualViewport?.removeEventListener('resize', this.onViewportChange);
+      window.visualViewport?.removeEventListener('scroll', this.onViewportChange);
     }
     if (this.statsChart) {
       this.statsChart.destroy();
@@ -577,7 +587,11 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private updateViewportState(): void {
     if (typeof window === 'undefined') return;
-    this.isSmartphoneViewport.set(window.innerWidth < 768);
+    const width = window.visualViewport?.width ?? window.innerWidth;
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    this.viewportWidth.set(Math.round(width));
+    this.viewportHeight.set(Math.round(height));
+    this.isSmartphoneViewport.set(width < 768);
   }
 
   private updateScrollTopVisibility(): void {
@@ -1325,6 +1339,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         next: () => {
           this.editGroupLoading.set(false);
           this.showEditGroupModal.set(false);
+          this.unlockBodyScroll();
           this.loadData();
         },
         error: (err) => {
@@ -1350,6 +1365,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         next: () => {
           this.groupSettingsLoading.set(false);
           this.showGroupSettingsModal.set(false);
+          this.unlockBodyScroll();
           this.loadData();
         },
         error: (err) => {
@@ -1452,11 +1468,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    return formatLocalDate(dateString);
   }
 
   setHistoryFilter(filter: 'all' | 'games' | 'events'): void {
@@ -1821,10 +1833,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       return null;
     }
     const labels = series.map((item) =>
-      new Date(item.game.playedAt).toLocaleDateString('en-US', {
-        day: '2-digit',
-        month: '2-digit',
-      })
+      formatLocalDate(item.game.playedAt, { day: '2-digit', month: '2-digit' })
     );
 
     if (option === 'decks_rank_trend') {

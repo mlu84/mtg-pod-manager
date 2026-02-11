@@ -24,7 +24,7 @@
     @if (isSeasonPaused) {
       <div class="alert alert--warning">
         <i class="fas fa-exclamation-triangle"></i>
-        Season is in pause. Recording is disabled until {{ seasonPauseUntil | date:'dd.MM.yyyy' }}.
+        Season is in pause. Recording is disabled until {{ seasonPauseUntil ? formatDate(seasonPauseUntil) : '' }}.
       </div>
     }
 

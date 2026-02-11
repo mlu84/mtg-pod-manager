@@ -42,6 +42,8 @@ export class GroupPlayComponent {
   rollVisible = signal(false);
   confirmResetActive = signal(false);
   private resetConfirmTimer: ReturnType<typeof setTimeout> | null = null;
+  private rollAnimationTimer: ReturnType<typeof setTimeout> | null = null;
+  private rollHideTimer: ReturnType<typeof setTimeout> | null = null;
 
   rolling = signal(false);
   rollResult = signal<number | null>(null);
@@ -309,22 +311,40 @@ export class GroupPlayComponent {
   rollD20(): void {
     if (this.rolling()) return;
     const animationDuration = 1000;
+    if (this.rollAnimationTimer) {
+      clearTimeout(this.rollAnimationTimer);
+      this.rollAnimationTimer = null;
+    }
+    if (this.rollHideTimer) {
+      clearTimeout(this.rollHideTimer);
+      this.rollHideTimer = null;
+    }
     this.rolling.set(true);
     this.rollVisible.set(true);
     this.rollResult.set(null);
     const result = Math.floor(Math.random() * 20) + 1;
-    setTimeout(() => {
+    this.rollAnimationTimer = setTimeout(() => {
       this.rolling.set(false);
       this.rollResult.set(result);
-      setTimeout(() => {
+      this.rollHideTimer = setTimeout(() => {
         if (!this.rollVisible()) return;
         this.rollResult.set(null);
         this.rollVisible.set(false);
+        this.rollHideTimer = null;
       }, 2000);
+      this.rollAnimationTimer = null;
     }, animationDuration);
   }
 
   closeRollModal(): void {
+    if (this.rollAnimationTimer) {
+      clearTimeout(this.rollAnimationTimer);
+      this.rollAnimationTimer = null;
+    }
+    if (this.rollHideTimer) {
+      clearTimeout(this.rollHideTimer);
+      this.rollHideTimer = null;
+    }
     this.rollVisible.set(false);
     this.rollResult.set(null);
     this.rolling.set(false);

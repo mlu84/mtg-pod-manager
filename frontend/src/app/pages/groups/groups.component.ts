@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
 import { UsersApiService } from '../../core/services/users-api.service';
+import { formatLocalDate } from '../../core/utils/date-utils';
 import {
   Group,
   GroupSearchResult,
@@ -305,5 +306,9 @@ export class GroupsComponent implements OnInit {
 
   goToSysadminUsers(): void {
     this.router.navigate(['/sysadmin-users']);
+  }
+
+  formatDate(dateString: string): string {
+    return formatLocalDate(dateString);
   }
 }

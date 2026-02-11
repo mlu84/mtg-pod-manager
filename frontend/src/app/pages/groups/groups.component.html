@@ -346,7 +346,7 @@
                     <span class="application-item__name">{{ app.group.name }}</span>
                     <span class="application-item__format">{{ app.group.format }}</span>
                   </div>
-                  <span class="application-item__date">{{ app.createdAt | date:'dd.MM.yyyy' }}</span>
+                  <span class="application-item__date">{{ formatDate(app.createdAt) }}</span>
                 </div>
               }
             </div>

@@ -16,7 +16,14 @@
   <div class="winners-banner__list">
     @for (winner of banner.winners; track winner.position) {
       <div class="winners-banner__item">
-        <span class="winners-banner__pos">#{{ winner.position }}</span>
+        <span
+          class="winners-banner__trophy"
+          [class.winners-banner__trophy--gold]="winner.position === 1"
+          [class.winners-banner__trophy--silver]="winner.position === 2"
+          [class.winners-banner__trophy--bronze]="winner.position === 3"
+        >
+          <i class="fas fa-trophy"></i>
+        </span>
         <span class="winners-banner__deck">{{ winner.deckName }}</span>
         <span class="winners-banner__owner">{{ winner.ownerName }}</span>
         <span class="mana-symbols mana-symbols--inline">

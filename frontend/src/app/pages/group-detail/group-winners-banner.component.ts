@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GroupDetail } from '../../models/group.model';
 import { getManaSymbols as toManaSymbols } from './color-utils';
+import { formatLocalDate } from '../../core/utils/date-utils';
 
 type WinnersBanner = NonNullable<GroupDetail['winnersBanner']>;
 
@@ -18,8 +19,7 @@ export class GroupWinnersBannerComponent {
 
   get info(): string | null {
     if (!this.banner) return null;
-    const endedAt = new Date(this.banner.endedAt);
-    return `Season ended ${endedAt.toLocaleDateString('en-US')}`;
+    return `Season ended ${formatLocalDate(this.banner.endedAt)}`;
   }
 
   getManaSymbols(colors: string): string[] {

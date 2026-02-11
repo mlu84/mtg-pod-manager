@@ -42,16 +42,19 @@ export class GroupPlaySlotComponent {
 
   handleIncrementLife(event: Event): void {
     event.stopPropagation();
+    if (!this.isLocked) return;
     this.incrementLife.emit(this.index);
   }
 
   handleDecrementLife(event: Event): void {
     event.stopPropagation();
+    if (!this.isLocked) return;
     this.decrementLife.emit(this.index);
   }
 
   handleStartLifeHold(delta: number, event: Event): void {
     event.stopPropagation();
+    if (!this.isLocked) return;
     this.startLifeHold.emit({ index: this.index, delta });
   }
 
@@ -62,11 +65,13 @@ export class GroupPlaySlotComponent {
 
   handleIncrementPoison(event: Event): void {
     event.stopPropagation();
+    if (!this.isLocked) return;
     this.incrementPoison.emit(this.index);
   }
 
   handleStartPoisonHold(event: Event): void {
     event.stopPropagation();
+    if (!this.isLocked) return;
     this.startPoisonHold.emit(this.index);
   }
 
@@ -77,11 +82,13 @@ export class GroupPlaySlotComponent {
 
   handleIncrementCommanderDamage(opponentIndex: number, event: Event): void {
     event.stopPropagation();
+    if (!this.isLocked) return;
     this.incrementCommanderDamage.emit({ index: this.index, opponentIndex });
   }
 
   handleStartCommanderHold(opponentIndex: number, event: Event): void {
     event.stopPropagation();
+    if (!this.isLocked) return;
     this.startCommanderHold.emit({ index: this.index, opponentIndex });
   }
 

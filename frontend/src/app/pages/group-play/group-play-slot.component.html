@@ -25,7 +25,7 @@
         <span class="play-slot__deck-name">{{ slot.deckName }}</span>
         @if (slot.playerName) {
           <span class="play-slot__player">{{ slot.playerName }}</span>
-        } @else {
+        } @else if (!isLocked) {
           <span class="play-slot__player play-slot__player--muted">Tap to add player</span>
         }
       } @else {

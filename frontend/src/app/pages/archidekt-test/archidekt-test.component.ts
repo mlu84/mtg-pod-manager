@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ErrorReportingService } from '../../core/services/error-reporting.service';
+import { formatLocalDate } from '../../core/utils/date-utils';
 
 interface ArchidektCardEntry {
   categories?: string[];
@@ -242,7 +243,7 @@ export class ArchidektTestComponent {
 
   formatDate(dateString: string): string {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return formatLocalDate(dateString, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

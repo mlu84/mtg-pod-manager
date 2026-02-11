@@ -67,10 +67,16 @@ export class GroupsSeasonService {
       },
     });
 
+    const seasonLabel = this.getSeasonLabel(group.activeSeasonName);
     await this.eventsService.log(
       groupId,
-      'SEASON_RESET',
-      'Season was reset',
+      'SEASON_ENDED',
+      `${seasonLabel} has ended`,
+    );
+    await this.eventsService.log(
+      groupId,
+      'SEASON_STARTED',
+      `${seasonLabel} has started`,
     );
   }
 
@@ -126,11 +132,25 @@ export class GroupsSeasonService {
       },
     });
 
+    const seasonLabel = this.getSeasonLabel(group.activeSeasonName);
     await this.eventsService.log(
       groupId,
-      'SEASON_RESET',
-      'Season was reset manually',
+      'SEASON_ENDED',
+      `${seasonLabel} has ended`,
     );
+    await this.eventsService.log(
+      groupId,
+      'SEASON_STARTED',
+      `${seasonLabel} has started`,
+    );
+  }
+
+  private getSeasonLabel(name?: string | null): string {
+    const trimmed = name?.trim();
+    if (!trimmed) return 'Season';
+    return trimmed.toLowerCase().startsWith('season ')
+      ? trimmed
+      : `Season ${trimmed}`;
   }
 
   /**

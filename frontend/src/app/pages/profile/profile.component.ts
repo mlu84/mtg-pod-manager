@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { UserProfile } from '../../models/user.model';
+import { formatLocalDate } from '../../core/utils/date-utils';
 
 @Component({
   selector: 'app-profile',
@@ -102,10 +103,6 @@ export class ProfileComponent implements OnInit {
 
   formatDate(dateString: string | null): string {
     if (!dateString) return 'Not verified';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    return formatLocalDate(dateString);
   }
 }

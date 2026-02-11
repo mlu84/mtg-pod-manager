@@ -114,10 +114,17 @@ describe('GroupsSeasonService.ensureSeasonUpToDate', () => {
       },
     });
 
-    expect(eventsService.log).toHaveBeenCalledWith(
+    expect(eventsService.log).toHaveBeenNthCalledWith(
+      1,
       groupId,
-      'SEASON_RESET',
-      'Season was reset',
+      'SEASON_ENDED',
+      'Season B has ended',
+    );
+    expect(eventsService.log).toHaveBeenNthCalledWith(
+      2,
+      groupId,
+      'SEASON_STARTED',
+      'Season B has started',
     );
   });
 });

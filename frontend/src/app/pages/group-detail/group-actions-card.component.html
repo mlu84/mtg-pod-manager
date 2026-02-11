@@ -27,7 +27,7 @@
       <div class="alert alert--warning">
         <i class="fas fa-exclamation-triangle"></i>
         Season is in pause. Recording games is disabled until
-        {{ seasonPauseUntil | date:'dd.MM.yyyy' }}.
+        {{ seasonPauseUntil ? formatDate(seasonPauseUntil) : '' }}.
       </div>
     }
   } @else {
