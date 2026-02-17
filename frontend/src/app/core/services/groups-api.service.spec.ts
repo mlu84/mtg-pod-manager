@@ -7,12 +7,14 @@ describe('GroupsApiService', () => {
   let http: {
     get: ReturnType<typeof vi.fn>;
     post: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
     http = {
       get: vi.fn(),
       post: vi.fn(),
+      delete: vi.fn(),
     };
     service = new GroupsApiService(http as any);
   });
@@ -35,5 +37,22 @@ describe('GroupsApiService', () => {
     expect(http.post).toHaveBeenCalledWith(`${environment.apiUrl}/groups/join`, {
       inviteCode: 'invite-123',
     });
+  });
+
+  it('acceptInvite posts to invite accept endpoint', () => {
+    service.acceptInvite('invite-1');
+
+    expect(http.post).toHaveBeenCalledWith(
+      `${environment.apiUrl}/groups/invites/invite-1/accept`,
+      {},
+    );
+  });
+
+  it('cancelSentInvite calls DELETE on invite endpoint', () => {
+    service.cancelSentInvite('invite-2');
+
+    expect(http.delete).toHaveBeenCalledWith(
+      `${environment.apiUrl}/groups/invites/invite-2`,
+    );
   });
 });

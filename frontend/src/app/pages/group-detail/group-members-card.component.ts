@@ -12,5 +12,7 @@ import { GroupMember } from '../../models/group.model';
 export class GroupMembersCardComponent {
   @Input({ required: true }) membersCollapsed!: boolean;
   @Input({ required: true }) members!: GroupMember[];
+  @Input({ required: true }) isAdmin!: boolean;
   @Output() toggleCollapsed = new EventEmitter<void>();
+  @Output() inviteUser = new EventEmitter<void>();
 }

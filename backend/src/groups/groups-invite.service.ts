@@ -40,15 +40,28 @@ export class GroupsInviteService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { inAppName: true },
+      select: { inAppName: true, email: true },
     });
 
-    await this.prisma.usersOnGroups.create({
-      data: {
-        userId,
-        groupId: group.id,
-        role: 'MEMBER',
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.usersOnGroups.create({
+        data: {
+          userId,
+          groupId: group.id,
+          role: 'MEMBER',
+        },
+      });
+
+      const normalizedEmail = user?.email?.trim().toLowerCase();
+      await tx.groupInvite.deleteMany({
+        where: {
+          groupId: group.id,
+          OR: [
+            { invitedUserId: userId },
+            ...(normalizedEmail ? [{ invitedEmail: normalizedEmail }] : []),
+          ],
+        },
+      });
     });
 
     await this.eventsService.log(

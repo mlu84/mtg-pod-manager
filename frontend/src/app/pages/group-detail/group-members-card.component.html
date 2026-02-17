@@ -1,6 +1,11 @@
 <section class="card">
   <div class="card__header">
     <h2 class="card__title"><i class="fas fa-users"></i> Members</h2>
+    @if (isAdmin) {
+      <button class="btn btn--outline members-invite-btn" (click)="inviteUser.emit()">
+        <i class="fas fa-user-plus"></i> Invite User
+      </button>
+    }
     <button class="card__toggle" (click)="toggleCollapsed.emit()" title="Toggle members">
       <i class="fas" [class.fa-chevron-down]="membersCollapsed" [class.fa-chevron-up]="!membersCollapsed"></i>
     </button>

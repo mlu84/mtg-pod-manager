@@ -8,6 +8,9 @@ import {
   GroupDetail,
   GroupSearchResponse,
   GroupApplication,
+  IncomingGroupApplication,
+  IncomingGroupInvite,
+  SentGroupInvite,
 } from '../../models/group.model';
 
 const API_URL = environment.apiUrl;
@@ -52,5 +55,49 @@ export class GroupsApiService {
 
   getGroupApplications(groupId: string): Observable<GroupApplication[]> {
     return this.http.get<GroupApplication[]>(`${API_URL}/groups/${groupId}/applications`);
+  }
+
+  getIncomingApplications(): Observable<IncomingGroupApplication[]> {
+    return this.http.get<IncomingGroupApplication[]>(`${API_URL}/groups/applications/incoming`);
+  }
+
+  acceptGroupApplication(groupId: string, userId: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${API_URL}/groups/${groupId}/applications/${userId}/accept`,
+      {},
+    );
+  }
+
+  rejectGroupApplication(groupId: string, userId: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${API_URL}/groups/${groupId}/applications/${userId}/reject`,
+      {},
+    );
+  }
+
+  getIncomingInvites(): Observable<IncomingGroupInvite[]> {
+    return this.http.get<IncomingGroupInvite[]>(`${API_URL}/groups/invites/incoming`);
+  }
+
+  acceptInvite(inviteId: string): Observable<{ message: string; groupId: string }> {
+    return this.http.post<{ message: string; groupId: string }>(
+      `${API_URL}/groups/invites/${inviteId}/accept`,
+      {},
+    );
+  }
+
+  rejectInvite(inviteId: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${API_URL}/groups/invites/${inviteId}/reject`,
+      {},
+    );
+  }
+
+  getSentInvites(): Observable<SentGroupInvite[]> {
+    return this.http.get<SentGroupInvite[]>(`${API_URL}/groups/invites/sent`);
+  }
+
+  cancelSentInvite(inviteId: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${API_URL}/groups/invites/${inviteId}`);
   }
 }

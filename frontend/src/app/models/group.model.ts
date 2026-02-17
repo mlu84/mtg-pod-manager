@@ -122,7 +122,61 @@ export interface UserGroupApplication {
   createdAt: string;
 }
 
+export type GroupInviteType = 'USER' | 'EMAIL';
+
+export interface IncomingGroupInvite {
+  id: string;
+  createdAt: string;
+  type: GroupInviteType;
+  invitedEmail: string;
+  group: {
+    id: string;
+    name: string;
+    format: string;
+  };
+  inviter: {
+    id: string;
+    inAppName: string;
+  };
+}
+
+export interface SentGroupInvite {
+  id: string;
+  createdAt: string;
+  type: GroupInviteType;
+  invitedEmail: string;
+  invitedUser: {
+    id: string;
+    inAppName: string;
+  } | null;
+  group: {
+    id: string;
+    name: string;
+    format: string;
+  };
+}
+
+export interface InvitableUser {
+  id: string;
+  inAppName: string;
+}
+
 export interface GroupApplication {
+  userId: string;
+  user: {
+    id: string;
+    inAppName: string;
+  };
+  createdAt: string;
+}
+
+export interface IncomingGroupApplication {
+  groupId: string;
+  group: {
+    id: string;
+    name: string;
+    format: string;
+  };
   userId: string;
   user: {
     id: string;

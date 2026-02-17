@@ -2,13 +2,17 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { formatLocalDate } from '../../core/utils/date-utils';
 import {
   Group,
+  IncomingGroupApplication,
   GroupSearchResult,
+  IncomingGroupInvite,
+  SentGroupInvite,
   UserGroupApplication,
 } from '../../models/group.model';
 
@@ -29,6 +33,7 @@ export class GroupsComponent implements OnInit {
   showCreateModal = signal(false);
   showJoinModal = signal(false);
   showSearchModal = signal(false);
+  showRequestsModal = signal(false);
 
   // Create group form
   newGroupName = '';
@@ -53,10 +58,12 @@ export class GroupsComponent implements OnInit {
 
   // Applications
   myApplications = signal<UserGroupApplication[]>([]);
-  applicationsLoading = signal(false);
-  applicationsError = signal<string | null>(null);
-  applicationsPage = signal(1);
-  readonly applicationsPageSize = 5;
+  incomingApplications = signal<IncomingGroupApplication[]>([]);
+  incomingInvites = signal<IncomingGroupInvite[]>([]);
+  sentInvites = signal<SentGroupInvite[]>([]);
+  requestsLoading = signal(false);
+  requestsError = signal<string | null>(null);
+  requestsActionLoading = signal(false);
 
   // Format options
   formats = [
@@ -81,20 +88,19 @@ export class GroupsComponent implements OnInit {
 
   isEmailVerified = this.authService.isEmailVerified;
   isSysAdmin = this.authService.isSysAdmin;
-  applicationsBadge = computed(() => this.myApplications().length);
-  applicationsTotalPages = computed(() =>
-    Math.max(1, Math.ceil(this.myApplications().length / this.applicationsPageSize))
+  requestsBadge = computed(
+    () =>
+      this.myApplications().length +
+      this.incomingApplications().length +
+      this.incomingInvites().length +
+      this.sentInvites().length,
   );
-  paginatedApplications = computed(() => {
-    const start = (this.applicationsPage() - 1) * this.applicationsPageSize;
-    return this.myApplications().slice(start, start + this.applicationsPageSize);
-  });
 
   constructor() {}
 
   ngOnInit(): void {
     this.loadGroups();
-    this.loadMyApplications();
+    this.loadRequestCenterData(false);
   }
 
   loadGroups(): void {
@@ -195,7 +201,6 @@ export class GroupsComponent implements OnInit {
     this.searchError.set(null);
     this.searchTotal.set(0);
     this.searchPage.set(1);
-    this.applicationsPage.set(1);
     this.showSearchModal.set(true);
   }
 
@@ -203,18 +208,40 @@ export class GroupsComponent implements OnInit {
     this.showSearchModal.set(false);
   }
 
-  loadMyApplications(): void {
-    this.applicationsLoading.set(true);
-    this.applicationsError.set(null);
+  openRequestsModal(): void {
+    this.requestsError.set(null);
+    this.showRequestsModal.set(true);
+    this.loadRequestCenterData(true);
+  }
 
-    this.usersApiService.getMyApplications().subscribe({
-      next: (apps) => {
-        this.myApplications.set(apps);
-        this.applicationsLoading.set(false);
+  closeRequestsModal(): void {
+    this.showRequestsModal.set(false);
+  }
+
+  loadRequestCenterData(showError = true): void {
+    this.requestsLoading.set(true);
+    if (showError) {
+      this.requestsError.set(null);
+    }
+
+    forkJoin({
+      applications: this.usersApiService.getMyApplications(),
+      incomingApplications: this.groupsApiService.getIncomingApplications(),
+      incomingInvites: this.groupsApiService.getIncomingInvites(),
+      sentInvites: this.groupsApiService.getSentInvites(),
+    }).subscribe({
+      next: (result) => {
+        this.myApplications.set(result.applications);
+        this.incomingApplications.set(result.incomingApplications);
+        this.incomingInvites.set(result.incomingInvites);
+        this.sentInvites.set(result.sentInvites);
+        this.requestsLoading.set(false);
       },
       error: (err) => {
-        this.applicationsError.set(err.error?.message || 'Failed to load applications');
-        this.applicationsLoading.set(false);
+        this.requestsLoading.set(false);
+        if (showError) {
+          this.requestsError.set(err.error?.message || 'Failed to load requests');
+        }
       },
     });
   }
@@ -278,7 +305,7 @@ export class GroupsComponent implements OnInit {
     this.groupsApiService.applyToGroup(groupId).subscribe({
       next: () => {
         this.searchLoading.set(false);
-        this.loadMyApplications();
+        this.loadRequestCenterData(false);
       },
       error: (err) => {
         this.searchLoading.set(false);
@@ -287,9 +314,91 @@ export class GroupsComponent implements OnInit {
     });
   }
 
-  setApplicationsPage(page: number): void {
-    if (page < 1 || page > this.applicationsTotalPages()) return;
-    this.applicationsPage.set(page);
+  acceptInvite(inviteId: string): void {
+    if (this.requestsActionLoading()) return;
+
+    this.requestsActionLoading.set(true);
+    this.requestsError.set(null);
+    this.groupsApiService.acceptInvite(inviteId).subscribe({
+      next: () => {
+        this.requestsActionLoading.set(false);
+        this.loadGroups();
+        this.loadRequestCenterData(true);
+      },
+      error: (err) => {
+        this.requestsActionLoading.set(false);
+        this.requestsError.set(err.error?.message || 'Failed to accept invite');
+      },
+    });
+  }
+
+  rejectInvite(inviteId: string): void {
+    if (this.requestsActionLoading()) return;
+
+    this.requestsActionLoading.set(true);
+    this.requestsError.set(null);
+    this.groupsApiService.rejectInvite(inviteId).subscribe({
+      next: () => {
+        this.requestsActionLoading.set(false);
+        this.loadRequestCenterData(true);
+      },
+      error: (err) => {
+        this.requestsActionLoading.set(false);
+        this.requestsError.set(err.error?.message || 'Failed to reject invite');
+      },
+    });
+  }
+
+  acceptIncomingApplication(groupId: string, userId: string): void {
+    if (this.requestsActionLoading()) return;
+
+    this.requestsActionLoading.set(true);
+    this.requestsError.set(null);
+    this.groupsApiService.acceptGroupApplication(groupId, userId).subscribe({
+      next: () => {
+        this.requestsActionLoading.set(false);
+        this.loadGroups();
+        this.loadRequestCenterData(true);
+      },
+      error: (err) => {
+        this.requestsActionLoading.set(false);
+        this.requestsError.set(err.error?.message || 'Failed to accept request');
+      },
+    });
+  }
+
+  rejectIncomingApplication(groupId: string, userId: string): void {
+    if (this.requestsActionLoading()) return;
+
+    this.requestsActionLoading.set(true);
+    this.requestsError.set(null);
+    this.groupsApiService.rejectGroupApplication(groupId, userId).subscribe({
+      next: () => {
+        this.requestsActionLoading.set(false);
+        this.loadRequestCenterData(true);
+      },
+      error: (err) => {
+        this.requestsActionLoading.set(false);
+        this.requestsError.set(err.error?.message || 'Failed to reject request');
+      },
+    });
+  }
+
+  cancelSentInvite(inviteId: string): void {
+    if (this.requestsActionLoading()) return;
+
+    this.requestsActionLoading.set(true);
+    this.requestsError.set(null);
+    this.groupsApiService.cancelSentInvite(inviteId).subscribe({
+      next: () => {
+        this.requestsActionLoading.set(false);
+        this.loadRequestCenterData(true);
+      },
+      error: (err) => {
+        this.requestsActionLoading.set(false);
+        this.requestsError.set(err.error?.message || 'Failed to cancel invite');
+      },
+    });
   }
 
   logout(): void {

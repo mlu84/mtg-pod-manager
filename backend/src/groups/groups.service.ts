@@ -8,6 +8,7 @@ import { GroupsMediaService } from './groups-media.service';
 import { GroupsMembersService } from './groups-members.service';
 import { GroupsQueryService } from './groups-query.service';
 import { GroupsSeasonService } from './groups-season.service';
+import { GroupsInvitationsService } from './groups-invitations.service';
 
 @Injectable()
 export class GroupsService {
@@ -19,6 +20,7 @@ export class GroupsService {
     private groupsInviteService: GroupsInviteService,
     private groupsMediaService: GroupsMediaService,
     private groupsSeasonService: GroupsSeasonService,
+    private groupsInvitationsService: GroupsInvitationsService,
   ) {}
 
   create(createGroupDto: CreateGroupDto, userId: string) {
@@ -47,6 +49,10 @@ export class GroupsService {
 
   getApplications(groupId: string, userId: string) {
     return this.groupsApplicationsService.getApplications(groupId, userId);
+  }
+
+  getIncomingApplications(userId: string) {
+    return this.groupsApplicationsService.getIncomingApplications(userId);
   }
 
   acceptApplication(groupId: string, applicantUserId: string, adminUserId: string) {
@@ -117,5 +123,37 @@ export class GroupsService {
 
   dismissWinnersBanner(groupId: string, userId: string): Promise<void> {
     return this.groupsSeasonService.dismissWinnersBanner(groupId, userId);
+  }
+
+  searchInvitableUsers(groupId: string, userId: string, query: string) {
+    return this.groupsInvitationsService.searchInvitableUsers(groupId, userId, query);
+  }
+
+  createUserInvite(groupId: string, userId: string, targetUserId: string) {
+    return this.groupsInvitationsService.createUserInvite(groupId, userId, targetUserId);
+  }
+
+  createEmailInvite(groupId: string, userId: string, email: string) {
+    return this.groupsInvitationsService.createEmailInvite(groupId, userId, email);
+  }
+
+  getIncomingInvites(userId: string) {
+    return this.groupsInvitationsService.getIncomingInvites(userId);
+  }
+
+  acceptInvite(inviteId: string, userId: string) {
+    return this.groupsInvitationsService.acceptInvite(inviteId, userId);
+  }
+
+  rejectInvite(inviteId: string, userId: string) {
+    return this.groupsInvitationsService.rejectInvite(inviteId, userId);
+  }
+
+  getSentInvites(userId: string) {
+    return this.groupsInvitationsService.getSentInvites(userId);
+  }
+
+  cancelSentInvite(inviteId: string, userId: string) {
+    return this.groupsInvitationsService.cancelSentInvite(inviteId, userId);
   }
 }

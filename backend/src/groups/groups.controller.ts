@@ -19,6 +19,8 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { JoinGroupDto } from './dto/join-group.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { CreateUserInviteDto } from './dto/create-user-invite.dto';
+import { CreateEmailInviteDto } from './dto/create-email-invite.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { VerifiedUserGuard } from '../auth/guards/verified-user.guard';
 import { CurrentUser, CurrentUserType } from '../auth/decorators/current-user.decorator';
@@ -55,6 +57,48 @@ export class GroupsController {
     return this.groupsService.search(query, user.id, page, pageSize);
   }
 
+  @Get('invites/incoming')
+  getIncomingInvites(@CurrentUser() user: CurrentUserType) {
+    return this.groupsService.getIncomingInvites(user.id);
+  }
+
+  @Get('applications/incoming')
+  getIncomingApplications(@CurrentUser() user: CurrentUserType) {
+    return this.groupsService.getIncomingApplications(user.id);
+  }
+
+  @Get('invites/sent')
+  getSentInvites(@CurrentUser() user: CurrentUserType) {
+    return this.groupsService.getSentInvites(user.id);
+  }
+
+  @Post('invites/:inviteId/accept')
+  @UseGuards(VerifiedUserGuard)
+  acceptInvite(
+    @Param('inviteId') inviteId: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.groupsService.acceptInvite(inviteId, user.id);
+  }
+
+  @Post('invites/:inviteId/reject')
+  @UseGuards(VerifiedUserGuard)
+  rejectInvite(
+    @Param('inviteId') inviteId: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.groupsService.rejectInvite(inviteId, user.id);
+  }
+
+  @Delete('invites/:inviteId')
+  @UseGuards(VerifiedUserGuard)
+  cancelSentInvite(
+    @Param('inviteId') inviteId: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.groupsService.cancelSentInvite(inviteId, user.id);
+  }
+
   @Get(':id')
   findOne(
     @Param('id') id: string,
@@ -69,6 +113,44 @@ export class GroupsController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.joinByCode(joinGroupDto.inviteCode, user.id);
+  }
+
+  @Get(':id/invitable-users')
+  @UseGuards(VerifiedUserGuard)
+  searchInvitableUsers(
+    @Param('id') groupId: string,
+    @Query('query') query: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.groupsService.searchInvitableUsers(groupId, user.id, query || '');
+  }
+
+  @Post(':id/invites/user')
+  @UseGuards(VerifiedUserGuard)
+  createUserInvite(
+    @Param('id') groupId: string,
+    @Body() createUserInviteDto: CreateUserInviteDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.groupsService.createUserInvite(
+      groupId,
+      user.id,
+      createUserInviteDto.targetUserId,
+    );
+  }
+
+  @Post(':id/invites/email')
+  @UseGuards(VerifiedUserGuard)
+  createEmailInvite(
+    @Param('id') groupId: string,
+    @Body() createEmailInviteDto: CreateEmailInviteDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.groupsService.createEmailInvite(
+      groupId,
+      user.id,
+      createEmailInviteDto.email,
+    );
   }
 
   @Post(':id/applications')

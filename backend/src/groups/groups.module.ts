@@ -10,9 +10,11 @@ import { GroupsMembersService } from './groups-members.service';
 import { GroupsMembershipService } from './groups-membership.service';
 import { GroupsQueryService } from './groups-query.service';
 import { GroupsSeasonService } from './groups-season.service';
+import { GroupsInvitationsService } from './groups-invitations.service';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MailModule],
   controllers: [GroupsController],
   providers: [
     GroupsService,
@@ -24,6 +26,7 @@ import { GroupsSeasonService } from './groups-season.service';
     GroupsMembershipService,
     GroupsQueryService,
     GroupsSeasonService,
+    GroupsInvitationsService,
   ],
   exports: [GroupsService, GroupsMembershipService],
 })

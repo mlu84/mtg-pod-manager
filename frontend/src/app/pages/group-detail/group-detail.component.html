@@ -150,7 +150,9 @@
             class="members-card"
             [membersCollapsed]="membersCollapsed()"
             [members]="group()!.members"
+            [isAdmin]="isAdmin()"
             (toggleCollapsed)="toggleMembersCollapsed()"
+            (inviteUser)="openInviteUserModal()"
           />
         </div>
       </div>
@@ -358,6 +360,97 @@
       (editNextSeasonIntermissionDaysChange)="editNextSeasonIntermissionDays = $event"
       (requestEndSeason)="requestEndSeason()"
     />
+  }
+
+  @if (showInviteUserModal()) {
+    <div class="modal-overlay">
+      <div class="modal card" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <h2>Invite User</h2>
+          <button class="modal__close" (click)="closeInviteUserModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <h3 class="modal__section-title">Invite Existing User</h3>
+        @if (inviteUserSearchError()) {
+          <div class="alert alert--danger">{{ inviteUserSearchError() }}</div>
+        }
+        @if (inviteUserActionError()) {
+          <div class="alert alert--danger">{{ inviteUserActionError() }}</div>
+        }
+        @if (inviteUserActionSuccess()) {
+          <div class="alert alert--success">{{ inviteUserActionSuccess() }}</div>
+        }
+
+        <form class="form-group search-form" (ngSubmit)="searchInvitableUsers()">
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="inviteUserSearchQuery"
+            name="inviteUserSearchQuery"
+            placeholder="Search by in-app name"
+            [disabled]="inviteUserSearchLoading()"
+          />
+          <button type="submit" class="btn btn--primary" [disabled]="inviteUserSearchLoading()">
+            @if (inviteUserSearchLoading()) { Searching... } @else { Search }
+          </button>
+        </form>
+
+        @if (inviteUserSearchResults().length === 0 && inviteUserSearchQuery.trim() && !inviteUserSearchLoading()) {
+          <p class="text-muted">No invitable users found.</p>
+        } @else if (inviteUserSearchResults().length > 0) {
+          <div class="application-list">
+            @for (user of inviteUserSearchResults(); track user.id) {
+              <div class="application-item">
+                <div class="application-item__info">
+                  <span class="application-item__name">{{ user.inAppName }}</span>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn--secondary"
+                  [disabled]="inviteUserActionLoading()"
+                  (click)="sendUserInvite(user.id)"
+                >
+                  Invite
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <h3 class="modal__section-title">Invite by Email</h3>
+        @if (inviteEmailError()) {
+          <div class="alert alert--danger">{{ inviteEmailError() }}</div>
+        }
+        @if (inviteEmailSuccess()) {
+          <div class="alert alert--success">{{ inviteEmailSuccess() }}</div>
+        }
+
+        <form (ngSubmit)="sendEmailInvite()">
+          <div class="form-group">
+            <label for="inviteEmailAddress">Email</label>
+            <input
+              type="email"
+              id="inviteEmailAddress"
+              class="form-control"
+              [(ngModel)]="inviteEmailAddress"
+              name="inviteEmailAddress"
+              placeholder="name@example.com"
+              [disabled]="inviteEmailLoading()"
+            />
+          </div>
+          <div class="modal__actions">
+            <button type="button" class="btn btn--outline" (click)="closeInviteUserModal()">
+              Close
+            </button>
+            <button type="submit" class="btn btn--primary" [disabled]="inviteEmailLoading()">
+              @if (inviteEmailLoading()) { Sending... } @else { Send Invite }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   }
 
   <!-- Member Settings Modal -->

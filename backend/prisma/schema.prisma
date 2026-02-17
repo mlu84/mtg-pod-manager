@@ -26,6 +26,11 @@ enum SeasonInterval {
   YEARLY
 }
 
+enum GroupInviteType {
+  USER
+  EMAIL
+}
+
 model User {
   id                     String     @id @default(cuid())
   email                  String     @unique
@@ -46,6 +51,8 @@ model User {
   gamePlacements GamePlacement[]
   groupApplications GroupApplication[]
   seasonDismissals GroupSeasonDismissal[]
+  sentGroupInvites GroupInvite[] @relation("GroupInviteInviter")
+  receivedGroupInvites GroupInvite[] @relation("GroupInviteInvitedUser")
 }
 
 model Group {
@@ -77,6 +84,7 @@ model Group {
   games        Game[]
   events       GroupEvent[]
   applications GroupApplication[]
+  invites      GroupInvite[]
   seasons      GroupSeason[]
   lastSeason   GroupSeason? @relation("GroupLastSeason", fields: [lastSeasonId], references: [id])
 }
@@ -166,6 +174,29 @@ model GroupApplication {
   groupId String
 
   @@unique([userId, groupId])
+}
+
+model GroupInvite {
+  id            String          @id @default(cuid())
+  createdAt     DateTime        @default(now())
+  type          GroupInviteType
+  invitedEmail  String
+
+  group         Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId       String
+
+  inviter       User            @relation("GroupInviteInviter", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  inviterUserId String
+
+  invitedUser   User?           @relation("GroupInviteInvitedUser", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedUserId String?
+
+  @@unique([groupId, invitedUserId])
+  @@unique([groupId, invitedEmail])
+  @@index([groupId])
+  @@index([inviterUserId])
+  @@index([invitedUserId])
+  @@index([invitedEmail])
 }
 
 model GroupSeason {

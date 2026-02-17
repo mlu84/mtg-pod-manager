@@ -23,6 +23,7 @@ import {
   GroupDetail,
   Deck,
   GroupApplication,
+  InvitableUser,
   SeasonInterval,
 } from '../../models/group.model';
 import { Game, RankingEntry, RankingEntryWithTrend, GroupEvent } from '../../models/game.model';
@@ -155,6 +156,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   showMemberSettingsModal = signal(false);
   showGroupSettingsModal = signal(false);
   showSeasonSettingsModal = signal(false);
+  showInviteUserModal = signal(false);
 
   // Deck form (create)
   deckName = '';
@@ -259,6 +261,19 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   applicationsLoading = signal(false);
   applicationsError = signal<string | null>(null);
   applicationActionLoading = signal(false);
+
+  // User invites (admin)
+  inviteUserSearchQuery = '';
+  inviteUserSearchResults = signal<InvitableUser[]>([]);
+  inviteUserSearchLoading = signal(false);
+  inviteUserSearchError = signal<string | null>(null);
+  inviteUserActionLoading = signal(false);
+  inviteUserActionError = signal<string | null>(null);
+  inviteUserActionSuccess = signal<string | null>(null);
+  inviteEmailAddress = '';
+  inviteEmailLoading = signal(false);
+  inviteEmailError = signal<string | null>(null);
+  inviteEmailSuccess = signal<string | null>(null);
 
   // Game form
   gamePlacements: { deckId: string; rank: number; playerName: string }[] = [];
@@ -1394,6 +1409,97 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   closeMemberSettingsModal(): void {
     this.showMemberSettingsModal.set(false);
     this.unlockBodyScroll();
+  }
+
+  openInviteUserModal(): void {
+    if (!this.isAdmin()) return;
+
+    this.inviteUserSearchQuery = '';
+    this.inviteUserSearchResults.set([]);
+    this.inviteUserSearchError.set(null);
+    this.inviteUserActionError.set(null);
+    this.inviteUserActionSuccess.set(null);
+    this.inviteEmailAddress = '';
+    this.inviteEmailError.set(null);
+    this.inviteEmailSuccess.set(null);
+    this.showInviteUserModal.set(true);
+    this.lockBodyScroll();
+  }
+
+  closeInviteUserModal(): void {
+    this.showInviteUserModal.set(false);
+    this.unlockBodyScroll();
+  }
+
+  searchInvitableUsers(): void {
+    const query = this.inviteUserSearchQuery.trim();
+    if (!query) {
+      this.inviteUserSearchResults.set([]);
+      this.inviteUserSearchError.set('Please enter a user name');
+      return;
+    }
+
+    this.inviteUserSearchLoading.set(true);
+    this.inviteUserSearchError.set(null);
+    this.inviteUserActionError.set(null);
+    this.inviteUserActionSuccess.set(null);
+
+    this.groupDetailApiService.searchInvitableUsers(this.groupId, query).subscribe({
+      next: (users) => {
+        this.inviteUserSearchResults.set(users);
+        this.inviteUserSearchLoading.set(false);
+      },
+      error: (err) => {
+        this.inviteUserSearchLoading.set(false);
+        this.inviteUserSearchError.set(err.error?.message || 'Failed to search users');
+      },
+    });
+  }
+
+  sendUserInvite(targetUserId: string): void {
+    if (this.inviteUserActionLoading()) return;
+
+    this.inviteUserActionLoading.set(true);
+    this.inviteUserActionError.set(null);
+    this.inviteUserActionSuccess.set(null);
+
+    this.groupDetailApiService.createUserInvite(this.groupId, targetUserId).subscribe({
+      next: (result) => {
+        this.inviteUserActionLoading.set(false);
+        this.inviteUserActionSuccess.set(result.message || 'Invite sent');
+        this.inviteUserSearchResults.set(
+          this.inviteUserSearchResults().filter((user) => user.id !== targetUserId),
+        );
+      },
+      error: (err) => {
+        this.inviteUserActionLoading.set(false);
+        this.inviteUserActionError.set(err.error?.message || 'Failed to send invite');
+      },
+    });
+  }
+
+  sendEmailInvite(): void {
+    const email = this.inviteEmailAddress.trim();
+    if (!email) {
+      this.inviteEmailError.set('Please enter an email address');
+      return;
+    }
+
+    this.inviteEmailLoading.set(true);
+    this.inviteEmailError.set(null);
+    this.inviteEmailSuccess.set(null);
+
+    this.groupDetailApiService.createEmailInvite(this.groupId, email).subscribe({
+      next: (result) => {
+        this.inviteEmailLoading.set(false);
+        this.inviteEmailSuccess.set(result.message || 'Email invite sent');
+        this.inviteEmailAddress = '';
+      },
+      error: (err) => {
+        this.inviteEmailLoading.set(false);
+        this.inviteEmailError.set(err.error?.message || 'Failed to send email invite');
+      },
+    });
   }
 
   updateGroup(): void {

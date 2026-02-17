@@ -51,8 +51,11 @@
         </button>
         <button class="btn btn--secondary btn--search" (click)="openSearchModal()">
           <i class="fas fa-search"></i> Search Groups
-          @if (applicationsBadge() > 0) {
-            <span class="btn-badge">{{ applicationsBadge() }}</span>
+        </button>
+        <button class="btn btn--primary btn--search" (click)="openRequestsModal()">
+          <i class="fas fa-inbox"></i> Group Requests
+          @if (requestsBadge() > 0) {
+            <span class="btn-badge">{{ requestsBadge() }}</span>
           }
         </button>
       </div>
@@ -256,97 +259,185 @@
         </button>
       </form>
 
-      <div class="search-content">
-        <div class="search-results">
-          <h3>Results</h3>
-          @if (searchLoading()) {
-            <div class="loading-inline">
-              <div class="spinner"></div>
-              <span>Searching...</span>
-            </div>
-          } @else if (searchResults().length === 0 && searchQuery) {
-            <p class="text-muted">No groups found.</p>
-          } @else {
-            <div class="result-list">
-              @for (result of searchResults(); track result.id) {
-                <div class="result-item">
-                  <div class="result-item__image">
-                    <img [src]="result.imageUrl || defaultGroupImage" [alt]="result.name" />
-                  </div>
-                  <div class="result-item__info">
-                    <div class="result-item__title">
-                      <span class="result-item__name">{{ result.name }}</span>
-                      <span class="result-item__format">{{ result.format }}</span>
-                    </div>
-                    @if (result.description) {
-                      <p class="result-item__description">{{ result.description }}</p>
-                    }
-                    <span class="result-item__meta">{{ result.memberCount }} members</span>
-                  </div>
-                  <div class="result-item__actions">
-                    @if (isMember(result.id)) {
-                      <button class="btn btn--outline" disabled>Member</button>
-                    } @else if (hasApplied(result.id)) {
-                      <button class="btn btn--outline" disabled>Applied</button>
-                    } @else {
-                      <button class="btn btn--secondary" (click)="applyToGroup(result.id)"
-                              [disabled]="searchLoading() || !isEmailVerified()">
-                        Apply
-                      </button>
-                    }
-                  </div>
+      <div class="search-results">
+        <h3>Results</h3>
+        @if (searchLoading()) {
+          <div class="loading-inline">
+            <div class="spinner"></div>
+            <span>Searching...</span>
+          </div>
+        } @else if (searchResults().length === 0 && searchQuery) {
+          <p class="text-muted">No groups found.</p>
+        } @else {
+          <div class="result-list">
+            @for (result of searchResults(); track result.id) {
+              <div class="result-item">
+                <div class="result-item__image">
+                  <img [src]="result.imageUrl || defaultGroupImage" [alt]="result.name" />
                 </div>
-              }
-            </div>
-
-            @if (searchTotalPages() > 1) {
-              <div class="pagination">
-                <button class="btn btn--outline" (click)="setSearchPage(searchPage() - 1)"
-                        [disabled]="searchPage() === 1">Prev</button>
-                <span class="pagination__info">Page {{ searchPage() }} of {{ searchTotalPages() }}</span>
-                <button class="btn btn--outline" (click)="setSearchPage(searchPage() + 1)"
-                        [disabled]="searchPage() === searchTotalPages()">Next</button>
+                <div class="result-item__info">
+                  <div class="result-item__title">
+                    <span class="result-item__name">{{ result.name }}</span>
+                    <span class="result-item__format">{{ result.format }}</span>
+                  </div>
+                  @if (result.description) {
+                    <p class="result-item__description">{{ result.description }}</p>
+                  }
+                  <span class="result-item__meta">{{ result.memberCount }} members</span>
+                </div>
+                <div class="result-item__actions">
+                  @if (isMember(result.id)) {
+                    <button class="btn btn--outline" disabled>Member</button>
+                  } @else if (hasApplied(result.id)) {
+                    <button class="btn btn--outline" disabled>Applied</button>
+                  } @else {
+                    <button class="btn btn--secondary" (click)="applyToGroup(result.id)"
+                            [disabled]="searchLoading() || !isEmailVerified()">
+                      Apply
+                    </button>
+                  }
+                </div>
               </div>
             }
-          }
-        </div>
+          </div>
 
-        <div class="applications">
-          <h3>My Open Applications</h3>
-          @if (applicationsLoading()) {
-            <div class="loading-inline">
-              <div class="spinner"></div>
-              <span>Loading...</span>
+          @if (searchTotalPages() > 1) {
+            <div class="pagination">
+              <button class="btn btn--outline" (click)="setSearchPage(searchPage() - 1)"
+                      [disabled]="searchPage() === 1">Prev</button>
+              <span class="pagination__info">Page {{ searchPage() }} of {{ searchTotalPages() }}</span>
+              <button class="btn btn--outline" (click)="setSearchPage(searchPage() + 1)"
+                      [disabled]="searchPage() === searchTotalPages()">Next</button>
             </div>
-          } @else if (applicationsError()) {
-            <p class="text-muted">{{ applicationsError() }}</p>
-          } @else if (myApplications().length === 0) {
-            <p class="text-muted">No open applications.</p>
-          } @else {
-            <div class="application-list">
-              @for (app of paginatedApplications(); track app.group.id) {
-                <div class="application-item">
-                  <div class="application-item__info">
-                    <span class="application-item__name">{{ app.group.name }}</span>
-                    <span class="application-item__format">{{ app.group.format }}</span>
-                  </div>
-                  <span class="application-item__date">{{ formatDate(app.createdAt) }}</span>
-                </div>
-              }
-            </div>
-
-            @if (applicationsTotalPages() > 1) {
-              <div class="pagination">
-                <button class="btn btn--outline" (click)="setApplicationsPage(applicationsPage() - 1)"
-                        [disabled]="applicationsPage() === 1">Prev</button>
-                <span class="pagination__info">Page {{ applicationsPage() }} of {{ applicationsTotalPages() }}</span>
-                <button class="btn btn--outline" (click)="setApplicationsPage(applicationsPage() + 1)"
-                        [disabled]="applicationsPage() === applicationsTotalPages()">Next</button>
-              </div>
-            }
           }
-        </div>
+        }
       </div>
+    </div>
+  </div>
+}
+
+<!-- Group Requests Modal -->
+@if (showRequestsModal()) {
+  <div class="modal-overlay" (click)="closeRequestsModal()">
+    <div class="modal modal--wide card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Group Requests</h2>
+        <button class="modal__close" (click)="closeRequestsModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      @if (requestsError()) {
+        <div class="alert alert--danger">{{ requestsError() }}</div>
+      }
+
+      @if (requestsLoading()) {
+        <div class="loading-inline">
+          <div class="spinner"></div>
+          <span>Loading requests...</span>
+        </div>
+      } @else {
+        <div class="requests-content">
+          <div class="applications">
+            <h3>Incoming Requests</h3>
+            @if (incomingApplications().length === 0) {
+              <p class="text-muted">No incoming requests.</p>
+            } @else {
+              <div class="application-list">
+                @for (app of incomingApplications(); track app.groupId + '-' + app.userId) {
+                  <div class="application-item">
+                    <div class="application-item__info">
+                      <span class="application-item__name">{{ app.user.inAppName }}</span>
+                      <span class="application-item__format">{{ app.group.name }}</span>
+                      <span class="application-item__date">{{ formatDate(app.createdAt) }}</span>
+                    </div>
+                    <div class="result-item__actions">
+                      <button class="btn btn--outline" [disabled]="requestsActionLoading()" (click)="rejectIncomingApplication(app.groupId, app.userId)">
+                        Reject
+                      </button>
+                      <button class="btn btn--primary" [disabled]="requestsActionLoading()" (click)="acceptIncomingApplication(app.groupId, app.userId)">
+                        Accept
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="applications">
+            <h3>Incoming Invites</h3>
+            @if (incomingInvites().length === 0) {
+              <p class="text-muted">No incoming invites.</p>
+            } @else {
+              <div class="application-list">
+                @for (invite of incomingInvites(); track invite.id) {
+                  <div class="application-item">
+                    <div class="application-item__info">
+                      <span class="application-item__name">{{ invite.group.name }}</span>
+                      <span class="application-item__format">{{ invite.group.format }}</span>
+                      <span class="application-item__date">
+                        Invited by {{ invite.inviter.inAppName }} on {{ formatDate(invite.createdAt) }}
+                      </span>
+                    </div>
+                    <div class="result-item__actions">
+                      <button class="btn btn--outline" [disabled]="requestsActionLoading()" (click)="rejectInvite(invite.id)">
+                        Reject
+                      </button>
+                      <button class="btn btn--primary" [disabled]="requestsActionLoading()" (click)="acceptInvite(invite.id)">
+                        Accept
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="applications">
+            <h3>My Open Applications</h3>
+            @if (myApplications().length === 0) {
+              <p class="text-muted">No open applications.</p>
+            } @else {
+              <div class="application-list">
+                @for (app of myApplications(); track app.group.id) {
+                  <div class="application-item">
+                    <div class="application-item__info">
+                      <span class="application-item__name">{{ app.group.name }}</span>
+                      <span class="application-item__format">{{ app.group.format }}</span>
+                    </div>
+                    <span class="application-item__date">{{ formatDate(app.createdAt) }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="applications">
+            <h3>My Sent Invites</h3>
+            @if (sentInvites().length === 0) {
+              <p class="text-muted">No sent invites.</p>
+            } @else {
+              <div class="application-list">
+                @for (invite of sentInvites(); track invite.id) {
+                  <div class="application-item">
+                    <div class="application-item__info">
+                      <span class="application-item__name">
+                        {{ invite.invitedUser?.inAppName || invite.invitedEmail }}
+                      </span>
+                      <span class="application-item__format">{{ invite.group.name }}</span>
+                      <span class="application-item__date">{{ formatDate(invite.createdAt) }}</span>
+                    </div>
+                    <button class="btn btn--outline" [disabled]="requestsActionLoading()" (click)="cancelSentInvite(invite.id)">
+                      Cancel
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
   </div>
 }
