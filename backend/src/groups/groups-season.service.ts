@@ -2,6 +2,24 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 import { GroupsMembershipService } from './groups-membership.service';
+import { SeasonInterval } from '@prisma/client';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type GroupSeasonState = {
+  id: string;
+  activeSeasonEndsAt: Date | null;
+  activeSeasonStartedAt: Date | null;
+  activeSeasonName: string | null;
+  nextSeasonName: string | null;
+  nextSeasonStartsAt: Date | null;
+  nextSeasonEndsAt: Date | null;
+  nextSeasonIsSuccessive: boolean;
+  nextSeasonInterval: SeasonInterval | null;
+  nextSeasonIntermissionDays: number;
+  seasonPauseDays: number;
+  seasonPauseUntil: Date | null;
+};
 
 @Injectable()
 export class GroupsSeasonService {
@@ -16,67 +34,42 @@ export class GroupsSeasonService {
    * Creates a snapshot of the finished season and resets deck stats for the new one.
    */
   async ensureSeasonUpToDate(groupId: string): Promise<void> {
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
-      select: {
-        id: true,
-        activeSeasonEndsAt: true,
-        activeSeasonStartedAt: true,
-        activeSeasonName: true,
-        seasonPauseDays: true,
-        seasonPauseUntil: true,
-      },
-    });
+    const group = await this.getSeasonState(groupId);
+    if (!group) return;
 
-    if (!group?.activeSeasonEndsAt || !group.activeSeasonStartedAt) {
+    const now = new Date();
+    if (!group.activeSeasonEndsAt || !group.activeSeasonStartedAt) {
+      await this.activatePlannedNextSeasonIfDue(groupId, group, now);
       return;
     }
 
-    const now = new Date();
+    if (
+      group.seasonPauseUntil &&
+      now >= group.seasonPauseUntil &&
+      group.activeSeasonStartedAt <= group.seasonPauseUntil
+    ) {
+      await this.prisma.group.update({
+        where: { id: groupId },
+        data: { seasonPauseUntil: null },
+      });
+      const startedSeasonLabel = this.getSeasonLabel(group.activeSeasonName);
+      await this.eventsService.log(
+        groupId,
+        'SEASON_STARTED',
+        `${startedSeasonLabel} has started`,
+      );
+      group.seasonPauseUntil = null;
+    }
+
     if (now < group.activeSeasonEndsAt) {
       return;
     }
 
-    const snapshot = await this.createSeasonSnapshot(
+    await this.completeSeason(
       groupId,
-      group.activeSeasonStartedAt,
       group.activeSeasonEndsAt,
-      group.activeSeasonName,
-    );
-
-    const durationMs = Math.max(
-      group.activeSeasonEndsAt.getTime() - group.activeSeasonStartedAt.getTime(),
-      24 * 60 * 60 * 1000,
-    );
-    // Guard against invalid or zero-length seasons.
-    const pauseDays = group.seasonPauseDays ?? 0;
-    const pauseUntil =
-      pauseDays > 0 ? new Date(now.getTime() + pauseDays * 24 * 60 * 60 * 1000) : null;
-    // Optional pause creates a gap between seasons without changing duration.
-    const newStart = pauseUntil ?? new Date();
-    const newEnd = new Date(newStart.getTime() + durationMs);
-
-    await this.prisma.group.update({
-      where: { id: groupId },
-      data: {
-        lastSeasonId: snapshot.id,
-        activeSeasonName: null,
-        activeSeasonStartedAt: newStart,
-        activeSeasonEndsAt: newEnd,
-        seasonPauseUntil: pauseUntil,
-      },
-    });
-
-    const seasonLabel = this.getSeasonLabel(group.activeSeasonName);
-    await this.eventsService.log(
-      groupId,
-      'SEASON_ENDED',
-      `${seasonLabel} has ended`,
-    );
-    await this.eventsService.log(
-      groupId,
-      'SEASON_STARTED',
-      `${seasonLabel} has started`,
+      group,
+      { requireSameDayNextSeason: false },
     );
   }
 
@@ -87,38 +80,209 @@ export class GroupsSeasonService {
   async resetSeason(groupId: string, userId: string): Promise<void> {
     await this.membershipService.ensureAdmin(groupId, userId);
 
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
-      select: {
-        activeSeasonEndsAt: true,
-        activeSeasonStartedAt: true,
-        activeSeasonName: true,
-        seasonPauseDays: true,
-      },
-    });
+    const group = await this.getSeasonState(groupId);
 
-    if (!group?.activeSeasonStartedAt || !group.activeSeasonEndsAt) {
+    if (!group) {
       throw new BadRequestException('Season is not configured');
     }
 
     const now = new Date();
+    const hasActiveSeasonData = this.hasActiveSeasonData(group);
+    const hasNextSeasonData = this.hasNextSeasonData(group);
+    const isPauseActive = !!group.seasonPauseUntil && now < group.seasonPauseUntil;
+
+    if (!hasActiveSeasonData && isPauseActive && hasNextSeasonData) {
+      await this.clearPauseAndNextSeason(groupId);
+      await this.eventsService.log(
+        groupId,
+        'SEASON_UPDATED',
+        'Season pause and planned next season were removed.',
+      );
+      return;
+    }
+
+    if (!hasActiveSeasonData && !hasNextSeasonData) {
+      throw new BadRequestException('Season is not configured');
+    }
+
+    if (!hasActiveSeasonData && hasNextSeasonData) {
+      await this.clearPauseAndNextSeason(groupId);
+      await this.eventsService.log(
+        groupId,
+        'SEASON_UPDATED',
+        'Planned next season was removed.',
+      );
+      return;
+    }
+
+    if (!group.activeSeasonStartedAt) {
+      throw new BadRequestException('Season is not configured');
+    }
+
+    const activeSeasonStarted = group.activeSeasonStartedAt.getTime() <= now.getTime();
+    let snapshotId: string | null = null;
+
+    if (activeSeasonStarted) {
+      const snapshot = await this.createSeasonSnapshot(
+        groupId,
+        group.activeSeasonStartedAt,
+        now,
+        group.activeSeasonName,
+      );
+      snapshotId = snapshot.id;
+      const seasonLabel = this.getSeasonLabel(group.activeSeasonName);
+      await this.eventsService.log(
+        groupId,
+        'SEASON_ENDED',
+        `${seasonLabel} has ended`,
+      );
+    }
+
+    if (
+      hasNextSeasonData &&
+      group.nextSeasonStartsAt &&
+      this.isSameUtcDay(group.nextSeasonStartsAt, now)
+    ) {
+      const nextSeason = this.resolveNextSeasonStart(group, now, {
+        requireSameDayNextSeason: true,
+      });
+      if (nextSeason) {
+        const data: {
+          lastSeasonId?: string;
+          activeSeasonName: string | null;
+          activeSeasonStartedAt: Date;
+          activeSeasonEndsAt: Date | null;
+          seasonPauseUntil: Date | null;
+          nextSeasonName: string | null;
+          nextSeasonStartsAt: Date | null;
+          nextSeasonEndsAt: Date | null;
+          nextSeasonIsSuccessive: boolean;
+          nextSeasonInterval: SeasonInterval | null;
+          nextSeasonIntermissionDays: number;
+        } = {
+          activeSeasonName: nextSeason.activeSeasonName,
+          activeSeasonStartedAt: nextSeason.activeSeasonStartedAt,
+          activeSeasonEndsAt: nextSeason.activeSeasonEndsAt,
+          seasonPauseUntil: nextSeason.seasonPauseUntil,
+          nextSeasonName: nextSeason.nextSeasonName,
+          nextSeasonStartsAt: nextSeason.nextSeasonStartsAt,
+          nextSeasonEndsAt: nextSeason.nextSeasonEndsAt,
+          nextSeasonIsSuccessive: nextSeason.nextSeasonIsSuccessive,
+          nextSeasonInterval: nextSeason.nextSeasonInterval,
+          nextSeasonIntermissionDays: nextSeason.nextSeasonIntermissionDays,
+        };
+        if (snapshotId) {
+          data.lastSeasonId = snapshotId;
+        }
+        await this.prisma.group.update({
+          where: { id: groupId },
+          data,
+        });
+
+        if (!nextSeason.seasonPauseUntil) {
+          const nextSeasonLabel = this.getSeasonLabel(nextSeason.activeSeasonName);
+          await this.eventsService.log(
+            groupId,
+            'SEASON_STARTED',
+            `${nextSeasonLabel} has started`,
+          );
+        }
+        return;
+      }
+    }
+
+    const pauseUntil =
+      hasNextSeasonData && group.nextSeasonStartsAt && group.nextSeasonStartsAt > now
+        ? group.nextSeasonStartsAt
+        : null;
+    const clearActiveData: {
+      lastSeasonId?: string;
+      activeSeasonName: null;
+      activeSeasonStartedAt: null;
+      activeSeasonEndsAt: null;
+      seasonPauseUntil: Date | null;
+    } = {
+      activeSeasonName: null,
+      activeSeasonStartedAt: null,
+      activeSeasonEndsAt: null,
+      seasonPauseUntil: pauseUntil,
+    };
+    if (snapshotId) {
+      clearActiveData.lastSeasonId = snapshotId;
+    }
+    await this.prisma.group.update({
+      where: { id: groupId },
+      data: clearActiveData,
+    });
+  }
+
+  private async completeSeason(
+    groupId: string,
+    endedAt: Date,
+    group: GroupSeasonState,
+    options: { requireSameDayNextSeason: boolean },
+  ): Promise<void> {
+    if (!group.activeSeasonStartedAt || !group.activeSeasonEndsAt) {
+      throw new BadRequestException('Season is not configured');
+    }
+
+    if (endedAt.getTime() <= group.activeSeasonStartedAt.getTime()) {
+      throw new BadRequestException('Season cannot end before it starts');
+    }
+
     const snapshot = await this.createSeasonSnapshot(
       groupId,
       group.activeSeasonStartedAt,
-      now,
+      endedAt,
       group.activeSeasonName,
     );
 
+    const nextSeason = this.resolveNextSeasonStart(group, endedAt, options);
+    const seasonLabel = this.getSeasonLabel(group.activeSeasonName);
+    await this.eventsService.log(
+      groupId,
+      'SEASON_ENDED',
+      `${seasonLabel} has ended`,
+    );
+
+    if (nextSeason) {
+      await this.prisma.group.update({
+        where: { id: groupId },
+        data: {
+          lastSeasonId: snapshot.id,
+          activeSeasonName: nextSeason.activeSeasonName,
+          activeSeasonStartedAt: nextSeason.activeSeasonStartedAt,
+          activeSeasonEndsAt: nextSeason.activeSeasonEndsAt,
+          seasonPauseUntil: nextSeason.seasonPauseUntil,
+          nextSeasonName: nextSeason.nextSeasonName,
+          nextSeasonStartsAt: nextSeason.nextSeasonStartsAt,
+          nextSeasonEndsAt: nextSeason.nextSeasonEndsAt,
+          nextSeasonIsSuccessive: nextSeason.nextSeasonIsSuccessive,
+          nextSeasonInterval: nextSeason.nextSeasonInterval,
+          nextSeasonIntermissionDays: nextSeason.nextSeasonIntermissionDays,
+        },
+      });
+
+      if (!nextSeason.seasonPauseUntil) {
+        const nextSeasonLabel = this.getSeasonLabel(nextSeason.activeSeasonName);
+        await this.eventsService.log(
+          groupId,
+          'SEASON_STARTED',
+          `${nextSeasonLabel} has started`,
+        );
+      }
+      return;
+    }
+
     const durationMs = Math.max(
       group.activeSeasonEndsAt.getTime() - group.activeSeasonStartedAt.getTime(),
-      24 * 60 * 60 * 1000,
+      DAY_MS,
     );
-    // Guard against invalid or zero-length seasons.
     const pauseDays = group.seasonPauseDays ?? 0;
+    const transitionBase = new Date();
     const pauseUntil =
-      pauseDays > 0 ? new Date(now.getTime() + pauseDays * 24 * 60 * 60 * 1000) : null;
-    // Optional pause creates a gap between seasons without changing duration.
-    const newStart = pauseUntil ?? new Date();
+      pauseDays > 0 ? new Date(transitionBase.getTime() + pauseDays * DAY_MS) : null;
+    const newStart = pauseUntil ?? transitionBase;
     const newEnd = new Date(newStart.getTime() + durationMs);
 
     await this.prisma.group.update({
@@ -132,12 +296,6 @@ export class GroupsSeasonService {
       },
     });
 
-    const seasonLabel = this.getSeasonLabel(group.activeSeasonName);
-    await this.eventsService.log(
-      groupId,
-      'SEASON_ENDED',
-      `${seasonLabel} has ended`,
-    );
     await this.eventsService.log(
       groupId,
       'SEASON_STARTED',
@@ -151,6 +309,220 @@ export class GroupsSeasonService {
     return trimmed.toLowerCase().startsWith('season ')
       ? trimmed
       : `Season ${trimmed}`;
+  }
+
+  private async getSeasonState(groupId: string): Promise<GroupSeasonState | null> {
+    return this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: {
+        id: true,
+        activeSeasonEndsAt: true,
+        activeSeasonStartedAt: true,
+        activeSeasonName: true,
+        nextSeasonName: true,
+        nextSeasonStartsAt: true,
+        nextSeasonEndsAt: true,
+        nextSeasonIsSuccessive: true,
+        nextSeasonInterval: true,
+        nextSeasonIntermissionDays: true,
+        seasonPauseDays: true,
+        seasonPauseUntil: true,
+      },
+    });
+  }
+
+  private hasActiveSeasonData(group: GroupSeasonState): boolean {
+    return !!group.activeSeasonName || !!group.activeSeasonStartedAt || !!group.activeSeasonEndsAt;
+  }
+
+  private hasNextSeasonData(group: GroupSeasonState): boolean {
+    return (
+      !!group.nextSeasonName ||
+      !!group.nextSeasonStartsAt ||
+      !!group.nextSeasonEndsAt ||
+      group.nextSeasonIsSuccessive ||
+      !!group.nextSeasonInterval ||
+      group.nextSeasonIntermissionDays > 0
+    );
+  }
+
+  private async clearPauseAndNextSeason(groupId: string): Promise<void> {
+    await this.prisma.group.update({
+      where: { id: groupId },
+      data: {
+        seasonPauseUntil: null,
+        nextSeasonName: null,
+        nextSeasonStartsAt: null,
+        nextSeasonEndsAt: null,
+        nextSeasonIsSuccessive: false,
+        nextSeasonInterval: null,
+        nextSeasonIntermissionDays: 0,
+      },
+    });
+  }
+
+  private async activatePlannedNextSeasonIfDue(
+    groupId: string,
+    group: GroupSeasonState,
+    now: Date,
+  ): Promise<void> {
+    if (!group.nextSeasonStartsAt || now < group.nextSeasonStartsAt) {
+      return;
+    }
+
+    const plannedStart = new Date(group.nextSeasonStartsAt);
+    const plannedEnd =
+      group.nextSeasonEndsAt
+        ? new Date(group.nextSeasonEndsAt)
+        : group.nextSeasonIsSuccessive && group.nextSeasonInterval
+          ? this.addInterval(plannedStart, group.nextSeasonInterval)
+          : null;
+
+    const nextPlan = this.buildFollowingNextSeasonPlan(group, plannedStart, plannedEnd);
+
+    await this.prisma.group.update({
+      where: { id: groupId },
+      data: {
+        activeSeasonName: group.nextSeasonName,
+        activeSeasonStartedAt: plannedStart,
+        activeSeasonEndsAt: plannedEnd,
+        seasonPauseUntil: null,
+        nextSeasonName: nextPlan?.name ?? null,
+        nextSeasonStartsAt: nextPlan?.startsAt ?? null,
+        nextSeasonEndsAt: nextPlan?.endsAt ?? null,
+        nextSeasonIsSuccessive: nextPlan?.isSuccessive ?? false,
+        nextSeasonInterval: nextPlan?.interval ?? null,
+        nextSeasonIntermissionDays: nextPlan?.intermissionDays ?? 0,
+      },
+    });
+
+    const seasonLabel = this.getSeasonLabel(group.nextSeasonName);
+    await this.eventsService.log(
+      groupId,
+      'SEASON_STARTED',
+      `${seasonLabel} has started`,
+    );
+  }
+
+  private resolveNextSeasonStart(
+    group: GroupSeasonState,
+    endedAt: Date,
+    options: { requireSameDayNextSeason: boolean },
+  ): {
+    activeSeasonName: string | null;
+    activeSeasonStartedAt: Date;
+    activeSeasonEndsAt: Date | null;
+    seasonPauseUntil: Date | null;
+    nextSeasonName: string | null;
+    nextSeasonStartsAt: Date | null;
+    nextSeasonEndsAt: Date | null;
+    nextSeasonIsSuccessive: boolean;
+    nextSeasonInterval: SeasonInterval | null;
+    nextSeasonIntermissionDays: number;
+  } | null {
+    if (!group.nextSeasonStartsAt) {
+      return null;
+    }
+
+    if (
+      options.requireSameDayNextSeason &&
+      !this.isSameUtcDay(group.nextSeasonStartsAt, endedAt)
+    ) {
+      return null;
+    }
+
+    const plannedStart = new Date(group.nextSeasonStartsAt);
+    const plannedEnd =
+      group.nextSeasonEndsAt
+        ? new Date(group.nextSeasonEndsAt)
+        : group.nextSeasonIsSuccessive && group.nextSeasonInterval
+          ? this.addInterval(plannedStart, group.nextSeasonInterval)
+          : null;
+    const seasonPauseUntil = plannedStart.getTime() > endedAt.getTime() ? plannedStart : null;
+
+    const nextPlan = this.buildFollowingNextSeasonPlan(
+      group,
+      plannedStart,
+      plannedEnd,
+    );
+
+    return {
+      activeSeasonName: group.nextSeasonName,
+      activeSeasonStartedAt: plannedStart,
+      activeSeasonEndsAt: plannedEnd,
+      seasonPauseUntil,
+      nextSeasonName: nextPlan?.name ?? null,
+      nextSeasonStartsAt: nextPlan?.startsAt ?? null,
+      nextSeasonEndsAt: nextPlan?.endsAt ?? null,
+      nextSeasonIsSuccessive: nextPlan?.isSuccessive ?? false,
+      nextSeasonInterval: nextPlan?.interval ?? null,
+      nextSeasonIntermissionDays: nextPlan?.intermissionDays ?? 0,
+    };
+  }
+
+  private buildFollowingNextSeasonPlan(
+    group: GroupSeasonState,
+    activeSeasonStart: Date,
+    activeSeasonEnd: Date | null,
+  ): {
+    name: string | null;
+    startsAt: Date;
+    endsAt: Date | null;
+    isSuccessive: boolean;
+    interval: SeasonInterval;
+    intermissionDays: number;
+  } | null {
+    if (!group.nextSeasonIsSuccessive || !group.nextSeasonInterval) {
+      return null;
+    }
+
+    const intermissionDays = group.nextSeasonIntermissionDays ?? 0;
+    const interval = group.nextSeasonInterval;
+    const baseStart = activeSeasonEnd
+      ? this.addDaysUtc(activeSeasonEnd, intermissionDays)
+      : this.addDaysUtc(this.addInterval(activeSeasonStart, interval), intermissionDays);
+
+    return {
+      name: group.nextSeasonName,
+      startsAt: baseStart,
+      endsAt: this.addInterval(baseStart, interval),
+      isSuccessive: true,
+      interval,
+      intermissionDays,
+    };
+  }
+
+  private addDaysUtc(date: Date, days: number): Date {
+    const base = this.toUtcDay(date);
+    return new Date(base.getTime() + Math.max(0, days) * DAY_MS);
+  }
+
+  private addInterval(date: Date, interval: SeasonInterval): Date {
+    const base = this.toUtcDay(date);
+    if (interval === 'WEEKLY') {
+      return this.addDaysUtc(base, 7);
+    }
+    if (interval === 'BI_WEEKLY') {
+      return this.addDaysUtc(base, 14);
+    }
+
+    const shifted = new Date(base);
+    if (interval === 'MONTHLY') shifted.setUTCMonth(shifted.getUTCMonth() + 1);
+    if (interval === 'QUARTERLY') shifted.setUTCMonth(shifted.getUTCMonth() + 3);
+    if (interval === 'HALF_YEARLY') shifted.setUTCMonth(shifted.getUTCMonth() + 6);
+    if (interval === 'YEARLY') shifted.setUTCFullYear(shifted.getUTCFullYear() + 1);
+    shifted.setUTCHours(0, 0, 0, 0);
+    return shifted;
+  }
+
+  private isSameUtcDay(a: Date, b: Date): boolean {
+    return this.toUtcDay(a).getTime() === this.toUtcDay(b).getTime();
+  }
+
+  private toUtcDay(date: Date): Date {
+    const utc = new Date(date);
+    utc.setUTCHours(0, 0, 0, 0);
+    return utc;
   }
 
   /**

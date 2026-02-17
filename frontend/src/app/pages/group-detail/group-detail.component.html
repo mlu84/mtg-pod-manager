@@ -24,6 +24,7 @@
       (copyInviteCode)="copyInviteCode()"
       (regenerateInviteCode)="regenerateInviteCode()"
       (openMemberSettings)="openMemberSettingsModal()"
+      (openSeasonSettings)="openSeasonSettingsModal()"
       (openGroupSettings)="openGroupSettingsModal()"
     />
 
@@ -312,11 +313,6 @@
       [groupImageUploading]="groupImageUploading()"
       [groupImagePreview]="groupImagePreview"
       [editHistoryRetentionDays]="editHistoryRetentionDays"
-      [editSeasonName]="editSeasonName"
-      [editSeasonStartAt]="editSeasonStartAt"
-      [editSeasonEndsAt]="editSeasonEndsAt"
-      [editSeasonPauseDays]="editSeasonPauseDays"
-      [canResetSeason]="canResetSeason()"
       [deleteGroupLoading]="deleteGroupLoading()"
       [confirmModalLoading]="confirmModalLoading()"
       (close)="closeGroupSettingsModal()"
@@ -324,12 +320,43 @@
       (groupImageSelected)="onGroupImageSelected($event)"
       (uploadGroupImage)="uploadGroupImage()"
       (editHistoryRetentionDaysChange)="editHistoryRetentionDays = $event"
+      (requestDeleteGroup)="requestDeleteGroup()"
+    />
+  }
+
+  @if (showSeasonSettingsModal()) {
+    <app-group-season-settings-modal
+      [seasonSettingsError]="seasonSettingsError()"
+      [seasonSettingsLoading]="seasonSettingsLoading()"
+      [endSeasonLoading]="seasonResetLoading()"
+      [canEndSeason]="canResetSeason()"
+      [endSeasonHint]="endSeasonHint()"
+      [editSeasonName]="editSeasonName"
+      [editSeasonStartAt]="editSeasonStartAt"
+      [editSeasonEndsAt]="editSeasonEndsAt"
+      [editSeasonPauseDays]="editSeasonPauseDays"
+      [editNextSeasonName]="editNextSeasonName"
+      [editNextSeasonStartsAt]="editNextSeasonStartsAt"
+      [nextSeasonStartMin]="getNextSeasonStartMinDate()"
+      [editNextSeasonEndsAt]="editNextSeasonEndsAt"
+      [editNextSeasonIsSuccessive]="editNextSeasonIsSuccessive"
+      [editNextSeasonInterval]="editNextSeasonInterval"
+      [editNextSeasonIntermissionDays]="editNextSeasonIntermissionDays"
+      [seasonIntervalOptions]="seasonIntervalOptions"
+      [seasonStartLocked]="!!group()?.activeSeasonStartedAt"
+      (close)="closeSeasonSettingsModal()"
+      (submit)="updateSeasonSettings()"
       (editSeasonNameChange)="editSeasonName = $event"
       (editSeasonStartAtChange)="editSeasonStartAt = $event"
       (editSeasonEndsAtChange)="editSeasonEndsAt = $event"
       (editSeasonPauseDaysChange)="editSeasonPauseDays = $event"
-      (requestSeasonReset)="requestSeasonReset()"
-      (requestDeleteGroup)="requestDeleteGroup()"
+      (editNextSeasonNameChange)="editNextSeasonName = $event"
+      (editNextSeasonStartsAtChange)="editNextSeasonStartsAt = $event"
+      (editNextSeasonEndsAtChange)="editNextSeasonEndsAt = $event"
+      (nextSeasonSuccessiveChange)="onNextSeasonSuccessiveChange($event)"
+      (editNextSeasonIntervalChange)="editNextSeasonInterval = $event"
+      (editNextSeasonIntermissionDaysChange)="editNextSeasonIntermissionDays = $event"
+      (requestEndSeason)="requestEndSeason()"
     />
   }
 
@@ -377,7 +404,7 @@
         <button class="btn btn--outline" (click)="closeConfirmModal()" [disabled]="confirmModalLoading()">
           Cancel
         </button>
-        <button class="btn btn--danger" (click)="executeConfirmAction()" [disabled]="confirmModalLoading()">
+        <button class="btn btn--danger btn--confirm-action" (click)="executeConfirmAction()" [disabled]="confirmModalLoading()">
           @if (confirmModalLoading()) {
             <i class="fas fa-spinner fa-spin"></i> Processing...
           } @else {

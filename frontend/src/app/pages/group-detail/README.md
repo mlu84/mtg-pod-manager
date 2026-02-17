@@ -7,7 +7,7 @@ Responsibilities
 Key Components
 - GroupHeaderComponent, GroupRankingCardComponent, GroupHistoryCardComponent, GroupStatsCardComponent.
 - GroupDecksCardComponent, GroupMembersCardComponent, GroupApplicationsPanelComponent, GroupWinnersBannerComponent.
-- Modals: GroupDeckCreateModalComponent, GroupDeckEditModalComponent, GroupRecordGameModalComponent, GroupSettingsModalComponent.
+- Modals: GroupDeckCreateModalComponent, GroupDeckEditModalComponent, GroupRecordGameModalComponent, GroupSettingsModalComponent, GroupSeasonSettingsModalComponent.
 
 Inputs/Outputs
 - Input: route param `groupId`.

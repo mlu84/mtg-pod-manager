@@ -18,6 +18,7 @@ export type EventType =
   | 'GAME_RECORDED'
   | 'GAME_UNDONE'
   | 'SEASON_RESET'
+  | 'SEASON_UPDATED'
   | 'SEASON_STARTED'
   | 'SEASON_ENDED';
 

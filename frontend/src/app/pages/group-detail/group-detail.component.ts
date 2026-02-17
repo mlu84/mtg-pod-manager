@@ -18,7 +18,13 @@ import { GroupDeckCreateModalComponent } from './group-deck-create-modal.compone
 import { GroupDeckEditModalComponent } from './group-deck-edit-modal.component';
 import { GroupRecordGameModalComponent } from './group-record-game-modal.component';
 import { GroupSettingsModalComponent } from './group-settings-modal.component';
-import { GroupDetail, Deck, GroupApplication } from '../../models/group.model';
+import { GroupSeasonSettingsModalComponent } from './group-season-settings-modal.component';
+import {
+  GroupDetail,
+  Deck,
+  GroupApplication,
+  SeasonInterval,
+} from '../../models/group.model';
 import { Game, RankingEntry, RankingEntryWithTrend, GroupEvent } from '../../models/game.model';
 import { VALID_COLORS, VALID_DECK_TYPES } from './deck-constants';
 import { isValidRankConfiguration } from './rank-utils';
@@ -79,6 +85,7 @@ import { formatLocalDate } from '../../core/utils/date-utils';
     GroupDeckEditModalComponent,
     GroupRecordGameModalComponent,
     GroupSettingsModalComponent,
+    GroupSeasonSettingsModalComponent,
   ],
   templateUrl: './group-detail.component.html',
   styleUrl: './group-detail.component.scss',
@@ -147,6 +154,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   showEditGroupModal = signal(false);
   showMemberSettingsModal = signal(false);
   showGroupSettingsModal = signal(false);
+  showSeasonSettingsModal = signal(false);
 
   // Deck form (create)
   deckName = '';
@@ -183,6 +191,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   editHistoryRetentionDays = 30;
   groupSettingsLoading = signal(false);
   groupSettingsError = signal<string | null>(null);
+  seasonSettingsLoading = signal(false);
+  seasonSettingsError = signal<string | null>(null);
   groupImageUploading = signal(false);
   groupImageError = signal<string | null>(null);
   groupImagePreview: string | null = null;
@@ -191,6 +201,20 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   editSeasonEndsAt = '';
   editSeasonStartAt = '';
   editSeasonPauseDays = 0;
+  editNextSeasonName = '';
+  editNextSeasonStartsAt = '';
+  editNextSeasonEndsAt = '';
+  editNextSeasonIsSuccessive = false;
+  editNextSeasonInterval: SeasonInterval | '' = '';
+  editNextSeasonIntermissionDays = 0;
+  readonly seasonIntervalOptions: Array<{ value: SeasonInterval; label: string }> = [
+    { value: 'WEEKLY', label: 'Weekly' },
+    { value: 'BI_WEEKLY', label: 'Bi-weekly' },
+    { value: 'MONTHLY', label: 'Monthly' },
+    { value: 'QUARTERLY', label: 'Quarterly' },
+    { value: 'HALF_YEARLY', label: 'Half-yearly' },
+    { value: 'YEARLY', label: 'Yearly' },
+  ];
   seasonResetLoading = signal(false);
 
   // Confirmation modal
@@ -390,10 +414,20 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   snapshotAvailable = computed(() => {
     return !!this.group()?.lastSeasonId;
   });
+  endSeasonHint = computed(() => {
+    const group = this.group();
+    if (this.hasActiveSeasonData(group)) {
+      return 'Ends current league immediately and creates a ranking snapshot.';
+    }
+    if (this.hasNextSeasonData(group)) {
+      return 'Removes the planned next season and clears the active pause.';
+    }
+    return 'Ends current league immediately and creates a ranking snapshot.';
+  });
   canResetSeason = computed(() => {
-    const start = this.group()?.activeSeasonStartedAt;
-    const end = this.group()?.activeSeasonEndsAt;
-    return !!start && !!end;
+    const group = this.group();
+    if (!group) return false;
+    return this.hasActiveSeasonData(group) || this.hasNextSeasonData(group);
   });
   seasonCountdown = computed(() => {
     const endsAt = this.group()?.activeSeasonEndsAt;
@@ -867,12 +901,29 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   canStartPlayGame(): boolean {
+    if (!this.isEmailVerified()) return false;
+    if (!this.isAdmin()) return false;
+    if (this.isSeasonPaused()) return false;
+    if (this.isSmartphoneViewport()) return false;
     const decks = this.group()?.decks || [];
     const activeDecks = decks.filter((deck) => deck.isActive);
     return activeDecks.length >= 2;
   }
 
   playGameDisabledReason(): string {
+    if (!this.isEmailVerified()) {
+      return 'Verify your email to start a live game';
+    }
+    if (!this.isAdmin()) {
+      return 'Only group admins can start New Game';
+    }
+    if (this.isSeasonPaused()) {
+      const pauseUntil = this.group()?.seasonPauseUntil;
+      if (pauseUntil) {
+        return `Season is paused until ${this.formatDate(pauseUntil)}.`;
+      }
+      return 'Season is paused. Recording games is disabled.';
+    }
     if (this.isSmartphoneViewport()) {
       return 'Display too small for New Game. Please use Record Game.';
     }
@@ -1285,14 +1336,6 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!group) return;
 
     this.editHistoryRetentionDays = group.historyRetentionDays ?? 30;
-    this.editSeasonName = group.activeSeasonName || '';
-    this.editSeasonEndsAt = group.activeSeasonEndsAt
-      ? group.activeSeasonEndsAt.slice(0, 10)
-      : '';
-    this.editSeasonStartAt = group.activeSeasonStartedAt
-      ? group.activeSeasonStartedAt.slice(0, 10)
-      : '';
-    this.editSeasonPauseDays = group.seasonPauseDays ?? 0;
     this.groupSettingsError.set(null);
     this.groupImageError.set(null);
     this.groupImagePreview = null;
@@ -1305,6 +1348,38 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showGroupSettingsModal.set(false);
     this.groupImagePreview = null;
     this.groupImageFile = null;
+    this.unlockBodyScroll();
+  }
+
+  openSeasonSettingsModal(): void {
+    const group = this.group();
+    if (!group) return;
+
+    this.editSeasonName = group.activeSeasonName || '';
+    this.editSeasonEndsAt = group.activeSeasonEndsAt
+      ? group.activeSeasonEndsAt.slice(0, 10)
+      : '';
+    this.editSeasonStartAt = group.activeSeasonStartedAt
+      ? group.activeSeasonStartedAt.slice(0, 10)
+      : '';
+    this.editSeasonPauseDays = group.seasonPauseDays ?? 0;
+    this.editNextSeasonName = group.nextSeasonName || '';
+    this.editNextSeasonStartsAt = group.nextSeasonStartsAt
+      ? group.nextSeasonStartsAt.slice(0, 10)
+      : '';
+    this.editNextSeasonEndsAt = group.nextSeasonEndsAt
+      ? group.nextSeasonEndsAt.slice(0, 10)
+      : '';
+    this.editNextSeasonIsSuccessive = group.nextSeasonIsSuccessive ?? false;
+    this.editNextSeasonInterval = group.nextSeasonInterval || '';
+    this.editNextSeasonIntermissionDays = group.nextSeasonIntermissionDays ?? 0;
+    this.seasonSettingsError.set(null);
+    this.showSeasonSettingsModal.set(true);
+    this.lockBodyScroll();
+  }
+
+  closeSeasonSettingsModal(): void {
+    this.showSeasonSettingsModal.set(false);
     this.unlockBodyScroll();
   }
 
@@ -1356,10 +1431,6 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupDetailApiService
       .updateGroup(this.groupId, {
         historyRetentionDays: this.editHistoryRetentionDays,
-        activeSeasonName: this.editSeasonName || undefined,
-        activeSeasonEndsAt: this.editSeasonEndsAt || undefined,
-        activeSeasonStartedAt: this.editSeasonStartAt || undefined,
-        seasonPauseDays: this.editSeasonPauseDays,
       })
       .subscribe({
         next: () => {
@@ -1375,11 +1446,91 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  requestSeasonReset(): void {
+  updateSeasonSettings(): void {
+    const nextSeasonStartMin = this.getNextSeasonStartMinDate();
+    if (
+      this.editNextSeasonStartsAt &&
+      nextSeasonStartMin &&
+      this.editNextSeasonStartsAt < nextSeasonStartMin
+    ) {
+      this.seasonSettingsError.set(
+        `Next season start must be on or after ${nextSeasonStartMin}.`,
+      );
+      return;
+    }
+
+    this.seasonSettingsLoading.set(true);
+    this.seasonSettingsError.set(null);
+    const seasonStartLocked = !!this.group()?.activeSeasonStartedAt;
+
+    this.groupDetailApiService
+      .updateGroup(this.groupId, {
+        activeSeasonName: this.editSeasonName.trim() || null,
+        activeSeasonEndsAt: this.editSeasonEndsAt || null,
+        activeSeasonStartedAt: seasonStartLocked ? undefined : this.editSeasonStartAt || null,
+        seasonPauseDays: this.editSeasonPauseDays,
+        nextSeasonName: this.editNextSeasonName.trim() || null,
+        nextSeasonStartsAt: this.editNextSeasonStartsAt || null,
+        nextSeasonEndsAt: this.editNextSeasonEndsAt || null,
+        nextSeasonIsSuccessive: this.editNextSeasonIsSuccessive,
+        nextSeasonInterval: this.editNextSeasonIsSuccessive
+          ? this.editNextSeasonInterval || null
+          : null,
+        nextSeasonIntermissionDays: this.editNextSeasonIsSuccessive
+          ? this.editNextSeasonIntermissionDays
+          : 0,
+      })
+      .subscribe({
+        next: () => {
+          this.seasonSettingsLoading.set(false);
+          this.closeSeasonSettingsModal();
+          this.loadData();
+        },
+        error: (err) => {
+          this.seasonSettingsLoading.set(false);
+          this.seasonSettingsError.set(err.error?.message || 'Failed to update season settings');
+        },
+      });
+  }
+
+  getNextSeasonStartMinDate(): string {
+    const today = this.toUtcDateInputValue(new Date());
+    const activeSeasonEndWithPause = this.editSeasonEndsAt
+      ? this.addDaysToDateInput(this.editSeasonEndsAt, this.editSeasonPauseDays)
+      : '';
+    const pauseUntil = this.group()?.seasonPauseUntil
+      ? this.group()!.seasonPauseUntil!.slice(0, 10)
+      : '';
+    return [today, activeSeasonEndWithPause, pauseUntil]
+      .filter((value) => !!value)
+      .sort()
+      .at(-1) || '';
+  }
+
+  onNextSeasonSuccessiveChange(enabled: boolean): void {
+    this.editNextSeasonIsSuccessive = enabled;
+    if (enabled && !this.editNextSeasonInterval) {
+      this.editNextSeasonInterval = 'MONTHLY';
+    }
+    if (!enabled) {
+      this.editNextSeasonIntermissionDays = 0;
+    }
+  }
+
+  requestEndSeason(): void {
+    const group = this.group();
+    const hasActiveSeasonData = this.hasActiveSeasonData(group);
+    const confirmationMessage = hasActiveSeasonData
+      ? 'Do you want to end the current season now? This ends the current league immediately and creates a ranking snapshot.'
+      : 'Do you want to remove the planned next season (and active pause, if present)?';
+
     this.showConfirmation(
-      'Reset season',
-      'Reset the current season? This will snapshot the ranking and reset deck stats.',
-      () => this.executeSeasonReset()
+      'End current Season',
+      confirmationMessage,
+      () => {
+        this.confirmModalLoading.set(true);
+        this.executeSeasonReset();
+      },
     );
   }
 
@@ -1388,15 +1539,50 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupDetailApiService.resetSeason(this.groupId).subscribe({
       next: () => {
         this.seasonResetLoading.set(false);
+        this.confirmModalLoading.set(false);
         this.closeConfirmModal();
+        this.closeSeasonSettingsModal();
         this.loadData();
       },
       error: (err) => {
         this.seasonResetLoading.set(false);
+        this.confirmModalLoading.set(false);
         this.closeConfirmModal();
-        this.showAlert('Error', err.error?.message || 'Failed to reset season');
+        this.showAlert('Error', err.error?.message || 'Failed to end season');
       },
     });
+  }
+
+  private toUtcDateInputValue(date: Date): string {
+    const utc = new Date(date);
+    utc.setUTCHours(0, 0, 0, 0);
+    return utc.toISOString().slice(0, 10);
+  }
+
+  private addDaysToDateInput(isoDate: string, days: number): string {
+    const base = new Date(isoDate);
+    if (Number.isNaN(base.getTime())) {
+      return isoDate;
+    }
+    base.setUTCHours(0, 0, 0, 0);
+    const safeDays = Math.max(0, Number(days) || 0);
+    const shifted = new Date(base.getTime() + safeDays * 24 * 60 * 60 * 1000);
+    return shifted.toISOString().slice(0, 10);
+  }
+
+  private hasActiveSeasonData(group: GroupDetail | null): boolean {
+    return !!group?.activeSeasonName || !!group?.activeSeasonStartedAt || !!group?.activeSeasonEndsAt;
+  }
+
+  private hasNextSeasonData(group: GroupDetail | null): boolean {
+    return (
+      !!group?.nextSeasonName ||
+      !!group?.nextSeasonStartsAt ||
+      !!group?.nextSeasonEndsAt ||
+      !!group?.nextSeasonIsSuccessive ||
+      !!group?.nextSeasonInterval ||
+      (group?.nextSeasonIntermissionDays ?? 0) > 0
+    );
   }
 
   onGroupImageSelected(event: Event): void {

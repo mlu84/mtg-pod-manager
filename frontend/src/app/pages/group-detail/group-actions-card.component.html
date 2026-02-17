@@ -4,9 +4,7 @@
       <button
         class="btn btn--secondary btn--square btn--soft-blue"
         (click)="playGame.emit()"
-        [disabled]="!isSmartphoneViewport && !canStartPlayGame"
-        [class.btn--disabled-soft]="isSmartphoneViewport"
-        [attr.aria-disabled]="isSmartphoneViewport ? 'true' : null"
+        [disabled]="!canStartPlayGame"
         [title]="playGameDisabledReason"
       >
         <i class="fas fa-play"></i>

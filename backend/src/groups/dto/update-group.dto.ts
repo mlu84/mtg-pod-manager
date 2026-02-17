@@ -1,4 +1,14 @@
-import { IsString, MaxLength, IsOptional, IsInt, IsIn, IsDateString, Min, Max } from 'class-validator';
+import {
+  IsString,
+  MaxLength,
+  IsOptional,
+  IsInt,
+  IsIn,
+  IsDateString,
+  Min,
+  Max,
+  IsBoolean,
+} from 'class-validator';
 
 export class UpdateGroupDto {
   @IsString()
@@ -19,20 +29,47 @@ export class UpdateGroupDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
-  activeSeasonName?: string;
+  activeSeasonName?: string | null;
 
   @IsDateString()
   @IsOptional()
-  activeSeasonEndsAt?: string;
+  activeSeasonEndsAt?: string | null;
 
   @IsDateString()
   @IsOptional()
-  activeSeasonStartedAt?: string;
+  activeSeasonStartedAt?: string | null;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  nextSeasonName?: string | null;
+
+  @IsDateString()
+  @IsOptional()
+  nextSeasonStartsAt?: string | null;
+
+  @IsDateString()
+  @IsOptional()
+  nextSeasonEndsAt?: string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  nextSeasonIsSuccessive?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['WEEKLY', 'BI_WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'])
+  nextSeasonInterval?: 'WEEKLY' | 'BI_WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
+
+  @IsInt()
+  @IsOptional()
+  @Min(0)
+  @Max(365)
+  nextSeasonIntermissionDays?: number;
 
   @IsInt()
   @IsOptional()
   @Min(0)
   @Max(365)
   seasonPauseDays?: number;
-
 }

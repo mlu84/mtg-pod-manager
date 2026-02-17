@@ -1,0 +1,188 @@
+<div class="modal-overlay">
+  <div class="modal card" (click)="$event.stopPropagation()">
+    <div class="modal__header">
+      <h2>Season Settings</h2>
+      <button class="modal__close" (click)="close.emit()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    @if (seasonSettingsError) {
+      <div class="alert alert--danger">{{ seasonSettingsError }}</div>
+    }
+
+    <form (ngSubmit)="submit.emit()">
+      <h3 class="modal__section-title">Active Season</h3>
+      <div class="form-group">
+        <label for="editSeasonName">Active season name (optional)</label>
+        <input
+          type="text"
+          id="editSeasonName"
+          class="form-control"
+          [ngModel]="editSeasonName"
+          (ngModelChange)="editSeasonNameChange.emit($event)"
+          name="editSeasonName"
+          [disabled]="seasonSettingsLoading"
+          placeholder="Active Season"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editSeasonStart">Active season start</label>
+        <input
+          type="date"
+          id="editSeasonStart"
+          class="form-control"
+          [ngModel]="editSeasonStartAt"
+          (ngModelChange)="editSeasonStartAtChange.emit($event)"
+          name="editSeasonStartAt"
+          [readonly]="seasonStartLocked"
+          [disabled]="seasonSettingsLoading"
+        />
+        @if (seasonStartLocked) {
+          <small class="form-hint">Season start is locked once the season is active.</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="editSeasonEnd">Active season end</label>
+        <input
+          type="date"
+          id="editSeasonEnd"
+          class="form-control"
+          [ngModel]="editSeasonEndsAt"
+          (ngModelChange)="editSeasonEndsAtChange.emit($event)"
+          name="editSeasonEndsAt"
+          [disabled]="seasonSettingsLoading"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editSeasonPauseDays">Pause after season (days)</label>
+        <input
+          type="number"
+          id="editSeasonPauseDays"
+          class="form-control"
+          [ngModel]="editSeasonPauseDays"
+          (ngModelChange)="editSeasonPauseDaysChange.emit($event)"
+          name="editSeasonPauseDays"
+          [disabled]="seasonSettingsLoading"
+          min="0"
+          max="365"
+        />
+      </div>
+
+      <h3 class="modal__section-title">Next Season</h3>
+      <div class="form-group">
+        <label for="editNextSeasonName">Next season name (optional)</label>
+        <input
+          type="text"
+          id="editNextSeasonName"
+          class="form-control"
+          [ngModel]="editNextSeasonName"
+          (ngModelChange)="editNextSeasonNameChange.emit($event)"
+          name="editNextSeasonName"
+          [disabled]="seasonSettingsLoading"
+          placeholder="Next Season"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editNextSeasonStart">Next season start</label>
+        <input
+          type="date"
+          id="editNextSeasonStart"
+          class="form-control"
+          [ngModel]="editNextSeasonStartsAt"
+          (ngModelChange)="editNextSeasonStartsAtChange.emit($event)"
+          name="editNextSeasonStartsAt"
+          [attr.min]="nextSeasonStartMin || null"
+          [disabled]="seasonSettingsLoading"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editNextSeasonEnd">Next season end (optional)</label>
+        <input
+          type="date"
+          id="editNextSeasonEnd"
+          class="form-control"
+          [ngModel]="editNextSeasonEndsAt"
+          (ngModelChange)="editNextSeasonEndsAtChange.emit($event)"
+          name="editNextSeasonEndsAt"
+          [disabled]="seasonSettingsLoading"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-inline">
+          <input
+            type="checkbox"
+            [ngModel]="editNextSeasonIsSuccessive"
+            (ngModelChange)="nextSeasonSuccessiveChange.emit($event)"
+            name="editNextSeasonIsSuccessive"
+            [disabled]="seasonSettingsLoading"
+          />
+          Successive schedule
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="editNextSeasonInterval">Interval</label>
+        <select
+          id="editNextSeasonInterval"
+          class="form-control"
+          [ngModel]="editNextSeasonInterval"
+          (ngModelChange)="editNextSeasonIntervalChange.emit($event)"
+          name="editNextSeasonInterval"
+          [disabled]="seasonSettingsLoading || !editNextSeasonIsSuccessive"
+        >
+          <option value="">Select interval</option>
+          @for (option of seasonIntervalOptions; track option.value) {
+            <option [ngValue]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="editNextSeasonIntermission">Intermission length (days)</label>
+        <input
+          type="number"
+          id="editNextSeasonIntermission"
+          class="form-control"
+          [ngModel]="editNextSeasonIntermissionDays"
+          (ngModelChange)="editNextSeasonIntermissionDaysChange.emit($event)"
+          name="editNextSeasonIntermissionDays"
+          [disabled]="seasonSettingsLoading || !editNextSeasonIsSuccessive"
+          min="0"
+          max="365"
+        />
+      </div>
+
+      <div class="form-group form-group--danger">
+        <button
+          type="button"
+          class="btn btn--danger btn--confirm-action"
+          [disabled]="!canEndSeason || endSeasonLoading"
+          (click)="requestEndSeason.emit()"
+        >
+          @if (endSeasonLoading) {
+            Processing...
+          } @else {
+            End current Season
+          }
+        </button>
+        <small class="form-hint">{{ endSeasonHint }}</small>
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--outline" (click)="close.emit()" [disabled]="seasonSettingsLoading">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn--primary" [disabled]="seasonSettingsLoading">
+          @if (seasonSettingsLoading) { Saving... } @else { Save Changes }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -17,6 +17,15 @@ enum SystemRole {
   SYSADMIN
 }
 
+enum SeasonInterval {
+  WEEKLY
+  BI_WEEKLY
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
 model User {
   id                     String     @id @default(cuid())
   email                  String     @unique
@@ -51,6 +60,12 @@ model Group {
   activeSeasonName String?
   activeSeasonEndsAt DateTime?
   activeSeasonStartedAt DateTime?
+  nextSeasonName String?
+  nextSeasonStartsAt DateTime?
+  nextSeasonEndsAt DateTime?
+  nextSeasonIsSuccessive Boolean @default(false)
+  nextSeasonInterval SeasonInterval?
+  nextSeasonIntermissionDays Int @default(0)
   seasonPauseDays Int @default(0)
   seasonPauseUntil DateTime?
   lastSeasonId String? @unique

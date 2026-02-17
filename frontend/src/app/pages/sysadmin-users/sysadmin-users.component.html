@@ -162,7 +162,7 @@
       <p class="modal__message">{{ confirmMessage }}</p>
       <div class="modal__actions">
         <button class="btn btn--outline" (click)="closeConfirmModal()" [disabled]="confirmLoading()">Cancel</button>
-        <button class="btn btn--danger" (click)="executeConfirmAction()" [disabled]="confirmLoading()">
+        <button class="btn btn--danger btn--confirm-action" (click)="executeConfirmAction()" [disabled]="confirmLoading()">
           @if (confirmLoading()) { Processing... } @else { Confirm }
         </button>
       </div>

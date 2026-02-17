@@ -174,6 +174,16 @@ body {
     }
   }
 
+  // Standard style for destructive confirmation actions (outside New Game fullscreen UI)
+  .btn--confirm-action {
+    background-color: var(--color-danger);
+    color: var(--color-text);
+
+    &:hover:not(:disabled) {
+      background-color: #b02a37;
+    }
+  }
+
   .btn.btn--paypal {
     min-width: 0 !important;
     width: auto;

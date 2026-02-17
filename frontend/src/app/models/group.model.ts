@@ -8,10 +8,24 @@ export interface Group {
   activeSeasonName?: string | null;
   activeSeasonEndsAt?: string | null;
   activeSeasonStartedAt?: string | null;
+  nextSeasonName?: string | null;
+  nextSeasonStartsAt?: string | null;
+  nextSeasonEndsAt?: string | null;
+  nextSeasonIsSuccessive?: boolean;
+  nextSeasonInterval?: SeasonInterval | null;
+  nextSeasonIntermissionDays?: number;
   seasonPauseDays?: number;
   seasonPauseUntil?: string | null;
   role: 'ADMIN' | 'MEMBER';
 }
+
+export type SeasonInterval =
+  | 'WEEKLY'
+  | 'BI_WEEKLY'
+  | 'MONTHLY'
+  | 'QUARTERLY'
+  | 'HALF_YEARLY'
+  | 'YEARLY';
 
 export interface GroupDetail extends Group {
   inviteCode?: string;
@@ -53,9 +67,15 @@ export interface UpdateGroupRequest {
   name?: string;
   description?: string;
   historyRetentionDays?: number;
-  activeSeasonName?: string;
-  activeSeasonEndsAt?: string;
-  activeSeasonStartedAt?: string;
+  activeSeasonName?: string | null;
+  activeSeasonEndsAt?: string | null;
+  activeSeasonStartedAt?: string | null;
+  nextSeasonName?: string | null;
+  nextSeasonStartsAt?: string | null;
+  nextSeasonEndsAt?: string | null;
+  nextSeasonIsSuccessive?: boolean;
+  nextSeasonInterval?: SeasonInterval | null;
+  nextSeasonIntermissionDays?: number;
   seasonPauseDays?: number;
   snapshotVisibilityDays?: number;
 }

@@ -19,5 +19,6 @@ export class GroupHeaderComponent {
   @Output() copyInviteCode = new EventEmitter<void>();
   @Output() regenerateInviteCode = new EventEmitter<void>();
   @Output() openMemberSettings = new EventEmitter<void>();
+  @Output() openSeasonSettings = new EventEmitter<void>();
   @Output() openGroupSettings = new EventEmitter<void>();
 }

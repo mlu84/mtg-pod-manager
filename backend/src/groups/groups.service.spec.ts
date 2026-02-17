@@ -14,6 +14,7 @@ describe('GroupsSeasonService.ensureSeasonUpToDate', () => {
     };
   };
   let eventsService: { log: ReturnType<typeof vi.fn> };
+  let membershipService: { ensureAdmin: ReturnType<typeof vi.fn> };
   let service: GroupsSeasonService;
 
   beforeEach(() => {
@@ -31,10 +32,14 @@ describe('GroupsSeasonService.ensureSeasonUpToDate', () => {
       log: vi.fn(),
     };
 
+    membershipService = {
+      ensureAdmin: vi.fn().mockResolvedValue(undefined),
+    };
+
     service = new GroupsSeasonService(
       prisma as any,
       eventsService as any,
-      {} as GroupsMembershipService,
+      membershipService as unknown as GroupsMembershipService,
     );
   });
 
@@ -125,6 +130,94 @@ describe('GroupsSeasonService.ensureSeasonUpToDate', () => {
       groupId,
       'SEASON_STARTED',
       'Season B has started',
+    );
+  });
+
+  it('resetSeason clears active season and keeps planned next season when a pause is pending', async () => {
+    prisma.group.findUnique.mockResolvedValue({
+      id: groupId,
+      activeSeasonEndsAt: new Date('2026-03-01T00:00:00.000Z'),
+      activeSeasonStartedAt: new Date('2026-01-01T00:00:00.000Z'),
+      activeSeasonName: 'Season C',
+      nextSeasonName: 'Season D',
+      nextSeasonStartsAt: new Date('2026-02-20T00:00:00.000Z'),
+      nextSeasonEndsAt: new Date('2026-03-20T00:00:00.000Z'),
+      nextSeasonIsSuccessive: false,
+      nextSeasonInterval: null,
+      nextSeasonIntermissionDays: 0,
+      seasonPauseDays: 0,
+      seasonPauseUntil: null,
+    });
+
+    const createSeasonSnapshot = vi.fn().mockResolvedValue({ id: 'snapshot-2' });
+    (service as any).createSeasonSnapshot = createSeasonSnapshot;
+
+    await service.resetSeason(groupId, 'admin-1');
+
+    expect(membershipService.ensureAdmin).toHaveBeenCalledWith(groupId, 'admin-1');
+    expect(createSeasonSnapshot).toHaveBeenCalledWith(
+      groupId,
+      new Date('2026-01-01T00:00:00.000Z'),
+      fixedNow,
+      'Season C',
+    );
+    expect(prisma.group.update).toHaveBeenCalledWith({
+      where: { id: groupId },
+      data: {
+        lastSeasonId: 'snapshot-2',
+        activeSeasonName: null,
+        activeSeasonStartedAt: null,
+        activeSeasonEndsAt: null,
+        seasonPauseUntil: new Date('2026-02-20T00:00:00.000Z'),
+      },
+    });
+    expect(eventsService.log).toHaveBeenCalledTimes(1);
+    expect(eventsService.log).toHaveBeenCalledWith(
+      groupId,
+      'SEASON_ENDED',
+      'Season C has ended',
+    );
+  });
+
+  it('resetSeason clears pause and planned next season while waiting for next season start', async () => {
+    prisma.group.findUnique.mockResolvedValue({
+      id: groupId,
+      activeSeasonEndsAt: null,
+      activeSeasonStartedAt: null,
+      activeSeasonName: null,
+      nextSeasonName: 'Season E',
+      nextSeasonStartsAt: new Date('2026-02-15T00:00:00.000Z'),
+      nextSeasonEndsAt: new Date('2026-03-15T00:00:00.000Z'),
+      nextSeasonIsSuccessive: true,
+      nextSeasonInterval: 'MONTHLY',
+      nextSeasonIntermissionDays: 3,
+      seasonPauseDays: 3,
+      seasonPauseUntil: new Date('2026-02-15T00:00:00.000Z'),
+    });
+
+    const createSeasonSnapshot = vi.fn();
+    (service as any).createSeasonSnapshot = createSeasonSnapshot;
+
+    await service.resetSeason(groupId, 'admin-1');
+
+    expect(membershipService.ensureAdmin).toHaveBeenCalledWith(groupId, 'admin-1');
+    expect(prisma.group.update).toHaveBeenCalledWith({
+      where: { id: groupId },
+      data: {
+        seasonPauseUntil: null,
+        nextSeasonName: null,
+        nextSeasonStartsAt: null,
+        nextSeasonEndsAt: null,
+        nextSeasonIsSuccessive: false,
+        nextSeasonInterval: null,
+        nextSeasonIntermissionDays: 0,
+      },
+    });
+    expect(createSeasonSnapshot).not.toHaveBeenCalled();
+    expect(eventsService.log).toHaveBeenCalledWith(
+      groupId,
+      'SEASON_UPDATED',
+      'Season pause and planned next season were removed.',
     );
   });
 });
