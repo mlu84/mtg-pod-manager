@@ -12,7 +12,10 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Prisma, SystemRole } from '@prisma/client';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 
 type AuthenticatedUser = {
   id: string;
@@ -24,11 +27,19 @@ type AuthenticatedUser = {
 
 @Injectable()
 export class AuthService {
+  private static readonly FORGOT_PASSWORD_RATE_LIMIT_MAX = 5;
+  private static readonly RESET_PASSWORD_RATE_LIMIT_MAX = 10;
+  private static readonly RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+  private static readonly RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
+  private static readonly FORGOT_PASSWORD_GENERIC_MESSAGE =
+    'If an account exists for this email, a reset link has been sent.';
+
   constructor(
     private usersService: UsersService,
     private mailService: MailService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private authRateLimitService: AuthRateLimitService,
   ) {}
 
   async signUp(createAuthDto: CreateAuthDto): Promise<{ message: string }> {
@@ -101,6 +112,71 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       emailVerified: !!user.emailVerified,
     };
+  }
+
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+    clientIp: string,
+  ): Promise<{ message: string }> {
+    this.authRateLimitService.consume(
+      `forgot-password:${clientIp}`,
+      AuthService.FORGOT_PASSWORD_RATE_LIMIT_MAX,
+      AuthService.RATE_LIMIT_WINDOW_MS,
+    );
+
+    const user = await this.usersService.findOne({ email: forgotPasswordDto.email });
+    if (!user) {
+      return { message: AuthService.FORGOT_PASSWORD_GENERIC_MESSAGE };
+    }
+
+    try {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenHash = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+      const expiresAt = new Date(Date.now() + AuthService.RESET_TOKEN_TTL_MS);
+
+      await this.usersService.setPasswordResetToken(user.id, resetTokenHash, expiresAt);
+
+      await this.mailService.sendPasswordResetEmail(
+        user.email,
+        user.inAppName,
+        resetToken,
+      );
+    } catch {
+      // Keep response generic to avoid account enumeration side channels.
+    }
+
+    return { message: AuthService.FORGOT_PASSWORD_GENERIC_MESSAGE };
+  }
+
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+    clientIp: string,
+  ): Promise<{ message: string }> {
+    this.authRateLimitService.consume(
+      `reset-password:${clientIp}`,
+      AuthService.RESET_PASSWORD_RATE_LIMIT_MAX,
+      AuthService.RATE_LIMIT_WINDOW_MS,
+    );
+
+    const resetTokenHash = crypto
+      .createHash('sha256')
+      .update(resetPasswordDto.token)
+      .digest('hex');
+    const hashedPassword = await bcrypt.hash(resetPasswordDto.password, 10);
+
+    const consumed = await this.usersService.consumePasswordResetToken(
+      resetTokenHash,
+      hashedPassword,
+    );
+
+    if (!consumed) {
+      throw new BadRequestException('Invalid or expired reset token.');
+    }
+
+    return { message: 'Password reset successful. Please log in with your new password.' };
   }
 
   private async validateUser(

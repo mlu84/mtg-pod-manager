@@ -5,8 +5,10 @@ import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import {
   AuthResponse,
+  ForgotPasswordRequest,
   LoginRequest,
   RegisterRequest,
+  ResetPasswordRequest,
 } from '../../models/user.model';
 
 const API_URL = environment.apiUrl;
@@ -77,6 +79,14 @@ export class AuthService {
         return throwError(() => error);
       })
     );
+  }
+
+  forgotPassword(data: ForgotPasswordRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_URL}/auth/forgot-password`, data);
+  }
+
+  resetPassword(data: ResetPasswordRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_URL}/auth/reset-password`, data);
   }
 
   logout(): void {

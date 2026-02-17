@@ -296,10 +296,6 @@ export class GroupsComponent implements OnInit {
     this.authService.logout();
   }
 
-  goToProfile(): void {
-    this.router.navigate(['/profile']);
-  }
-
   goToArchidektTest(): void {
     this.router.navigate(['/archidekt-test']);
   }

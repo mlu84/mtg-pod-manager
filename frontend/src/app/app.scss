@@ -1,0 +1,149 @@
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.app-shell--play {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.app-shell__content {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.app-shell__content > router-outlet {
+  display: none;
+}
+
+.app-shell__content > :not(router-outlet) {
+  display: block;
+  min-height: 100%;
+}
+
+.meta-header {
+  position: relative;
+  background-color: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.meta-header__content {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.meta-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-secondary);
+  }
+}
+
+.meta-header__brand-logo {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
+}
+
+.meta-header__nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.meta-header__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text);
+    border-color: var(--color-border);
+    background-color: var(--color-bg-light);
+  }
+
+  &.is-active {
+    color: var(--color-text);
+    border-color: var(--color-primary);
+    background-color: rgba(92, 77, 125, 0.25);
+  }
+}
+
+.meta-header .btn--paypal {
+  padding: 2px 6px !important;
+}
+
+.donate-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.donate-prefix {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .meta-header {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .meta-header__content {
+    min-height: 34px;
+    gap: 6px;
+  }
+
+  .meta-header__brand {
+    font-size: 0.74rem;
+  }
+
+  .meta-header__nav {
+    gap: 4px;
+  }
+
+  .meta-header__link {
+    min-height: 22px;
+    padding: 0 6px;
+    font-size: 0.72rem;
+  }
+
+  .meta-header__brand-logo {
+    width: 16px;
+    height: 16px;
+  }
+
+  .donate-prefix {
+    font-size: 0.68rem;
+  }
+
+  .app-shell__content {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}

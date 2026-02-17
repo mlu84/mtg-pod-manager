@@ -7,6 +7,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 
 @Module({
   imports: [
@@ -25,10 +26,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         };
       },
       inject: [ConfigService],
-    }),
+  }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, AuthRateLimitService],
   exports: [JwtStrategy],
 })
 export class AuthModule {}

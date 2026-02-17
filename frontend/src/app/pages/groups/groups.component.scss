@@ -1,5 +1,5 @@
 .groups-page {
-  min-height: 100vh;
+  min-height: 100%;
 }
 
 .header {
@@ -413,18 +413,6 @@
     flex: 1 1 auto;
   }
 
-  .donate-inline {
-    width: auto;
-    align-self: flex-end;
-    margin-left: auto;
-    justify-content: flex-end;
-  }
-
-  .header__actions .btn--paypal {
-    flex: 0 0 auto;
-    width: auto;
-  }
-
   .actions {
     flex-direction: column;
     gap: var(--spacing-sm);
@@ -514,3 +502,4 @@ textarea.form-control {
 select.form-control {
   cursor: pointer;
 }
+

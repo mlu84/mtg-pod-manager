@@ -44,7 +44,25 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err.error?.message || 'Invalid credentials');
+        const status = err?.status;
+        const serverMessage = err?.error?.message;
+
+        if (status === 401) {
+          this.error.set(serverMessage || 'Invalid credentials');
+          return;
+        }
+
+        if (status === 0) {
+          this.error.set(
+            'Backend not reachable. Please start backend and database, then try again.',
+          );
+          return;
+        }
+
+        this.error.set(
+          serverMessage ||
+            'Login failed due to a server error. Check backend logs and DB/migrations.',
+        );
       },
     });
   }

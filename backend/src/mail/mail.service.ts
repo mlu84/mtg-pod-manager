@@ -47,4 +47,40 @@ export class MailService {
       `,
     });
   }
+
+  async sendPasswordResetEmail(
+    to: string,
+    inAppName: string,
+    resetToken: string,
+  ): Promise<void> {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    await this.resend.emails.send({
+      from: this.fromEmail,
+      to,
+      subject: 'Reset your MTG Pod-Manager password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #333;">Password Reset Request</h1>
+          <p>Hello ${inAppName},</p>
+          <p>You requested a password reset for your MTG Pod-Manager account.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${resetLink}"
+               style="background-color: #4CAF50; color: white; padding: 14px 28px;
+                      text-decoration: none; border-radius: 4px; display: inline-block;">
+              Reset Password
+            </a>
+          </p>
+          <p>This link expires in 15 minutes and can only be used once.</p>
+          <p>Or copy and paste this link into your browser:</p>
+          <p style="color: #666; word-break: break-all;">${resetLink}</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #999; font-size: 12px;">
+            If you did not request this reset, you can safely ignore this email.
+          </p>
+        </div>
+      `,
+    });
+  }
 }

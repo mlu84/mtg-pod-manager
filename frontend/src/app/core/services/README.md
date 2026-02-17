@@ -12,3 +12,5 @@ Inputs/Outputs
 Invariants
 - API clients use `environment.apiUrl`.
 - Errors should route through `ErrorReportingService` or `GlobalErrorHandler`.
+- User profile API includes avatar upload support via multipart requests.
+- User profile API includes authenticated self-deletion via `DELETE /users/me`.

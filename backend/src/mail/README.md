@@ -1,7 +1,7 @@
 # Mail Module
 
 Responsibilities
-- Send transactional emails (e.g. verification emails).
+- Send transactional emails (verification + password reset).
 
 Inputs/Outputs
 - Inputs: recipient address, template data, tokens.
@@ -9,3 +9,4 @@ Inputs/Outputs
 
 Invariants
 - Uses configured mail provider settings.
+- Password reset links target frontend reset route and are time-limited by backend token policy.

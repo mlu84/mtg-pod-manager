@@ -22,9 +22,13 @@ model User {
   email                  String     @unique
   password               String
   inAppName              String     @unique
+  avatarImage            Bytes?
+  avatarImageMime        String?
   systemRole             SystemRole @default(USER)
   emailVerified          DateTime?
   emailVerificationToken String?    @unique
+  passwordResetTokenHash String?    @unique
+  passwordResetTokenExpiresAt DateTime?
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
 

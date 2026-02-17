@@ -22,6 +22,34 @@ export const routes: Routes = [
     canActivate: [guestGuard],
   },
   {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./pages/auth/forgot-password/forgot-password.component').then(
+        (m) => m.ForgotPasswordComponent
+      ),
+    canActivate: [guestGuard],
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./pages/auth/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent
+      ),
+    canActivate: [guestGuard],
+  },
+  {
+    path: 'legal',
+    loadComponent: () =>
+      import('./pages/legal/legal.component').then((m) => m.LegalComponent),
+  },
+  {
+    path: 'contact',
+    loadComponent: () =>
+      import('./pages/impressum/impressum.component').then(
+        (m) => m.ImpressumComponent
+      ),
+  },
+  {
     path: 'groups',
     loadComponent: () =>
       import('./pages/groups/groups.component').then((m) => m.GroupsComponent),
@@ -40,14 +68,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/group-play/group-play.component').then(
         (m) => m.GroupPlayComponent
-      ),
-    canActivate: [authGuard],
-  },
-  {
-    path: 'profile',
-    loadComponent: () =>
-      import('./pages/profile/profile.component').then(
-        (m) => m.ProfileComponent
       ),
     canActivate: [authGuard],
   },

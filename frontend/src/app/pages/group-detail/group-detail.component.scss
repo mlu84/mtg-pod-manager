@@ -1,12 +1,12 @@
 .group-detail-page {
-  min-height: 100vh;
+  min-height: 100%;
   width: var(--viewport-width, 100%);
   max-width: 100%;
   overflow-x: hidden;
 }
 
 .loading-container {
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -985,3 +985,4 @@ textarea.form-control {
     flex-wrap: wrap;
   }
 }
+

@@ -24,4 +24,14 @@ export class UsersApiService {
   updateProfile(data: UpdateProfileRequest): Observable<UserProfile> {
     return this.http.patch<UserProfile>(`${API_URL}/users/me`, data);
   }
+
+  uploadAvatar(file: File): Observable<{ avatarUrl: string | null }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ avatarUrl: string | null }>(`${API_URL}/users/me/avatar`, formData);
+  }
+
+  deleteOwnAccount(): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${API_URL}/users/me`);
+  }
 }
