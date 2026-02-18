@@ -226,11 +226,14 @@
 <!-- Edit Deck Modal -->
 @if (showEditDeckModal()) {
   <app-group-deck-edit-modal
+    [assignOwnerOptions]="deckOwnerOptions()"
     [editDeckError]="editDeckError()"
     [editDeckLoading]="editDeckLoading()"
     [editDeckName]="editDeckName"
     [editDeckColors]="editDeckColors"
     [editDeckType]="editDeckType"
+    [editDeckOwnerId]="editDeckOwnerId"
+    [currentDeckOwnerId]="editingDeck?.owner?.id || ''"
     [editDeckIsActive]="editDeckIsActive"
     [editDeckArchidektUrl]="editDeckArchidektUrl"
     [editColorDropdownOpen]="editColorDropdownOpen"
@@ -241,8 +244,10 @@
     (editDeckNameChange)="editDeckName = $event"
     (editDeckColorsChange)="editDeckColors = $event"
     (editDeckTypeChange)="editDeckType = $event"
+    (editDeckOwnerIdChange)="editDeckOwnerId = $event"
     (editDeckIsActiveChange)="editDeckIsActive = $event"
     (editDeckArchidektUrlChange)="editDeckArchidektUrl = $event"
+    (assignOwner)="assignDeckOwner()"
     (openEditColorDropdown)="openEditColorDropdown()"
     (closeEditColorDropdown)="closeEditColorDropdown()"
     (selectEditColor)="selectEditColor($event)"

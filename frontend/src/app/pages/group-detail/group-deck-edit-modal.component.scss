@@ -19,3 +19,10 @@
     accent-color: var(--color-primary);
   }
 }
+
+.owner-assign-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--spacing-sm);
+  align-items: center;
+}

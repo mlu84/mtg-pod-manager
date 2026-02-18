@@ -83,6 +83,33 @@
       </div>
 
       <div class="form-group">
+        <label for="editDeckOwner">Owner</label>
+        <div class="owner-assign-row">
+          <select
+            id="editDeckOwner"
+            class="form-control"
+            [ngModel]="editDeckOwnerId"
+            (ngModelChange)="editDeckOwnerIdChange.emit($event)"
+            name="editDeckOwnerId"
+            [disabled]="editDeckLoading"
+          >
+            @for (owner of assignOwnerOptions; track owner.id) {
+              <option [value]="owner.id">{{ owner.inAppName }}</option>
+            }
+          </select>
+          <button
+            type="button"
+            class="btn btn--secondary"
+            (click)="assignOwner.emit()"
+            [disabled]="!canAssignOwner()"
+          >
+            Assign
+          </button>
+        </div>
+        <small class="form-hint">Assign saves immediately.</small>
+      </div>
+
+      <div class="form-group">
         <label class="checkbox-label">
           <input
             type="checkbox"

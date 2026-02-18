@@ -85,12 +85,15 @@
 }
 
 .deck-picker {
+  --deck-card-width: 140px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--deck-card-width), var(--deck-card-width)));
+  justify-content: flex-start;
   gap: var(--spacing-sm);
 }
 
 .deck-picker__item {
+  width: var(--deck-card-width);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -107,6 +110,16 @@
   height: 80px;
   border-radius: var(--radius-sm);
   object-fit: cover;
+}
+
+@media (max-width: 560px) {
+  .deck-picker {
+    --deck-card-width: 120px;
+  }
+
+  .deck-picker__item img {
+    height: 72px;
+  }
 }
 
 .roll-overlay {

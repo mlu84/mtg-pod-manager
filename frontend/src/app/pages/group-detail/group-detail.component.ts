@@ -177,6 +177,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   editDeckName = '';
   editDeckColors = '';
   editDeckType = '';
+  editDeckOwnerId = '';
   editDeckIsActive = true;
   editDeckArchidektUrl = '';
   editDeckLoading = signal(false);
@@ -424,6 +425,14 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   );
   adminCount = computed(
     () => this.group()?.members.filter((m) => m.role === 'ADMIN').length || 0
+  );
+  deckOwnerOptions = computed(() =>
+    (this.group()?.members || [])
+      .map((member) => ({
+        id: member.user.id,
+        inAppName: member.user.inAppName,
+      }))
+      .sort((a, b) => a.inAppName.localeCompare(b.inAppName))
   );
   isSeasonPaused = computed(() => {
     const pauseUntil = this.group()?.seasonPauseUntil;
@@ -1122,6 +1131,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.editDeckName = deck.name;
     this.editDeckColors = deck.colors;
     this.editDeckType = deck.type || '';
+    this.editDeckOwnerId = deck.owner.id;
     this.editDeckIsActive = deck.isActive;
     this.editDeckArchidektUrl = deck.archidektId
       ? `https://archidekt.com/decks/${deck.archidektId}`
@@ -1134,6 +1144,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   closeEditDeckModal(): void {
     this.showEditDeckModal.set(false);
     this.editingDeck = null;
+    this.editDeckOwnerId = '';
     this.editColorDropdownOpen = false;
     this.unlockBodyScroll();
   }
@@ -1582,6 +1593,51 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         error: (err) => {
           this.groupSettingsLoading.set(false);
           this.groupSettingsError.set(err.error?.message || 'Failed to update settings');
+        },
+      });
+  }
+
+  assignDeckOwner(): void {
+    if (!this.editingDeck) return;
+
+    const nextOwnerId = this.editDeckOwnerId.trim();
+    if (!nextOwnerId) {
+      this.editDeckError.set('Please select a valid owner');
+      return;
+    }
+
+    if (nextOwnerId === this.editingDeck.owner.id) {
+      return;
+    }
+
+    this.editDeckLoading.set(true);
+    this.editDeckError.set(null);
+
+    this.groupDetailApiService
+      .updateDeck(this.editingDeck.id, { ownerId: nextOwnerId })
+      .subscribe({
+        next: (updatedDeck) => {
+          this.editDeckLoading.set(false);
+          const stillCanEditDeck = this.canEditDeck(updatedDeck);
+          this.editingDeck = updatedDeck;
+          this.editDeckOwnerId = updatedDeck.owner.id;
+
+          if (!stillCanEditDeck) {
+            this.closeEditDeckModal();
+          }
+
+          this.showAlert(
+            'Success',
+            `Deck owner assigned to ${updatedDeck.owner.inAppName}.`,
+            'success',
+          );
+          this.loadData();
+        },
+        error: (err) => {
+          this.editDeckLoading.set(false);
+          this.editDeckError.set(
+            this.resolveApiErrorMessage(err, 'Failed to assign deck owner'),
+          );
         },
       });
   }

@@ -229,4 +229,5 @@ export interface UpdateDeckRequest {
   type?: string;
   isActive?: boolean;
   archidektUrl?: string;
+  ownerId?: string;
 }

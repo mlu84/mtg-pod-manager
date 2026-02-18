@@ -170,6 +170,44 @@ export class DecksService {
       'You can only edit your own decks',
     );
 
+    const requestedOwnerId = updateDeckDto.ownerId?.trim();
+    const ownerWillChange =
+      !!requestedOwnerId && requestedOwnerId.length > 0 && requestedOwnerId !== deck.ownerId;
+    let previousOwnerName: string | null = null;
+    let newOwnerName: string | null = null;
+
+    if (ownerWillChange) {
+      const [targetMembership, previousOwner, nextOwner] = await Promise.all([
+        this.prisma.usersOnGroups.findUnique({
+          where: {
+            userId_groupId: {
+              userId: requestedOwnerId!,
+              groupId: deck.groupId,
+            },
+          },
+        }),
+        this.prisma.user.findUnique({
+          where: { id: deck.ownerId },
+          select: { inAppName: true },
+        }),
+        this.prisma.user.findUnique({
+          where: { id: requestedOwnerId! },
+          select: { inAppName: true },
+        }),
+      ]);
+
+      if (!targetMembership) {
+        throw new ConflictException('Selected owner must be a member of this group');
+      }
+
+      if (!nextOwner) {
+        throw new NotFoundException('Target owner not found');
+      }
+
+      previousOwnerName = previousOwner?.inAppName ?? 'Unknown';
+      newOwnerName = nextOwner.inAppName;
+    }
+
     // Handle Archidekt integration
     let archidektData: {
       archidektId?: string | null;
@@ -200,6 +238,9 @@ export class DecksService {
 
     // Remove archidektUrl from DTO before passing to Prisma (it's not a DB field)
     const { archidektUrl, ...prismaData } = updateDeckDto;
+    if (requestedOwnerId) {
+      prismaData.ownerId = requestedOwnerId;
+    }
 
     try {
       const updatedDeck = await this.prisma.deck.update({
@@ -233,6 +274,14 @@ export class DecksService {
             `Deck "${updatedDeck.name}" was deactivated`,
           );
         }
+      }
+
+      if (ownerWillChange && previousOwnerName && newOwnerName) {
+        await this.eventsService.log(
+          deck.groupId,
+          'DECK_OWNER_ASSIGNED',
+          `Deck "${updatedDeck.name}" owner was changed from ${previousOwnerName} to ${newOwnerName}`,
+        );
       }
 
       return updatedDeck;

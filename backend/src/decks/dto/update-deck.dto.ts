@@ -24,4 +24,8 @@ export class UpdateDeckDto {
   @IsString()
   @IsOptional()
   archidektUrl?: string; // URL oder ID des Archidekt-Decks (leer = entfernen)
+
+  @IsString()
+  @IsOptional()
+  ownerId?: string;
 }
