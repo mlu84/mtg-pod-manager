@@ -11,3 +11,4 @@ Inputs/Outputs
 Invariants
 - Callers must be group members.
 - Deck stats are scoped to a group.
+- DTO validation enforces CUID format for `groupId` and optional `ownerId` reassignment.

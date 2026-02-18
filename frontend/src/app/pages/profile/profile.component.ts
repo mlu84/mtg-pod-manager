@@ -5,6 +5,11 @@ import { AuthService } from '../../core/services/auth.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { UserProfile } from '../../models/user.model';
 import { formatLocalDate } from '../../core/utils/date-utils';
+import {
+  normalizeText,
+  validateImageUploadFile,
+  validateRequiredText,
+} from '../../core/utils/input-validation';
 
 @Component({
   selector: 'app-profile',
@@ -34,7 +39,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
   deleteLoading = signal(false);
   deleteError = signal<string | null>(null);
 
-  private readonly maxAvatarBytes = 2 * 1024 * 1024;
   private selectedAvatarFile: File | null = null;
   private avatarObjectUrl: string | null = null;
 
@@ -85,13 +89,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   saveProfile(): void {
-    if (!this.editName.trim()) {
-      this.editError.set('Display name is required');
-      return;
-    }
-
-    if (this.editName.length < 2) {
-      this.editError.set('Display name must be at least 2 characters');
+    const normalizedName = normalizeText(this.editName);
+    const nameError = validateRequiredText(normalizedName, 'Display name', {
+      minLength: 2,
+      maxLength: 50,
+    });
+    if (nameError) {
+      this.editError.set(nameError);
       return;
     }
 
@@ -99,7 +103,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.editError.set(null);
     this.editSuccess.set(false);
 
-    this.usersApiService.updateProfile({ inAppName: this.editName.trim() }).subscribe({
+    this.usersApiService.updateProfile({ inAppName: normalizedName }).subscribe({
       next: (profile) => {
         this.profile.set(profile);
         this.editLoading.set(false);
@@ -126,15 +130,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      this.avatarError.set('Unsupported image type. Allowed: JPEG, PNG, WebP.');
-      this.clearAvatarSelection();
-      return;
-    }
-
-    if (file.size > this.maxAvatarBytes) {
-      this.avatarError.set('Image is too large. Maximum size is 2 MB.');
+    const imageError = validateImageUploadFile(file);
+    if (imageError) {
+      this.avatarError.set(imageError);
       this.clearAvatarSelection();
       return;
     }

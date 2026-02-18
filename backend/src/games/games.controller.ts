@@ -7,12 +7,16 @@ import {
   Param,
   Query,
   UseGuards,
+  DefaultValuePipe,
+  ParseBoolPipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { GamesService } from './games.service';
 import { CreateGameDto } from './dto/create-game.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { VerifiedUserGuard } from '../auth/guards/verified-user.guard';
 import { CurrentUser, CurrentUserType } from '../auth/decorators/current-user.decorator';
+import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe';
 
 @Controller('games')
 @UseGuards(JwtAuthGuard)
@@ -30,29 +34,25 @@ export class GamesController {
 
   @Get()
   findAllInGroup(
-    @Query('groupId') groupId: string,
-    @Query('limit') limit?: string,
+    @Query('groupId', ParseCuidPipe) groupId: string,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @CurrentUser() user?: CurrentUserType,
   ) {
-    return this.gamesService.findAllInGroup(
-      groupId,
-      user!.id,
-      limit ? parseInt(limit, 10) : 20,
-    );
+    return this.gamesService.findAllInGroup(groupId, user!.id, limit);
   }
 
   @Get('ranking')
   getRanking(
-    @Query('groupId') groupId: string,
-    @Query('snapshot') snapshot: string,
+    @Query('groupId', ParseCuidPipe) groupId: string,
+    @Query('snapshot', new DefaultValuePipe(false), ParseBoolPipe) snapshot: boolean,
     @CurrentUser() user: CurrentUserType,
   ) {
-    return this.gamesService.getRanking(groupId, user.id, snapshot === 'true');
+    return this.gamesService.getRanking(groupId, user.id, snapshot);
   }
 
   @Get(':id')
   findOne(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.gamesService.findOne(id, user.id);
@@ -61,7 +61,7 @@ export class GamesController {
   @Delete('undo')
   @UseGuards(VerifiedUserGuard)
   undoLastGame(
-    @Query('groupId') groupId: string,
+    @Query('groupId', ParseCuidPipe) groupId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.gamesService.undoLastGame(groupId, user.id);

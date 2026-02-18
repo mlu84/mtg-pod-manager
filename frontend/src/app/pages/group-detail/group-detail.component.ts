@@ -68,6 +68,22 @@ import {
 import Chart from 'chart.js/auto';
 import { ChartConfiguration } from 'chart.js';
 import { formatLocalDate } from '../../core/utils/date-utils';
+import {
+  validateDeckFormInput,
+  validateDeckOwnerAssignmentInput,
+  validateGamePlacementsInput,
+  validateGroupEditInput,
+  validateGroupImageSelection,
+  validateInviteEmailInput,
+  validateInviteSearchQuery,
+  validateSeasonDayInputs,
+} from './group-detail-form-validation';
+import { resolveApiErrorMessage } from './group-detail-error.util';
+import {
+  getNextSeasonStartMinDate as getNextSeasonStartMinDateFromState,
+  hasActiveSeasonData,
+  hasNextSeasonData,
+} from './group-detail-season-state.util';
 
 @Component({
   selector: 'app-group-detail',
@@ -444,10 +460,10 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   });
   endSeasonHint = computed(() => {
     const group = this.group();
-    if (this.hasActiveSeasonData(group)) {
+    if (hasActiveSeasonData(group)) {
       return 'Ends current league immediately and creates a ranking snapshot.';
     }
-    if (this.hasNextSeasonData(group)) {
+    if (hasNextSeasonData(group)) {
       return 'Removes the planned next season and clears the active pause.';
     }
     return 'Ends current league immediately and creates a ranking snapshot.';
@@ -455,7 +471,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   canResetSeason = computed(() => {
     const group = this.group();
     if (!group) return false;
-    return this.hasActiveSeasonData(group) || this.hasNextSeasonData(group);
+    return hasActiveSeasonData(group) || hasNextSeasonData(group);
   });
   seasonCountdown = computed(() => {
     const endsAt = this.group()?.activeSeasonEndsAt;
@@ -898,8 +914,16 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   createDeck(): void {
-    if (!this.deckName || !this.deckColors) {
-      this.deckError.set('Name and color are required');
+    const validation = validateDeckFormInput({
+      name: this.deckName,
+      colors: this.deckColors,
+      type: this.deckType,
+      archidektUrl: this.deckArchidektUrl,
+      allowedColors: this.colorOptions,
+      allowedTypes: this.typeOptions,
+    });
+    if (validation.error || !validation.value) {
+      this.deckError.set(validation.error ?? 'Invalid deck input');
       return;
     }
 
@@ -908,11 +932,11 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.groupDetailApiService
       .createDeck({
-        name: this.deckName,
-        colors: this.deckColors,
-        type: this.deckType || undefined,
+        name: validation.value.name,
+        colors: validation.value.colors,
+        type: validation.value.type,
         groupId: this.groupId,
-        archidektUrl: this.deckArchidektUrl || undefined,
+        archidektUrl: validation.value.archidektUrl,
       })
       .subscribe({
         next: () => {
@@ -923,7 +947,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err) => {
           this.deckLoading.set(false);
-          this.deckError.set(err.error?.message || 'Failed to create deck');
+          this.deckError.set(resolveApiErrorMessage(err, 'Failed to create deck'));
         },
       });
   }
@@ -1063,14 +1087,9 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   createGame(): void {
-    if (this.gamePlacements.length < 2) {
-      this.gameError.set('At least 2 players are required');
-      return;
-    }
-
-    const invalidPlacements = this.gamePlacements.filter((p) => !p.deckId);
-    if (invalidPlacements.length > 0) {
-      this.gameError.set('Please select a deck for each player');
+    const validation = validateGamePlacementsInput(this.gamePlacements);
+    if (validation.error || !validation.value) {
+      this.gameError.set(validation.error ?? 'Invalid game input');
       return;
     }
 
@@ -1080,11 +1099,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupDetailApiService
       .createGame({
         groupId: this.groupId,
-        placements: this.gamePlacements.map((p) => ({
-          deckId: p.deckId,
-          rank: Number(p.rank), // Convert to number (dropdown returns string)
-          playerName: p.playerName || undefined,
-        })),
+        placements: validation.value,
       })
       .subscribe({
         next: () => {
@@ -1095,7 +1110,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err) => {
           this.gameLoading.set(false);
-          this.gameError.set(err.error?.message || 'Failed to record game');
+          this.gameError.set(resolveApiErrorMessage(err, 'Failed to record game'));
         },
       });
   }
@@ -1120,7 +1135,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
-        this.showAlert('Error', err.error?.message || 'Failed to undo game');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to undo game'));
       },
     });
   }
@@ -1154,8 +1169,20 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   updateDeck(): void {
-    if (!this.editingDeck || !this.editDeckName || !this.editDeckColors) {
-      this.editDeckError.set('Name and color are required');
+    if (!this.editingDeck) {
+      this.editDeckError.set('Deck not found');
+      return;
+    }
+    const validation = validateDeckFormInput({
+      name: this.editDeckName,
+      colors: this.editDeckColors,
+      type: this.editDeckType,
+      archidektUrl: this.editDeckArchidektUrl,
+      allowedColors: this.colorOptions,
+      allowedTypes: this.typeOptions,
+    });
+    if (validation.error || !validation.value) {
+      this.editDeckError.set(validation.error ?? 'Invalid deck input');
       return;
     }
 
@@ -1164,11 +1191,11 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.groupDetailApiService
       .updateDeck(this.editingDeck.id, {
-        name: this.editDeckName,
-        colors: this.editDeckColors,
-        type: this.editDeckType || undefined,
+        name: validation.value.name,
+        colors: validation.value.colors,
+        type: validation.value.type,
         isActive: this.editDeckIsActive,
-        archidektUrl: this.editDeckArchidektUrl,
+        archidektUrl: validation.value.archidektUrl,
       })
       .subscribe({
         next: () => {
@@ -1180,7 +1207,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err) => {
           this.editDeckLoading.set(false);
-          this.editDeckError.set(err.error?.message || 'Failed to update deck');
+          this.editDeckError.set(resolveApiErrorMessage(err, 'Failed to update deck'));
         },
       });
   }
@@ -1199,7 +1226,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.editDeckLoading.set(false);
-        this.editDeckError.set(err.error?.message || 'Failed to refresh Archidekt data');
+        this.editDeckError.set(resolveApiErrorMessage(err, 'Failed to refresh Archidekt data'));
       },
     });
   }
@@ -1229,7 +1256,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
-        this.showAlert('Error', err.error?.message || 'Failed to delete deck');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to delete deck'));
       },
     });
   }
@@ -1248,7 +1275,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupDetailApiService.updateMemberRole(this.groupId, member.userId, 'ADMIN').subscribe({
       next: () => this.loadData(),
       error: (err) => {
-        this.showAlert('Error', err.error?.message || 'Failed to promote member');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to promote member'));
       },
     });
   }
@@ -1257,7 +1284,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupDetailApiService.updateMemberRole(this.groupId, member.userId, 'MEMBER').subscribe({
       next: () => this.loadData(),
       error: (err) => {
-        this.showAlert('Error', err.error?.message || 'Failed to demote member');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to demote member'));
       },
     });
   }
@@ -1294,7 +1321,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
-        this.showAlert('Error', err.error?.message || 'Failed to remove member');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to remove member'));
       },
     });
   }
@@ -1309,7 +1336,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.applicationActionLoading.set(false);
-        this.showAlert('Error', err.error?.message || 'Failed to accept application');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to accept application'));
       },
     });
   }
@@ -1324,7 +1351,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.applicationActionLoading.set(false);
-        this.showAlert('Error', err.error?.message || 'Failed to reject application');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to reject application'));
       },
     });
   }
@@ -1353,7 +1380,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
-        this.showAlert('Error', err.error?.message || 'Failed to regenerate invite code');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to regenerate invite code'));
       },
     });
   }
@@ -1462,13 +1489,15 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   searchInvitableUsers(): void {
-    const query = this.inviteUserSearchQuery.trim();
-    if (!query) {
+    const validation = validateInviteSearchQuery(this.inviteUserSearchQuery);
+    if (validation.error || !validation.value) {
       this.inviteUserSearchResults.set([]);
-      this.inviteUserSearchError.set('Please enter a user name');
+      this.inviteUserSearchError.set(validation.error ?? 'Invalid search query');
       this.inviteUserSearchInfo.set(null);
       return;
     }
+    const query = validation.value;
+    this.inviteUserSearchQuery = query;
 
     this.inviteUserSearchLoading.set(true);
     this.inviteUserSearchError.set(null);
@@ -1485,7 +1514,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         this.inviteUserSearchLoading.set(false);
         this.inviteUserSearchInfo.set(null);
-        this.inviteUserSearchError.set(this.resolveApiErrorMessage(err, 'Failed to search users'));
+        this.inviteUserSearchError.set(resolveApiErrorMessage(err, 'Failed to search users'));
       },
     });
   }
@@ -1508,17 +1537,18 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.inviteUserActionLoading.set(false);
-        this.inviteUserActionError.set(this.resolveApiErrorMessage(err, 'Failed to send invite'));
+        this.inviteUserActionError.set(resolveApiErrorMessage(err, 'Failed to send invite'));
       },
     });
   }
 
   sendEmailInvite(): void {
-    const email = this.inviteEmailAddress.trim();
-    if (!email) {
-      this.inviteEmailError.set('Please enter an email address');
+    const validation = validateInviteEmailInput(this.inviteEmailAddress);
+    if (validation.error || !validation.value) {
+      this.inviteEmailError.set(validation.error ?? 'Invalid email address');
       return;
     }
+    const email = validation.value;
 
     this.inviteEmailLoading.set(true);
     this.inviteEmailError.set(null);
@@ -1532,24 +1562,15 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.inviteEmailLoading.set(false);
-        this.inviteEmailError.set(this.resolveApiErrorMessage(err, 'Failed to send email invite'));
+        this.inviteEmailError.set(resolveApiErrorMessage(err, 'Failed to send email invite'));
       },
     });
   }
 
-  private resolveApiErrorMessage(err: unknown, fallback: string): string {
-    const status = (err as { status?: number } | null)?.status;
-    if (status === 401) {
-      return 'Session expired or unauthorized. Please log in again.';
-    }
-
-    const apiMessage = (err as { error?: { message?: string } } | null)?.error?.message;
-    return apiMessage || fallback;
-  }
-
   updateGroup(): void {
-    if (!this.editGroupName) {
-      this.editGroupError.set('Name is required');
+    const validation = validateGroupEditInput(this.editGroupName, this.editGroupDescription);
+    if (validation.error || !validation.value) {
+      this.editGroupError.set(validation.error ?? 'Invalid group input');
       return;
     }
 
@@ -1558,8 +1579,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.groupDetailApiService
       .updateGroup(this.groupId, {
-        name: this.editGroupName,
-        description: this.editGroupDescription || undefined,
+        name: validation.value.name,
+        description: validation.value.description,
       })
       .subscribe({
         next: () => {
@@ -1570,7 +1591,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err) => {
           this.editGroupLoading.set(false);
-          this.editGroupError.set(err.error?.message || 'Failed to update group');
+          this.editGroupError.set(resolveApiErrorMessage(err, 'Failed to update group'));
         },
       });
   }
@@ -1592,7 +1613,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err) => {
           this.groupSettingsLoading.set(false);
-          this.groupSettingsError.set(err.error?.message || 'Failed to update settings');
+          this.groupSettingsError.set(resolveApiErrorMessage(err, 'Failed to update settings'));
         },
       });
   }
@@ -1600,13 +1621,16 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   assignDeckOwner(): void {
     if (!this.editingDeck) return;
 
-    const nextOwnerId = this.editDeckOwnerId.trim();
-    if (!nextOwnerId) {
-      this.editDeckError.set('Please select a valid owner');
+    const validation = validateDeckOwnerAssignmentInput({
+      ownerId: this.editDeckOwnerId,
+      currentOwnerId: this.editingDeck.owner.id,
+      knownOwnerIds: new Set(this.deckOwnerOptions().map((member) => member.id)),
+    });
+    if (validation.error || !validation.value) {
+      this.editDeckError.set(validation.error ?? 'Invalid owner selection');
       return;
     }
-
-    if (nextOwnerId === this.editingDeck.owner.id) {
+    if (validation.value.noChange) {
       return;
     }
 
@@ -1614,7 +1638,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.editDeckError.set(null);
 
     this.groupDetailApiService
-      .updateDeck(this.editingDeck.id, { ownerId: nextOwnerId })
+      .updateDeck(this.editingDeck.id, { ownerId: validation.value.ownerId })
       .subscribe({
         next: (updatedDeck) => {
           this.editDeckLoading.set(false);
@@ -1636,14 +1660,27 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         error: (err) => {
           this.editDeckLoading.set(false);
           this.editDeckError.set(
-            this.resolveApiErrorMessage(err, 'Failed to assign deck owner'),
+            resolveApiErrorMessage(err, 'Failed to assign deck owner'),
           );
         },
       });
   }
 
   updateSeasonSettings(): void {
-    const nextSeasonStartMin = this.getNextSeasonStartMinDate();
+    const dayValidationError = validateSeasonDayInputs(
+      this.editSeasonPauseDays,
+      this.editNextSeasonIntermissionDays,
+    );
+    if (dayValidationError) {
+      this.seasonSettingsError.set(dayValidationError);
+      return;
+    }
+
+    const nextSeasonStartMin = getNextSeasonStartMinDateFromState({
+      editSeasonEndsAt: this.editSeasonEndsAt,
+      editSeasonPauseDays: this.editSeasonPauseDays,
+      seasonPauseUntil: this.group()?.seasonPauseUntil,
+    });
     if (
       this.editNextSeasonStartsAt &&
       nextSeasonStartMin &&
@@ -1684,23 +1721,9 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err) => {
           this.seasonSettingsLoading.set(false);
-          this.seasonSettingsError.set(err.error?.message || 'Failed to update season settings');
+          this.seasonSettingsError.set(resolveApiErrorMessage(err, 'Failed to update season settings'));
         },
       });
-  }
-
-  getNextSeasonStartMinDate(): string {
-    const today = this.toUtcDateInputValue(new Date());
-    const activeSeasonEndWithPause = this.editSeasonEndsAt
-      ? this.addDaysToDateInput(this.editSeasonEndsAt, this.editSeasonPauseDays)
-      : '';
-    const pauseUntil = this.group()?.seasonPauseUntil
-      ? this.group()!.seasonPauseUntil!.slice(0, 10)
-      : '';
-    return [today, activeSeasonEndWithPause, pauseUntil]
-      .filter((value) => !!value)
-      .sort()
-      .at(-1) || '';
   }
 
   onNextSeasonSuccessiveChange(enabled: boolean): void {
@@ -1713,10 +1736,18 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  getNextSeasonStartMinDate(): string {
+    return getNextSeasonStartMinDateFromState({
+      editSeasonEndsAt: this.editSeasonEndsAt,
+      editSeasonPauseDays: this.editSeasonPauseDays,
+      seasonPauseUntil: this.group()?.seasonPauseUntil,
+    });
+  }
+
   requestEndSeason(): void {
     const group = this.group();
-    const hasActiveSeasonData = this.hasActiveSeasonData(group);
-    const confirmationMessage = hasActiveSeasonData
+    const activeSeasonDataAvailable = hasActiveSeasonData(group);
+    const confirmationMessage = activeSeasonDataAvailable
       ? 'Do you want to end the current season now? This ends the current league immediately and creates a ranking snapshot.'
       : 'Do you want to remove the planned next season (and active pause, if present)?';
 
@@ -1744,41 +1775,9 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.seasonResetLoading.set(false);
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
-        this.showAlert('Error', err.error?.message || 'Failed to end season');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to end season'));
       },
     });
-  }
-
-  private toUtcDateInputValue(date: Date): string {
-    const utc = new Date(date);
-    utc.setUTCHours(0, 0, 0, 0);
-    return utc.toISOString().slice(0, 10);
-  }
-
-  private addDaysToDateInput(isoDate: string, days: number): string {
-    const base = new Date(isoDate);
-    if (Number.isNaN(base.getTime())) {
-      return isoDate;
-    }
-    base.setUTCHours(0, 0, 0, 0);
-    const safeDays = Math.max(0, Number(days) || 0);
-    const shifted = new Date(base.getTime() + safeDays * 24 * 60 * 60 * 1000);
-    return shifted.toISOString().slice(0, 10);
-  }
-
-  private hasActiveSeasonData(group: GroupDetail | null): boolean {
-    return !!group?.activeSeasonName || !!group?.activeSeasonStartedAt || !!group?.activeSeasonEndsAt;
-  }
-
-  private hasNextSeasonData(group: GroupDetail | null): boolean {
-    return (
-      !!group?.nextSeasonName ||
-      !!group?.nextSeasonStartsAt ||
-      !!group?.nextSeasonEndsAt ||
-      !!group?.nextSeasonIsSuccessive ||
-      !!group?.nextSeasonInterval ||
-      (group?.nextSeasonIntermissionDays ?? 0) > 0
-    );
   }
 
   onGroupImageSelected(event: Event): void {
@@ -1789,21 +1788,31 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.groupImagePreview = null;
       return;
     }
+    const validation = validateGroupImageSelection(file);
+    if (validation.error || !validation.value) {
+      this.groupImageFile = null;
+      this.groupImagePreview = null;
+      this.groupImageError.set(validation.error ?? 'Invalid image file');
+      return;
+    }
 
-    this.groupImageFile = file;
-    this.groupImagePreview = URL.createObjectURL(file);
+    this.groupImageError.set(null);
+    this.groupImageFile = validation.value;
+    this.groupImagePreview = URL.createObjectURL(validation.value);
   }
 
   uploadGroupImage(): void {
-    if (!this.groupImageFile) {
-      this.groupImageError.set('Please select an image first');
+    const validation = validateGroupImageSelection(this.groupImageFile);
+    if (validation.error || !validation.value) {
+      this.groupImageError.set(validation.error ?? 'Invalid image file');
       return;
     }
+    const file = validation.value;
 
     this.groupImageUploading.set(true);
     this.groupImageError.set(null);
 
-    this.groupDetailApiService.uploadGroupImage(this.groupId, this.groupImageFile).subscribe({
+    this.groupDetailApiService.uploadGroupImage(this.groupId, file).subscribe({
       next: (result) => {
         this.groupImageUploading.set(false);
         const currentGroup = this.group();
@@ -1815,7 +1824,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.groupImageUploading.set(false);
-        this.groupImageError.set(err.error?.message || 'Failed to upload image');
+        this.groupImageError.set(resolveApiErrorMessage(err, 'Failed to upload image'));
       },
     });
   }
@@ -1844,7 +1853,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.deleteGroupLoading.set(false);
         this.confirmModalLoading.set(false);
         this.closeConfirmModal();
-        this.showAlert('Error', err.error?.message || 'Failed to delete group');
+        this.showAlert('Error', resolveApiErrorMessage(err, 'Failed to delete group'));
       },
     });
   }

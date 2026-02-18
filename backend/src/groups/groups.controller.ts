@@ -10,7 +10,6 @@ import {
   UseGuards,
   UploadedFile,
   UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GroupsService } from './groups.service';
@@ -21,9 +20,13 @@ import { JoinGroupDto } from './dto/join-group.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { CreateUserInviteDto } from './dto/create-user-invite.dto';
 import { CreateEmailInviteDto } from './dto/create-email-invite.dto';
+import { SearchGroupsQueryDto } from './dto/search-groups-query.dto';
+import { SearchInvitableUsersQueryDto } from './dto/search-invitable-users-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { VerifiedUserGuard } from '../auth/guards/verified-user.guard';
 import { CurrentUser, CurrentUserType } from '../auth/decorators/current-user.decorator';
+import { createImageUploadInterceptorOptions } from '../common/upload/image-upload.util';
+import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe';
 
 @Controller('groups')
 @UseGuards(JwtAuthGuard)
@@ -49,12 +52,15 @@ export class GroupsController {
 
   @Get('search')
   search(
-    @Query('query') query: string,
-    @Query('page') page: string,
-    @Query('pageSize') pageSize: string,
+    @Query() queryDto: SearchGroupsQueryDto,
     @CurrentUser() user: CurrentUserType,
   ) {
-    return this.groupsService.search(query, user.id, page, pageSize);
+    return this.groupsService.search(
+      queryDto.query ?? '',
+      user.id,
+      queryDto.page,
+      queryDto.pageSize,
+    );
   }
 
   @Get('invites/incoming')
@@ -75,7 +81,7 @@ export class GroupsController {
   @Post('invites/:inviteId/accept')
   @UseGuards(VerifiedUserGuard)
   acceptInvite(
-    @Param('inviteId') inviteId: string,
+    @Param('inviteId', ParseCuidPipe) inviteId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.acceptInvite(inviteId, user.id);
@@ -84,7 +90,7 @@ export class GroupsController {
   @Post('invites/:inviteId/reject')
   @UseGuards(VerifiedUserGuard)
   rejectInvite(
-    @Param('inviteId') inviteId: string,
+    @Param('inviteId', ParseCuidPipe) inviteId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.rejectInvite(inviteId, user.id);
@@ -93,7 +99,7 @@ export class GroupsController {
   @Delete('invites/:inviteId')
   @UseGuards(VerifiedUserGuard)
   cancelSentInvite(
-    @Param('inviteId') inviteId: string,
+    @Param('inviteId', ParseCuidPipe) inviteId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.cancelSentInvite(inviteId, user.id);
@@ -101,7 +107,7 @@ export class GroupsController {
 
   @Get(':id')
   findOne(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.findOne(id, user.id);
@@ -118,17 +124,21 @@ export class GroupsController {
   @Get(':id/invitable-users')
   @UseGuards(VerifiedUserGuard)
   searchInvitableUsers(
-    @Param('id') groupId: string,
-    @Query('query') query: string,
+    @Param('id', ParseCuidPipe) groupId: string,
+    @Query() queryDto: SearchInvitableUsersQueryDto,
     @CurrentUser() user: CurrentUserType,
   ) {
-    return this.groupsService.searchInvitableUsers(groupId, user.id, query || '');
+    return this.groupsService.searchInvitableUsers(
+      groupId,
+      user.id,
+      queryDto.query ?? '',
+    );
   }
 
   @Post(':id/invites/user')
   @UseGuards(VerifiedUserGuard)
   createUserInvite(
-    @Param('id') groupId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
     @Body() createUserInviteDto: CreateUserInviteDto,
     @CurrentUser() user: CurrentUserType,
   ) {
@@ -142,7 +152,7 @@ export class GroupsController {
   @Post(':id/invites/email')
   @UseGuards(VerifiedUserGuard)
   createEmailInvite(
-    @Param('id') groupId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
     @Body() createEmailInviteDto: CreateEmailInviteDto,
     @CurrentUser() user: CurrentUserType,
   ) {
@@ -156,7 +166,7 @@ export class GroupsController {
   @Post(':id/applications')
   @UseGuards(VerifiedUserGuard)
   applyToGroup(
-    @Param('id') groupId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.createApplication(groupId, user.id);
@@ -164,7 +174,7 @@ export class GroupsController {
 
   @Get(':id/applications')
   getApplications(
-    @Param('id') groupId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.getApplications(groupId, user.id);
@@ -173,8 +183,8 @@ export class GroupsController {
   @Post(':id/applications/:userId/accept')
   @UseGuards(VerifiedUserGuard)
   acceptApplication(
-    @Param('id') groupId: string,
-    @Param('userId') applicantUserId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
+    @Param('userId', ParseCuidPipe) applicantUserId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.acceptApplication(
@@ -187,8 +197,8 @@ export class GroupsController {
   @Post(':id/applications/:userId/reject')
   @UseGuards(VerifiedUserGuard)
   rejectApplication(
-    @Param('id') groupId: string,
-    @Param('userId') applicantUserId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
+    @Param('userId', ParseCuidPipe) applicantUserId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.rejectApplication(
@@ -201,7 +211,7 @@ export class GroupsController {
   @Post(':id/season-reset')
   @UseGuards(VerifiedUserGuard)
   resetSeason(
-    @Param('id') groupId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.resetSeason(groupId, user.id);
@@ -210,7 +220,7 @@ export class GroupsController {
   @Post(':id/season-banner/dismiss')
   @UseGuards(VerifiedUserGuard)
   dismissSeasonBanner(
-    @Param('id') groupId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.dismissWinnersBanner(groupId, user.id);
@@ -219,7 +229,7 @@ export class GroupsController {
   @Patch(':id')
   @UseGuards(VerifiedUserGuard)
   update(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @Body() updateGroupDto: UpdateGroupDto,
     @CurrentUser() user: CurrentUserType,
   ) {
@@ -228,20 +238,9 @@ export class GroupsController {
 
   @Post(':id/image')
   @UseGuards(VerifiedUserGuard)
-  @UseInterceptors(
-    FileInterceptor('file', {
-      limits: { fileSize: 2 * 1024 * 1024 },
-      fileFilter: (_req, file, cb) => {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowed.includes(file.mimetype)) {
-          return cb(new BadRequestException('Unsupported image type'), false);
-        }
-        cb(null, true);
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('file', createImageUploadInterceptorOptions()))
   uploadGroupImage(
-    @Param('id') groupId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: CurrentUserType,
   ) {
@@ -251,8 +250,8 @@ export class GroupsController {
   @Delete(':id/members/:userId')
   @UseGuards(VerifiedUserGuard)
   removeMember(
-    @Param('id') groupId: string,
-    @Param('userId') memberUserId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
+    @Param('userId', ParseCuidPipe) memberUserId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.removeMember(groupId, memberUserId, user.id);
@@ -261,8 +260,8 @@ export class GroupsController {
   @Patch(':id/members/:userId/role')
   @UseGuards(VerifiedUserGuard)
   updateMemberRole(
-    @Param('id') groupId: string,
-    @Param('userId') memberUserId: string,
+    @Param('id', ParseCuidPipe) groupId: string,
+    @Param('userId', ParseCuidPipe) memberUserId: string,
     @Body() updateMemberRoleDto: UpdateMemberRoleDto,
     @CurrentUser() user: CurrentUserType,
   ) {
@@ -277,7 +276,7 @@ export class GroupsController {
   @Post(':id/regenerate-code')
   @UseGuards(VerifiedUserGuard)
   regenerateInviteCode(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.regenerateInviteCode(id, user.id);
@@ -286,7 +285,7 @@ export class GroupsController {
   @Delete(':id')
   @UseGuards(VerifiedUserGuard)
   remove(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.groupsService.remove(id, user.id);
@@ -294,7 +293,7 @@ export class GroupsController {
 
   @Get(':id/events')
   async getEvents(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     // Verify user is a member first

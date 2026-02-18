@@ -15,6 +15,7 @@ import { UpdateDeckDto } from './dto/update-deck.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { VerifiedUserGuard } from '../auth/guards/verified-user.guard';
 import { CurrentUser, CurrentUserType } from '../auth/decorators/current-user.decorator';
+import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe';
 
 @Controller('decks')
 @UseGuards(JwtAuthGuard)
@@ -32,7 +33,7 @@ export class DecksController {
 
   @Get()
   findAllInGroup(
-    @Query('groupId') groupId: string,
+    @Query('groupId', ParseCuidPipe) groupId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.decksService.findAllInGroup(groupId, user.id);
@@ -40,7 +41,7 @@ export class DecksController {
 
   @Get(':id')
   findOne(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.decksService.findOne(id, user.id);
@@ -49,7 +50,7 @@ export class DecksController {
   @Patch(':id')
   @UseGuards(VerifiedUserGuard)
   update(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @Body() updateDeckDto: UpdateDeckDto,
     @CurrentUser() user: CurrentUserType,
   ) {
@@ -59,7 +60,7 @@ export class DecksController {
   @Post(':id/refresh-archidekt')
   @UseGuards(VerifiedUserGuard)
   refreshArchidekt(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.decksService.refreshArchidekt(id, user.id);
@@ -68,7 +69,7 @@ export class DecksController {
   @Delete(':id')
   @UseGuards(VerifiedUserGuard)
   remove(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.decksService.remove(id, user.id);

@@ -1,4 +1,6 @@
 import { IsString, IsNotEmpty, MaxLength, IsOptional, IsIn } from 'class-validator';
+import { TrimString } from '../../common/transformers/string.transformers';
+import { IsCuid } from '../../common/validators/is-cuid.decorator';
 
 // Kanonische MTG-Farbkombinationen
 export const VALID_COLORS = [
@@ -58,23 +60,29 @@ export class CreateDeckDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
+  @TrimString()
   name: string;
 
   @IsString()
   @IsNotEmpty()
   @IsIn(VALID_COLORS)
+  @TrimString()
   colors: string;
 
   @IsString()
   @IsOptional()
   @IsIn(VALID_DECK_TYPES)
+  @TrimString()
   type?: string;
 
   @IsString()
   @IsNotEmpty()
+  @IsCuid()
+  @TrimString()
   groupId: string;
 
   @IsString()
   @IsOptional()
+  @TrimString()
   archidektUrl?: string; // URL oder ID des Archidekt-Decks
 }

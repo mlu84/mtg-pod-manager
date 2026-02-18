@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GroupsMembershipService } from './groups-membership.service';
 import { toImageDataUrl } from './groups-image.util';
+import { validateImageUploadFile } from '../common/upload/image-upload.util';
 
 @Injectable()
 export class GroupsMediaService {
@@ -16,15 +17,7 @@ export class GroupsMediaService {
     file: Express.Multer.File,
   ) {
     await this.membershipService.ensureAdmin(groupId, userId);
-
-    if (!file) {
-      throw new BadRequestException('No image provided');
-    }
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Unsupported image type');
-    }
+    validateImageUploadFile(file);
 
     const updated = await this.prisma.group.update({
       where: { id: groupId },

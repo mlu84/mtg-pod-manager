@@ -13,6 +13,7 @@ import { SysAdminGuard } from '../auth/guards/sysadmin.guard';
 import { AdminService } from './admin.service';
 import { RenameUserDto } from './dto/rename-user.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, SysAdminGuard)
@@ -29,19 +30,19 @@ export class AdminController {
   }
 
   @Delete('groups/:id')
-  deleteGroup(@Param('id') groupId: string) {
+  deleteGroup(@Param('id', ParseCuidPipe) groupId: string) {
     return this.adminService.deleteGroup(groupId);
   }
 
   @Patch('users/:id/rename')
-  renameUser(@Param('id') userId: string, @Body() dto: RenameUserDto) {
+  renameUser(@Param('id', ParseCuidPipe) userId: string, @Body() dto: RenameUserDto) {
     return this.adminService.renameUser(userId, dto.inAppName);
   }
 
   @Patch('groups/:groupId/members/:userId/role')
   updateMemberRole(
-    @Param('groupId') groupId: string,
-    @Param('userId') userId: string,
+    @Param('groupId', ParseCuidPipe) groupId: string,
+    @Param('userId', ParseCuidPipe) userId: string,
     @Body() dto: UpdateMemberRoleDto,
   ) {
     return this.adminService.updateMemberRole(groupId, userId, dto.role);
@@ -49,14 +50,14 @@ export class AdminController {
 
   @Delete('groups/:groupId/members/:userId')
   removeMember(
-    @Param('groupId') groupId: string,
-    @Param('userId') userId: string,
+    @Param('groupId', ParseCuidPipe) groupId: string,
+    @Param('userId', ParseCuidPipe) userId: string,
   ) {
     return this.adminService.removeMember(groupId, userId);
   }
 
   @Delete('users/:id')
-  deleteUser(@Param('id') userId: string) {
+  deleteUser(@Param('id', ParseCuidPipe) userId: string) {
     return this.adminService.deleteUserAccount(userId);
   }
 }

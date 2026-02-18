@@ -2,7 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GroupsMembershipService } from './groups-membership.service';
 import { GroupsSeasonService } from './groups-season.service';
-import { toImageDataUrl } from './groups-image.util';
+import {
+  buildGroupDetailPayload,
+  mapGroupSearchItem,
+  mapMembershipToGroupListItem,
+} from './groups-query.mapper';
+import { resolveSearchPagination } from './groups-query.util';
 
 @Injectable()
 export class GroupsQueryService {
@@ -31,31 +36,19 @@ export class GroupsQueryService {
       },
     });
 
-    return memberships.map((m) => ({
-      id: m.group.id,
-      name: m.group.name,
-      format: m.group.format,
-      description: m.group.description,
-      role: m.role,
-      imageUrl: toImageDataUrl(m.group.groupImage, m.group.groupImageMime),
-      activeSeasonEndsAt: m.group.activeSeasonEndsAt,
-      activeSeasonName: m.group.activeSeasonName,
-    }));
+    return memberships.map(mapMembershipToGroupListItem);
   }
 
-  async search(query: string, userId: string, page?: string, pageSize?: string) {
+  async search(query: string, userId: string, page?: number, pageSize?: number) {
     const trimmedQuery = (query || '').trim();
     if (!trimmedQuery) {
       return { items: [], total: 0, page: 1, pageSize: 10 };
     }
 
-    const parsedPage = Number(page);
-    const parsedPageSize = Number(pageSize);
-    const safePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-    const safePageSize =
-      Number.isFinite(parsedPageSize) && parsedPageSize > 0
-        ? Math.min(parsedPageSize, 20)
-        : 10;
+    const { page: safePage, pageSize: safePageSize } = resolveSearchPagination(
+      page,
+      pageSize,
+    );
 
     const where = {
       name: { contains: trimmedQuery },
@@ -81,14 +74,7 @@ export class GroupsQueryService {
     ]);
 
     return {
-      items: items.map((g) => ({
-        id: g.id,
-        name: g.name,
-        description: g.description,
-        format: g.format,
-        memberCount: g._count.members,
-        imageUrl: toImageDataUrl(g.groupImage, g.groupImageMime),
-      })),
+      items: items.map(mapGroupSearchItem),
       total,
       page: safePage,
       pageSize: safePageSize,
@@ -147,23 +133,10 @@ export class GroupsQueryService {
 
     const banner = await this.seasonService.getWinnersBanner(groupId, userId);
 
-    const { groupImage, groupImageMime, members, ...groupData } = group;
-
-    return {
-      ...groupData,
-      members: members.map((member) => ({
-        userId: member.userId,
-        role: member.role,
-        user: {
-          id: member.user.id,
-          inAppName: member.user.inAppName,
-          avatarUrl: toImageDataUrl(member.user.avatarImage, member.user.avatarImageMime),
-        },
-      })),
-      userRole: membership.role,
-      inviteCode: membership.role === 'ADMIN' ? group.inviteCode : undefined,
-      imageUrl: toImageDataUrl(groupImage, groupImageMime),
+    return buildGroupDetailPayload({
+      group,
+      membershipRole: membership.role,
       winnersBanner: banner,
-    };
+    });
   }
 }

@@ -9,6 +9,11 @@ Key Components
 - `GroupDecksCardComponent`, `GroupMembersCardComponent`, `GroupApplicationsPanelComponent`, `GroupWinnersBannerComponent`.
 - Modals: `GroupDeckCreateModalComponent`, `GroupDeckEditModalComponent`, `GroupRecordGameModalComponent`, `GroupSettingsModalComponent`, `GroupSeasonSettingsModalComponent`.
 
+Key Utilities
+- `group-detail-form-validation.ts`: centralized form/input validation for deck/game/group/season/invite flows.
+- `group-detail-season-state.util.ts`: season-state helpers (active/next checks, date normalization, min-date calculation).
+- `group-detail-error.util.ts`: shared API error message resolution for consistent user feedback.
+
 Deck List Behavior
 - Search filters by deck name, owner in-app name, and deck color string.
 - Default sort mode is `name`.

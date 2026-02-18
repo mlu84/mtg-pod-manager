@@ -8,6 +8,14 @@ import { GroupsApiService } from '../../core/services/groups-api.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { formatLocalDate } from '../../core/utils/date-utils';
 import {
+  normalizeText,
+  validateInviteCode,
+} from '../../core/utils/input-validation';
+import {
+  validateCreateGroupFormInput,
+  validateGroupSearchInput,
+} from './groups-form-validation';
+import {
   Group,
   IncomingGroupApplication,
   GroupSearchResult,
@@ -136,19 +144,25 @@ export class GroupsComponent implements OnInit {
   }
 
   createGroup(): void {
-    if (!this.newGroupName || !this.newGroupFormat) {
-      this.createError.set('Name and format are required');
+    const validation = validateCreateGroupFormInput(
+      this.newGroupName,
+      this.newGroupFormat,
+      this.newGroupDescription,
+    );
+    if (validation.error || !validation.value) {
+      this.createError.set(validation.error ?? 'Invalid group input');
       return;
     }
+    const { name, format, description } = validation.value;
 
     this.createLoading.set(true);
     this.createError.set(null);
 
     this.groupsApiService
       .createGroup({
-        name: this.newGroupName,
-        format: this.newGroupFormat,
-        description: this.newGroupDescription || undefined,
+        name,
+        format,
+        description: description || undefined,
       })
       .subscribe({
         next: (group) => {
@@ -174,15 +188,17 @@ export class GroupsComponent implements OnInit {
   }
 
   joinGroup(): void {
-    if (!this.inviteCode) {
-      this.joinError.set('Please enter an invite code');
+    const inviteCodeError = validateInviteCode(this.inviteCode);
+    if (inviteCodeError) {
+      this.joinError.set(inviteCodeError);
       return;
     }
+    const inviteCode = normalizeText(this.inviteCode);
 
     this.joinLoading.set(true);
     this.joinError.set(null);
 
-    this.groupsApiService.joinGroup(this.inviteCode).subscribe({
+    this.groupsApiService.joinGroup(inviteCode).subscribe({
       next: (result) => {
         this.joinLoading.set(false);
         this.showJoinModal.set(false);
@@ -247,13 +263,14 @@ export class GroupsComponent implements OnInit {
   }
 
   searchGroups(page = 1): void {
-    const query = this.searchQuery.trim();
-    if (!query) {
-      this.searchError.set('Please enter a search term');
+    const validation = validateGroupSearchInput(this.searchQuery);
+    if (validation.error || !validation.value) {
+      this.searchError.set(validation.error ?? 'Invalid search input');
       this.searchResults.set([]);
       this.searchTotal.set(0);
       return;
     }
+    const query = validation.value;
 
     this.searchQuery = query;
     this.searchLoading.set(true);

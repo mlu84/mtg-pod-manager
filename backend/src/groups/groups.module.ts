@@ -11,6 +11,7 @@ import { GroupsMembershipService } from './groups-membership.service';
 import { GroupsQueryService } from './groups-query.service';
 import { GroupsSeasonService } from './groups-season.service';
 import { GroupsInvitationsService } from './groups-invitations.service';
+import { GroupsInvitationsPolicyService } from './groups-invitations-policy.service';
 import { MailModule } from '../mail/mail.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { MailModule } from '../mail/mail.module';
     GroupsQueryService,
     GroupsSeasonService,
     GroupsInvitationsService,
+    GroupsInvitationsPolicyService,
   ],
   exports: [GroupsService, GroupsMembershipService],
 })

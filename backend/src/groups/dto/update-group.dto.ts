@@ -9,16 +9,19 @@ import {
   Max,
   IsBoolean,
 } from 'class-validator';
+import { TrimString } from '../../common/transformers/string.transformers';
 
 export class UpdateGroupDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @TrimString()
   name?: string;
 
   @IsString()
   @IsOptional()
   @MaxLength(500)
+  @TrimString()
   description?: string;
 
   @IsInt()
@@ -29,6 +32,7 @@ export class UpdateGroupDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @TrimString()
   activeSeasonName?: string | null;
 
   @IsDateString()
@@ -42,6 +46,7 @@ export class UpdateGroupDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @TrimString()
   nextSeasonName?: string | null;
 
   @IsDateString()
@@ -59,6 +64,7 @@ export class UpdateGroupDto {
   @IsString()
   @IsOptional()
   @IsIn(['WEEKLY', 'BI_WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'])
+  @TrimString()
   nextSeasonInterval?: 'WEEKLY' | 'BI_WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
 
   @IsInt()

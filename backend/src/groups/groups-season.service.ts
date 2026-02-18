@@ -3,8 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 import { GroupsMembershipService } from './groups-membership.service';
 import { SeasonInterval } from '@prisma/client';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import {
+  DAY_MS,
+  TWO_WEEKS_MS,
+  addDaysUtc,
+  addInterval,
+  getSeasonLabel,
+  isSameUtcDay,
+} from './groups-season.util';
 
 type GroupSeasonState = {
   id: string;
@@ -52,7 +58,7 @@ export class GroupsSeasonService {
         where: { id: groupId },
         data: { seasonPauseUntil: null },
       });
-      const startedSeasonLabel = this.getSeasonLabel(group.activeSeasonName);
+      const startedSeasonLabel = getSeasonLabel(group.activeSeasonName);
       await this.eventsService.log(
         groupId,
         'SEASON_STARTED',
@@ -130,7 +136,7 @@ export class GroupsSeasonService {
         group.activeSeasonName,
       );
       snapshotId = snapshot.id;
-      const seasonLabel = this.getSeasonLabel(group.activeSeasonName);
+      const seasonLabel = getSeasonLabel(group.activeSeasonName);
       await this.eventsService.log(
         groupId,
         'SEASON_ENDED',
@@ -141,7 +147,7 @@ export class GroupsSeasonService {
     if (
       hasNextSeasonData &&
       group.nextSeasonStartsAt &&
-      this.isSameUtcDay(group.nextSeasonStartsAt, now)
+      isSameUtcDay(group.nextSeasonStartsAt, now)
     ) {
       const nextSeason = this.resolveNextSeasonStart(group, now, {
         requireSameDayNextSeason: true,
@@ -180,7 +186,7 @@ export class GroupsSeasonService {
         });
 
         if (!nextSeason.seasonPauseUntil) {
-          const nextSeasonLabel = this.getSeasonLabel(nextSeason.activeSeasonName);
+          const nextSeasonLabel = getSeasonLabel(nextSeason.activeSeasonName);
           await this.eventsService.log(
             groupId,
             'SEASON_STARTED',
@@ -238,7 +244,7 @@ export class GroupsSeasonService {
     );
 
     const nextSeason = this.resolveNextSeasonStart(group, endedAt, options);
-    const seasonLabel = this.getSeasonLabel(group.activeSeasonName);
+    const seasonLabel = getSeasonLabel(group.activeSeasonName);
     await this.eventsService.log(
       groupId,
       'SEASON_ENDED',
@@ -264,7 +270,7 @@ export class GroupsSeasonService {
       });
 
       if (!nextSeason.seasonPauseUntil) {
-        const nextSeasonLabel = this.getSeasonLabel(nextSeason.activeSeasonName);
+        const nextSeasonLabel = getSeasonLabel(nextSeason.activeSeasonName);
         await this.eventsService.log(
           groupId,
           'SEASON_STARTED',
@@ -301,14 +307,6 @@ export class GroupsSeasonService {
       'SEASON_STARTED',
       `${seasonLabel} has started`,
     );
-  }
-
-  private getSeasonLabel(name?: string | null): string {
-    const trimmed = name?.trim();
-    if (!trimmed) return 'Season';
-    return trimmed.toLowerCase().startsWith('season ')
-      ? trimmed
-      : `Season ${trimmed}`;
   }
 
   private async getSeasonState(groupId: string): Promise<GroupSeasonState | null> {
@@ -375,7 +373,7 @@ export class GroupsSeasonService {
       group.nextSeasonEndsAt
         ? new Date(group.nextSeasonEndsAt)
         : group.nextSeasonIsSuccessive && group.nextSeasonInterval
-          ? this.addInterval(plannedStart, group.nextSeasonInterval)
+          ? addInterval(plannedStart, group.nextSeasonInterval)
           : null;
 
     const nextPlan = this.buildFollowingNextSeasonPlan(group, plannedStart, plannedEnd);
@@ -396,7 +394,7 @@ export class GroupsSeasonService {
       },
     });
 
-    const seasonLabel = this.getSeasonLabel(group.nextSeasonName);
+    const seasonLabel = getSeasonLabel(group.nextSeasonName);
     await this.eventsService.log(
       groupId,
       'SEASON_STARTED',
@@ -426,7 +424,7 @@ export class GroupsSeasonService {
 
     if (
       options.requireSameDayNextSeason &&
-      !this.isSameUtcDay(group.nextSeasonStartsAt, endedAt)
+      !isSameUtcDay(group.nextSeasonStartsAt, endedAt)
     ) {
       return null;
     }
@@ -436,7 +434,7 @@ export class GroupsSeasonService {
       group.nextSeasonEndsAt
         ? new Date(group.nextSeasonEndsAt)
         : group.nextSeasonIsSuccessive && group.nextSeasonInterval
-          ? this.addInterval(plannedStart, group.nextSeasonInterval)
+          ? addInterval(plannedStart, group.nextSeasonInterval)
           : null;
     const seasonPauseUntil = plannedStart.getTime() > endedAt.getTime() ? plannedStart : null;
 
@@ -479,50 +477,17 @@ export class GroupsSeasonService {
     const intermissionDays = group.nextSeasonIntermissionDays ?? 0;
     const interval = group.nextSeasonInterval;
     const baseStart = activeSeasonEnd
-      ? this.addDaysUtc(activeSeasonEnd, intermissionDays)
-      : this.addDaysUtc(this.addInterval(activeSeasonStart, interval), intermissionDays);
+      ? addDaysUtc(activeSeasonEnd, intermissionDays)
+      : addDaysUtc(addInterval(activeSeasonStart, interval), intermissionDays);
 
     return {
       name: group.nextSeasonName,
       startsAt: baseStart,
-      endsAt: this.addInterval(baseStart, interval),
+      endsAt: addInterval(baseStart, interval),
       isSuccessive: true,
       interval,
       intermissionDays,
     };
-  }
-
-  private addDaysUtc(date: Date, days: number): Date {
-    const base = this.toUtcDay(date);
-    return new Date(base.getTime() + Math.max(0, days) * DAY_MS);
-  }
-
-  private addInterval(date: Date, interval: SeasonInterval): Date {
-    const base = this.toUtcDay(date);
-    if (interval === 'WEEKLY') {
-      return this.addDaysUtc(base, 7);
-    }
-    if (interval === 'BI_WEEKLY') {
-      return this.addDaysUtc(base, 14);
-    }
-
-    const shifted = new Date(base);
-    if (interval === 'MONTHLY') shifted.setUTCMonth(shifted.getUTCMonth() + 1);
-    if (interval === 'QUARTERLY') shifted.setUTCMonth(shifted.getUTCMonth() + 3);
-    if (interval === 'HALF_YEARLY') shifted.setUTCMonth(shifted.getUTCMonth() + 6);
-    if (interval === 'YEARLY') shifted.setUTCFullYear(shifted.getUTCFullYear() + 1);
-    shifted.setUTCHours(0, 0, 0, 0);
-    return shifted;
-  }
-
-  private isSameUtcDay(a: Date, b: Date): boolean {
-    return this.toUtcDay(a).getTime() === this.toUtcDay(b).getTime();
-  }
-
-  private toUtcDay(date: Date): Date {
-    const utc = new Date(date);
-    utc.setUTCHours(0, 0, 0, 0);
-    return utc;
   }
 
   /**
@@ -639,8 +604,7 @@ export class GroupsSeasonService {
     if (!snapshot) return null;
 
     // Only surface the banner briefly after season end to avoid stale highlights.
-    const twoWeeks = 14 * 24 * 60 * 60 * 1000;
-    if (new Date().getTime() - snapshot.endedAt.getTime() > twoWeeks) {
+    if (new Date().getTime() - snapshot.endedAt.getTime() > TWO_WEEKS_MS) {
       return null;
     }
 

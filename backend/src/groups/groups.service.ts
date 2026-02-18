@@ -31,7 +31,7 @@ export class GroupsService {
     return this.groupsQueryService.findAllForUser(userId);
   }
 
-  search(query: string, userId: string, page?: string, pageSize?: string) {
+  search(query: string, userId: string, page?: number, pageSize?: number) {
     return this.groupsQueryService.search(query, userId, page, pageSize);
   }
 

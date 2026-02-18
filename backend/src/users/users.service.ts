@@ -1,13 +1,14 @@
 import {
   Injectable,
   ConflictException,
-  BadRequestException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { User, Prisma, SystemRole } from '@prisma/client';
 import { toImageDataUrl } from './users-image.util';
+import { validateImageUploadFile } from '../common/upload/image-upload.util';
+import { deleteGroupWithRelations } from '../common/prisma/group-delete.util';
 
 const profileSelect = {
   id: true,
@@ -146,14 +147,7 @@ export class UsersService {
   }
 
   async updateAvatar(userId: string, file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('No image provided');
-    }
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Unsupported image type');
-    }
+    validateImageUploadFile(file);
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
@@ -283,7 +277,7 @@ export class UsersService {
       });
 
       for (const groupId of groupsToDeleteList) {
-        await this.deleteGroupWithRelations(tx, groupId);
+        await deleteGroupWithRelations(tx, groupId);
       }
 
       for (const groupId of groupsToKeepList) {
@@ -302,40 +296,6 @@ export class UsersService {
     });
 
     return { message: 'Account deleted successfully' };
-  }
-
-  private async deleteGroupWithRelations(tx: Prisma.TransactionClient, groupId: string): Promise<void> {
-    await tx.gamePlacement.deleteMany({
-      where: {
-        game: {
-          groupId,
-        },
-      },
-    });
-
-    await tx.game.deleteMany({
-      where: { groupId },
-    });
-
-    await tx.deck.deleteMany({
-      where: { groupId },
-    });
-
-    await tx.groupEvent.deleteMany({
-      where: { groupId },
-    });
-
-    await tx.groupApplication.deleteMany({
-      where: { groupId },
-    });
-
-    await tx.usersOnGroups.deleteMany({
-      where: { groupId },
-    });
-
-    await tx.group.delete({
-      where: { id: groupId },
-    });
   }
 
   private toProfileResponse(user: {

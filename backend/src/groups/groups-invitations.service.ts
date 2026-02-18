@@ -10,6 +10,8 @@ import { EventsService } from '../events/events.service';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GroupsMembershipService } from './groups-membership.service';
+import { GroupsInvitationsPolicyService } from './groups-invitations-policy.service';
+import { getPrismaErrorCode } from '../common/prisma/prisma-error.util';
 
 @Injectable()
 export class GroupsInvitationsService {
@@ -18,6 +20,7 @@ export class GroupsInvitationsService {
     private membershipService: GroupsMembershipService,
     private eventsService: EventsService,
     private mailService: MailService,
+    private invitationsPolicy: GroupsInvitationsPolicyService,
   ) {}
 
   async searchInvitableUsers(groupId: string, adminUserId: string, query: string) {
@@ -48,7 +51,7 @@ export class GroupsInvitationsService {
     }
 
     const userIds = users.map((user) => user.id);
-    const emails = users.map((user) => this.normalizeEmail(user.email));
+    const emails = users.map((user) => this.invitationsPolicy.normalizeEmail(user.email));
 
     const [memberships, applications, invitesByUser, invitesByEmail] = await Promise.all([
       this.prisma.usersOnGroups.findMany({
@@ -88,14 +91,19 @@ export class GroupsInvitationsService {
         .map((entry) => entry.invitedUserId)
         .filter((value): value is string => !!value),
     );
-    const invitedEmails = new Set(invitesByEmail.map((entry) => this.normalizeEmail(entry.invitedEmail)));
+    const invitedEmails = new Set(
+      invitesByEmail.map((entry) => this.invitationsPolicy.normalizeEmail(entry.invitedEmail)),
+    );
 
     let alreadyInvitedMatches = 0;
     const items = users
       .filter((user) => {
         if (memberIds.has(user.id)) return false;
         if (applicantIds.has(user.id)) return false;
-        if (invitedUserIds.has(user.id) || invitedEmails.has(this.normalizeEmail(user.email))) {
+        if (
+          invitedUserIds.has(user.id) ||
+          invitedEmails.has(this.invitationsPolicy.normalizeEmail(user.email))
+        ) {
           alreadyInvitedMatches += 1;
           return false;
         }
@@ -152,7 +160,11 @@ export class GroupsInvitationsService {
       throw new ConflictException('This user cannot be invited');
     }
 
-    await this.ensureInvitable(groupId, targetUser.id, this.normalizeEmail(targetUser.email));
+    await this.invitationsPolicy.ensureInvitable(
+      groupId,
+      targetUser.id,
+      this.invitationsPolicy.normalizeEmail(targetUser.email),
+    );
 
     try {
       await this.prisma.groupInvite.create({
@@ -160,12 +172,12 @@ export class GroupsInvitationsService {
           groupId,
           inviterUserId: adminUserId,
           invitedUserId: targetUser.id,
-          invitedEmail: this.normalizeEmail(targetUser.email),
+          invitedEmail: this.invitationsPolicy.normalizeEmail(targetUser.email),
           type: GroupInviteType.USER,
         },
       });
     } catch (error) {
-      const errorCode = this.getPrismaErrorCode(error);
+      const errorCode = getPrismaErrorCode(error);
       if (errorCode === 'P2002') {
         throw new ConflictException('An invite for this user is already pending');
       }
@@ -184,7 +196,7 @@ export class GroupsInvitationsService {
   async createEmailInvite(groupId: string, adminUserId: string, email: string) {
     await this.membershipService.ensureAdmin(groupId, adminUserId);
 
-    const normalizedEmail = this.normalizeEmail(email);
+    const normalizedEmail = this.invitationsPolicy.normalizeEmail(email);
     const [group, inviter, existingUser] = await Promise.all([
       this.prisma.group.findUnique({
         where: { id: groupId },
@@ -220,7 +232,7 @@ export class GroupsInvitationsService {
       throw new NotFoundException('Inviter not found');
     }
 
-    if (this.normalizeEmail(inviter.email) === normalizedEmail) {
+    if (this.invitationsPolicy.normalizeEmail(inviter.email) === normalizedEmail) {
       throw new ConflictException('You cannot invite yourself');
     }
 
@@ -228,7 +240,7 @@ export class GroupsInvitationsService {
       throw new ConflictException('This user cannot be invited');
     }
 
-    await this.ensureInvitable(groupId, existingUser?.id ?? null, normalizedEmail);
+    await this.invitationsPolicy.ensureInvitable(groupId, existingUser?.id ?? null, normalizedEmail);
 
     let invite: { id: string };
     try {
@@ -243,7 +255,7 @@ export class GroupsInvitationsService {
         select: { id: true },
       });
     } catch (error) {
-      const errorCode = this.getPrismaErrorCode(error);
+      const errorCode = getPrismaErrorCode(error);
       if (errorCode === 'P2002') {
         throw new ConflictException('An invite for this email is already pending');
       }
@@ -281,7 +293,7 @@ export class GroupsInvitationsService {
       return [];
     }
 
-    const normalizedEmail = this.normalizeEmail(user.email);
+    const normalizedEmail = this.invitationsPolicy.normalizeEmail(user.email);
     const invites = await this.prisma.groupInvite.findMany({
       where: {
         OR: [
@@ -350,7 +362,7 @@ export class GroupsInvitationsService {
       throw new NotFoundException('Invite not found');
     }
 
-    this.ensureInviteReceiver(invite, userId, user.email);
+    this.invitationsPolicy.ensureInviteReceiver(invite, userId, user.email);
 
     const existingMembership = await this.prisma.usersOnGroups.findUnique({
       where: {
@@ -366,7 +378,7 @@ export class GroupsInvitationsService {
       return { message: 'You are already a member of this group', groupId: invite.groupId };
     }
 
-    const normalizedEmail = this.normalizeEmail(user.email);
+    const normalizedEmail = this.invitationsPolicy.normalizeEmail(user.email);
     await this.prisma.$transaction(async (tx) => {
       await tx.usersOnGroups.create({
         data: {
@@ -431,7 +443,7 @@ export class GroupsInvitationsService {
       throw new NotFoundException('Invite not found');
     }
 
-    this.ensureInviteReceiver(invite, userId, user.email);
+    this.invitationsPolicy.ensureInviteReceiver(invite, userId, user.email);
 
     await this.prisma.groupInvite.delete({
       where: { id: invite.id },
@@ -529,116 +541,4 @@ export class GroupsInvitationsService {
     return { message: 'Invite canceled' };
   }
 
-  private normalizeEmail(value: string): string {
-    return value.trim().toLowerCase();
-  }
-
-  private getPrismaErrorCode(error: unknown): string | null {
-    if (typeof error !== 'object' || error === null) {
-      return null;
-    }
-
-    const maybeCode = (error as { code?: unknown }).code;
-    return typeof maybeCode === 'string' ? maybeCode : null;
-  }
-
-  private async ensureInvitable(groupId: string, targetUserId: string | null, targetEmail: string) {
-    if (targetUserId) {
-      const existingMembership = await this.prisma.usersOnGroups.findUnique({
-        where: {
-          userId_groupId: {
-            userId: targetUserId,
-            groupId,
-          },
-        },
-      });
-      if (existingMembership) {
-        throw new ConflictException('This user is already a member of this group');
-      }
-
-      const existingApplication = await this.prisma.groupApplication.findUnique({
-        where: {
-          userId_groupId: {
-            userId: targetUserId,
-            groupId,
-          },
-        },
-      });
-      if (existingApplication) {
-        throw new ConflictException('User already has an open application for this group');
-      }
-    } else {
-      const existingUser = await this.prisma.user.findFirst({
-        where: { email: targetEmail },
-        select: { id: true },
-      });
-
-      if (existingUser) {
-        const [existingMembership, existingApplication] = await Promise.all([
-          this.prisma.usersOnGroups.findUnique({
-            where: {
-              userId_groupId: {
-                userId: existingUser.id,
-                groupId,
-              },
-            },
-          }),
-          this.prisma.groupApplication.findUnique({
-            where: {
-              userId_groupId: {
-                userId: existingUser.id,
-                groupId,
-              },
-            },
-          }),
-        ]);
-        if (existingMembership) {
-          throw new ConflictException('This user is already a member of this group');
-        }
-        if (existingApplication) {
-          throw new ConflictException('User already has an open application for this group');
-        }
-      }
-    }
-
-    const [inviteByEmail, inviteByUser] = await Promise.all([
-      this.prisma.groupInvite.findFirst({
-        where: {
-          groupId,
-          invitedEmail: targetEmail,
-        },
-        select: { id: true },
-      }),
-      targetUserId
-        ? this.prisma.groupInvite.findFirst({
-            where: {
-              groupId,
-              invitedUserId: targetUserId,
-            },
-            select: { id: true },
-          })
-        : Promise.resolve(null),
-    ]);
-
-    if (inviteByEmail || inviteByUser) {
-      throw new ConflictException('An invite for this user is already pending');
-    }
-  }
-
-  private ensureInviteReceiver(
-    invite: { invitedUserId: string | null; invitedEmail: string },
-    userId: string,
-    userEmail: string,
-  ): void {
-    const normalizedUserEmail = this.normalizeEmail(userEmail);
-    const normalizedInviteEmail = this.normalizeEmail(invite.invitedEmail);
-
-    if (invite.invitedUserId && invite.invitedUserId !== userId) {
-      throw new ForbiddenException('This invite is not assigned to your account');
-    }
-
-    if (!invite.invitedUserId && normalizedInviteEmail !== normalizedUserEmail) {
-      throw new ForbiddenException('This invite is not assigned to your account');
-    }
-  }
 }
