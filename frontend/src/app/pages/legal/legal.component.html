@@ -1,4 +1,4 @@
-<div class="legal-page">
+﻿<div class="legal-page">
   <header class="header">
     <div class="header__content container">
       <div class="header__left">
@@ -12,61 +12,351 @@
 
   <main class="container legal-content">
     <div class="card legal-card">
-      <h2>Legal, DSGVO and Terms of Service</h2>
-      <p class="text-muted">
-        This page is a technical placeholder template and does not constitute legal advice.
-        Final wording requires legal review before production use.
-      </p>
+      <h2>Legal</h2>
+      <p class="legal-meta"><strong>Service:</strong> MTG Pod-Manager</p>
+      <p class="legal-meta"><strong>Last updated:</strong> February 2026</p>
     </div>
 
     <div class="card legal-card">
-      <h2>Privacy Notice (DSGVO Template)</h2>
-      <h3>1. Data Controller</h3>
-      <p>[Insert legal entity/person, address, and contact details]</p>
-      <h3>2. Data Categories</h3>
-      <ul>
-        <li>Account data (email, display name, hashed password)</li>
-        <li>Group and deck data submitted by users</li>
-        <li>Technical logs required for security and operations</li>
-      </ul>
-      <h3>3. Processing Purposes and Legal Basis (Art. 6 DSGVO)</h3>
-      <ul>
-        <li>[Contract performance: Art. 6(1)(b)]</li>
-        <li>[Legitimate interest: Art. 6(1)(f)]</li>
-        <li>[Consent-based processing where applicable: Art. 6(1)(a)]</li>
-      </ul>
-      <h3>4. Retention and Deletion</h3>
+      <h2>GDPR / DSGVO at a Glance</h2>
       <p>
-        [Define retention windows per data category and automated deletion policy.]
+        This service processes personal data in line with the General Data Protection Regulation
+        (GDPR, German: DSGVO).
       </p>
-      <h3>5. Processors and Third Countries</h3>
+      <ul>
+        <li>Data is processed only for operating and securing the service.</li>
+        <li>You can request access, correction, deletion, restriction, portability, and objection.</li>
+        <li>You can lodge a complaint with a supervisory authority.</li>
+      </ul>
       <p>
-        [List subprocessors, transfer mechanisms, and safeguards for non-EU data transfers.]
+        Privacy contact:
+        <a href="mailto:michaelstrauss.berlin@googlemail.com">
+          michaelstrauss.berlin@googlemail.com
+        </a>
       </p>
-      <h3>6. Data Subject Rights</h3>
+    </div>
+    <div class="card legal-card">
+      <h2>Privacy Policy</h2>
+      <h3>1. Controller (Data Responsible Party)</h3>
+      <p>
+        Controller within the meaning of the General Data Protection Regulation (GDPR):
+      </p>
+      <p>
+        <strong>Michael Luckey-Strauß</strong><br />
+        Römerstraße 4<br />
+        88690 Uhldingen, Germany<br />
+        Email:
+        <a href="mailto:michaelstrauss.berlin@googlemail.com">
+          michaelstrauss.berlin@googlemail.com
+        </a>
+      </p>
+
+      <h3>2. Overview of Data Processing</h3>
+      <p>
+        We process personal data only to the extent necessary to provide and operate the service.
+      </p>
+      <ul>
+        <li>Account registration and authentication</li>
+        <li>Group and gameplay functionality</li>
+        <li>Security and system integrity</li>
+        <li>Communication with users</li>
+      </ul>
+      <p>We do not sell personal data.</p>
+
+      <h3>3. Categories of Data Processed</h3>
+      <h4>3.1 Account and Profile Data</h4>
+      <ul>
+        <li>Email address</li>
+        <li>Display name</li>
+        <li>Encrypted password</li>
+        <li>Optional avatar image</li>
+      </ul>
+      <h4>3.2 User Content</h4>
+      <ul>
+        <li>Deck names and metadata</li>
+        <li>Gameplay results and rankings</li>
+        <li>Group membership information</li>
+      </ul>
+      <h4>3.3 Technical and Security Data</h4>
+      <ul>
+        <li>Authentication logs</li>
+        <li>Session/authentication tokens</li>
+        <li>Temporary IP address for security purposes</li>
+        <li>Rate-limiting and abuse prevention logs</li>
+      </ul>
+      <h4>3.4 Communication Data</h4>
+      <ul>
+        <li>Email address</li>
+        <li>Message content</li>
+      </ul>
+      <h4>3.5 Data Received from Third Parties</h4>
+      <p>
+        If a group administrator invites a person by email, that email address may be processed
+        before an account is created in order to deliver the invitation.
+      </p>
+
+      <h3>4. Purpose and Legal Basis for Processing</h3>
+      <ul>
+        <li>Art. 6(1)(b) GDPR - performance of the service contract</li>
+        <li>
+          Art. 6(1)(f) GDPR - legitimate interests (security, abuse prevention, invitation
+          workflows)
+        </li>
+        <li>Art. 6(1)(a) GDPR - consent (where applicable)</li>
+        <li>Art. 6(1)(c) GDPR - compliance with legal obligations (where applicable)</li>
+      </ul>
+
+      <h3>5. Hosting, Processors, and International Transfers</h3>
+      <p>The service is primarily hosted on servers located within the European Union.</p>
+      <p>We use selected service providers (processors), including:</p>
+      <ul>
+        <li>Infrastructure/hosting providers (service operation and storage)</li>
+        <li>
+          <strong>Resend</strong> for transactional email delivery (verification, password reset,
+          invitations)
+        </li>
+      </ul>
+      <p>
+        Because Resend is not an EU-only provider, personal data may be processed outside the
+        EU/EEA. For such transfers, we rely on an appropriate transfer mechanism under Art. 44 et
+        seq. GDPR (for example, Standard Contractual Clauses and/or equivalent safeguards where
+        applicable).
+      </p>
+      <p>
+        The specific transfer mechanism and provider documentation used for production email
+        operations will be finalized and documented during deployment hardening.
+      </p>
+
+      <h3>6. Data Retention</h3>
+      <p>We retain personal data only as long as necessary for the stated purposes.</p>
+      <ul>
+        <li>Account/profile data: until account deletion (unless legal obligations apply)</li>
+        <li>Password reset tokens: max 15 minutes validity, then invalidated/removed</li>
+        <li>Invite/application records: until resolved, canceled, or no longer needed</li>
+        <li>
+          Gameplay/group records: while group context exists; personal references are removed or
+          anonymized where implemented on account deletion flows
+        </li>
+        <li>
+          Security/rate-limit logs: short-term retention (typically up to 30 days), unless longer
+          retention is required for abuse/legal handling
+        </li>
+        <li>Support/contact communication: as long as required for request handling</li>
+      </ul>
+
+      <h3>7. Account Deletion</h3>
+      <p>
+        Users may delete their account at any time. Upon deletion, profile data is removed, group
+        memberships are terminated, and identifying information is deleted or anonymized where
+        required by system design.
+      </p>
+
+      <h3>8. Data Sharing and Disclosure</h3>
+      <p>We do not sell or rent personal data.</p>
+      <p>Data may be shared only:</p>
+      <ul>
+        <li>When required by law</li>
+        <li>To enforce legal claims</li>
+        <li>To protect service security and integrity</li>
+        <li>With processors acting on our behalf under contractual safeguards</li>
+      </ul>
+
+      <h3>9. Cookies, Tracking, and Local Browser Storage</h3>
+      <p>
+        The service uses essential technical mechanisms required for authentication and secure
+        operation.
+      </p>
+      <ul>
+        <li><code>localStorage</code> for authentication/session-related app state</li>
+        <li>
+          <code>sessionStorage</code> for short-lived in-app draft state (for example temporary
+          game-record drafts)
+        </li>
+      </ul>
+      <p>We currently do not use advertising cookies or third-party analytics tracking.</p>
+
+      <h3>10. Data Security</h3>
+      <ul>
+        <li>Encrypted connections (HTTPS)</li>
+        <li>Secure authentication workflows</li>
+        <li>Rate limiting and abuse prevention</li>
+        <li>Server-side validation and upload restrictions</li>
+      </ul>
+
+      <h3>11. Your Rights Under GDPR</h3>
       <ul>
         <li>Access, rectification, erasure, restriction, portability, objection</li>
-        <li>Right to withdraw consent</li>
         <li>Right to lodge a complaint with a supervisory authority</li>
       </ul>
+      <p>
+        To exercise your rights, contact:
+        <a href="mailto:michaelstrauss.berlin@googlemail.com">
+          michaelstrauss.berlin@googlemail.com
+        </a>
+      </p>
+
+      <h3>12. Children's Privacy</h3>
+      <p>
+        The service is intended for users of the age permitted to use Magic: The Gathering
+        products. If you believe personal data from children was provided unlawfully, contact us
+        for removal.
+      </p>
+
+      <h3>13. Third-Party Links and Integrations</h3>
+      <p>
+        The service may allow optional external references (for example deck links). We are not
+        responsible for privacy practices of external websites.
+      </p>
+
+      <h3>14. Changes to this Privacy Policy</h3>
+      <p>
+        We may update this policy when legal requirements change, new features are introduced, or
+        security improvements are implemented. Significant changes are communicated appropriately.
+      </p>
+
+      <h3>15. Contact</h3>
+      <p>
+        For data-protection questions:
+        <a href="mailto:michaelstrauss.berlin@googlemail.com">
+          michaelstrauss.berlin@googlemail.com
+        </a>
+      </p>
     </div>
 
     <div class="card legal-card">
-      <h2>Terms of Service Template</h2>
-      <h3>1. Scope of Service</h3>
-      <p>[Define platform scope, availability, and non-commercial/legal boundaries.]</p>
-      <h3>2. User Accounts</h3>
-      <p>[Define eligibility, account security responsibilities, and termination rules.]</p>
-      <h3>3. User-Generated Content</h3>
-      <p>[Define ownership, responsibility, and moderation/removal rights.]</p>
-      <h3>4. Acceptable Use</h3>
-      <p>[Prohibit abuse, unlawful content, and attempts to compromise platform security.]</p>
-      <h3>5. Liability and Warranty</h3>
-      <p>[Define liability limitations under applicable local law.]</p>
-      <h3>6. Changes to Terms</h3>
-      <p>[Describe notification process for future updates.]</p>
-      <h3>7. Governing Law and Venue</h3>
-      <p>[Insert governing law and jurisdiction clause.]</p>
+      <h2>Terms of Service</h2>
+
+      <h3>1. Operator and Scope</h3>
+      <p>
+        These Terms govern use of the MTG Pod-Manager service. By registering or using the
+        service, users agree to these Terms.
+      </p>
+      <p>
+        Operator:<br />
+        <strong>Michael Luckey-Strauß</strong><br />
+        Römerstraße 4<br />
+        88690 Uhldingen, Germany<br />
+        Email:
+        <a href="mailto:michaelstrauss.berlin@googlemail.com">
+          michaelstrauss.berlin@googlemail.com
+        </a>
+      </p>
+
+      <h3>2. Description of the Service</h3>
+      <p>
+        MTG Pod-Manager is a web application for organizing Magic: The Gathering play groups,
+        including group management, deck management, game recording, seasonal rankings/statistics,
+        and invitations.
+      </p>
+
+      <h3>3. Registration and User Account</h3>
+      <p>
+        Some features require an account. Users must provide truthful information, provide a valid
+        email address, and keep credentials secure.
+      </p>
+      <p>
+        The operator may suspend or delete accounts in cases of false information, misuse, or
+        violations of these Terms.
+      </p>
+
+      <h3>4. User Profiles and Content</h3>
+      <p>
+        Users may provide profile information and deck/group-related content. Uploaded content must
+        not infringe third-party rights and must not be unlawful or abusive.
+      </p>
+
+      <h3>5. Groups and Roles</h3>
+      <p>
+        Group administrators may manage members, assign roles, send invitations, and define group
+        rules.
+      </p>
+
+      <h3>6. Deck, Game, and Ranking Data</h3>
+      <p>
+        The service records deck data, match results, rankings, and statistics in group context.
+        The operator does not guarantee completeness or correctness of user-entered data.
+      </p>
+
+      <h3>7. Invitations and Group Membership</h3>
+      <p>
+        Users may join groups by invitation, invite code, or application request. Administrators
+        decide on membership approval.
+      </p>
+
+      <h3>8. Acceptable Use</h3>
+      <p>Prohibited activities include:</p>
+      <ul>
+        <li>Distributing unlawful content</li>
+        <li>Harassing or threatening others</li>
+        <li>Bypassing security mechanisms</li>
+        <li>Automated attacks or manipulation</li>
+        <li>Intentionally submitting false game/ranking data</li>
+      </ul>
+
+      <h3>9. Account Deletion and Termination</h3>
+      <p>
+        Users may delete their account at any time. On deletion, profile data is removed,
+        memberships end, and roles are reassigned where necessary.
+      </p>
+
+      <h3>10. Service Availability</h3>
+      <p>
+        The operator aims for reliable availability but cannot guarantee uninterrupted operation.
+      </p>
+
+      <h3>11. Disclaimer of Liability</h3>
+      <p>
+        The service is provided \"as available\". The operator is not liable for data loss,
+        incorrect rankings/statistics, user actions, group conflicts, service interruptions, or
+        technical failures, except where mandatory law provides otherwise.
+      </p>
+
+      <h3>12. Donations and Voluntary Support</h3>
+      <p>
+        The service is free to use. Voluntary donations do not create entitlement to additional
+        services.
+      </p>
+
+      <h3>13. Intellectual Property</h3>
+      <p>
+        The software/design/structure are protected by intellectual property law. Magic: The
+        Gathering is a trademark of Wizards of the Coast LLC. This service is not affiliated with
+        Wizards of the Coast or Hasbro.
+      </p>
+
+      <h3>14. Privacy</h3>
+      <p>
+        Details on personal-data processing are provided in the Privacy Policy above.
+      </p>
+
+      <h3>15. Changes to the Terms</h3>
+      <p>
+        For material changes, users are informed at least 14 days before the effective date (for
+        example in-app notice or email).
+      </p>
+      <p>
+        If you continue to use the service after the effective date, the updated Terms are
+        considered accepted.
+      </p>
+      <p>
+        If you do not agree with updated Terms, you may stop using the service and delete your
+        account.
+      </p>
+
+      <h3>16. Governing Law</h3>
+      <p>
+        German law applies (excluding UN sales law), while mandatory consumer protection provisions
+        of the user's country of residence remain unaffected.
+      </p>
+
+      <h3>17. Contact</h3>
+      <p>
+        For questions regarding the service:
+        <a href="mailto:michaelstrauss.berlin@googlemail.com">
+          michaelstrauss.berlin@googlemail.com
+        </a>
+      </p>
     </div>
   </main>
 </div>
+

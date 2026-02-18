@@ -44,6 +44,12 @@
     font-size: 1rem;
   }
 
+  h4 {
+    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.95rem;
+  }
+
   p {
     margin-bottom: var(--spacing-sm);
   }
@@ -52,4 +58,15 @@
     margin: 0 0 var(--spacing-sm) 1rem;
     padding: 0;
   }
+
+  code {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.05rem 0.25rem;
+  }
+}
+
+.legal-meta {
+  margin: 0;
 }
