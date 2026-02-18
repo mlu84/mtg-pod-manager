@@ -5,9 +5,20 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend
+  const configuredFrontendOrigin = process.env.FRONTEND_URL?.trim();
+  const configuredCorsOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+  const corsOrigins = [
+    'http://localhost:4200',
+    ...(configuredFrontendOrigin ? [configuredFrontendOrigin] : []),
+    ...configuredCorsOrigins,
+  ];
+
+  // Enable CORS for frontend (env-driven in production)
   app.enableCors({
-    origin: 'http://localhost:4200',
+    origin: corsOrigins,
     credentials: true,
   });
 
