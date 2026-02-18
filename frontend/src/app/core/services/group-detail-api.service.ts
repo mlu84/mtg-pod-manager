@@ -8,6 +8,7 @@ import {
   GroupApplication,
   GroupDetail,
   InvitableUser,
+  InvitableUsersSearchResponse,
   UpdateDeckRequest,
   UpdateGroupRequest,
   CreateDeckRequest,
@@ -126,8 +127,8 @@ export class GroupDetailApiService {
     return this.http.post<{ message?: string }>(`${API_URL}/groups/${groupId}/season-banner/dismiss`, {});
   }
 
-  searchInvitableUsers(groupId: string, query: string): Observable<InvitableUser[]> {
-    return this.http.get<InvitableUser[]>(`${API_URL}/groups/${groupId}/invitable-users`, {
+  searchInvitableUsers(groupId: string, query: string): Observable<InvitableUsersSearchResponse> {
+    return this.http.get<InvitableUsersSearchResponse>(`${API_URL}/groups/${groupId}/invitable-users`, {
       params: { query },
     });
   }

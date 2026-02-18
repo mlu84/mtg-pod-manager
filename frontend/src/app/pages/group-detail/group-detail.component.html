@@ -130,6 +130,7 @@
             [isEmailVerified]="isEmailVerified()"
             [decksLength]="group()!.decks.length"
             [decksSearchTerm]="decksSearchTerm()"
+            [deckSortMode]="deckSortMode()"
             [filteredDecks]="filteredDecks()"
             [paginatedDecks]="paginatedDecks()"
             [decksPage]="decksPage()"
@@ -137,11 +138,13 @@
             [defaultDeckImage]="defaultDeckImage"
             [getColorGradient]="getColorGradient.bind(this)"
             [getManaSymbols]="getManaSymbols.bind(this)"
+            [getDeckTypeLabel]="getDeckTypeLabel.bind(this)"
             [canEditDeck]="canEditDeck.bind(this)"
             (toggleCollapsed)="toggleDecksCollapsed()"
             (addDeck)="openDeckModal()"
             (editDeck)="openEditDeckModal($event)"
             (decksSearchChange)="setDecksSearch($event)"
+            (deckSortModeChange)="setDeckSortMode($event)"
             (decksPageChange)="setDecksPage($event)"
           />
 
@@ -376,6 +379,9 @@
         @if (inviteUserSearchError()) {
           <div class="alert alert--danger">{{ inviteUserSearchError() }}</div>
         }
+        @if (inviteUserSearchInfo()) {
+          <div class="alert alert--warning invite-user-search-feedback">{{ inviteUserSearchInfo() }}</div>
+        }
         @if (inviteUserActionError()) {
           <div class="alert alert--danger">{{ inviteUserActionError() }}</div>
         }
@@ -397,10 +403,10 @@
           </button>
         </form>
 
-        @if (inviteUserSearchResults().length === 0 && inviteUserSearchQuery.trim() && !inviteUserSearchLoading()) {
-          <p class="text-muted">No invitable users found.</p>
+        @if (inviteUserSearchResults().length === 0 && inviteUserSearchQuery.trim() && !inviteUserSearchLoading() && !inviteUserSearchInfo()) {
+          <p class="text-muted invite-user-search-feedback">No invitable users found.</p>
         } @else if (inviteUserSearchResults().length > 0) {
-          <div class="application-list">
+          <div class="application-list invite-user-search-feedback">
             @for (user of inviteUserSearchResults(); track user.id) {
               <div class="application-item">
                 <div class="application-item__info">

@@ -15,7 +15,12 @@
   }
   <div class="winners-banner__list">
     @for (winner of banner.winners; track winner.position) {
-      <div class="winners-banner__item">
+      <div
+        class="winners-banner__item"
+        [class.winners-banner__item--first]="winner.position === 1"
+        [class.winners-banner__item--second]="winner.position === 2"
+        [class.winners-banner__item--third]="winner.position === 3"
+      >
         <span
           class="winners-banner__trophy"
           [class.winners-banner__trophy--gold]="winner.position === 1"

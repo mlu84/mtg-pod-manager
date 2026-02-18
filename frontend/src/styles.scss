@@ -78,6 +78,33 @@ body {
   min-height: 100vh;
 }
 
+@media (min-width: 761px) {
+  *:not(html):not(body) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-primary) var(--color-bg-light);
+  }
+
+  *:not(html):not(body)::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *:not(html):not(body)::-webkit-scrollbar-track {
+    background: var(--color-bg-light);
+    border-radius: 999px;
+  }
+
+  *:not(html):not(body)::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--color-primary-light), var(--color-primary));
+    border-radius: 999px;
+    border: 2px solid var(--color-bg-light);
+  }
+
+  *:not(html):not(body)::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #8f80b2, var(--color-primary-dark));
+  }
+}
+
   a {
     color: var(--color-secondary);
     text-decoration: none;

@@ -59,9 +59,10 @@ import {
 import {
   filterDecks,
   filterStatsDecks,
+  getDeckTypeLabel as toDeckTypeLabel,
   getDecksTotalPages,
   paginateDecks,
-  sortDecksByName,
+  sortDecks,
 } from './deck-list-utils';
 import Chart from 'chart.js/auto';
 import { ChartConfiguration } from 'chart.js';
@@ -267,6 +268,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   inviteUserSearchResults = signal<InvitableUser[]>([]);
   inviteUserSearchLoading = signal(false);
   inviteUserSearchError = signal<string | null>(null);
+  inviteUserSearchInfo = signal<string | null>(null);
   inviteUserActionLoading = signal(false);
   inviteUserActionError = signal<string | null>(null);
   inviteUserActionSuccess = signal<string | null>(null);
@@ -483,6 +485,11 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return toManaSymbols(colors);
   }
 
+  // Get normalized deck type label (falls back to Unknown)
+  getDeckTypeLabel(type: string | undefined): string {
+    return toDeckTypeLabel(type);
+  }
+
   // Ranking pagination
   readonly rankingPageSize = 10;
   rankingPage = signal(1);
@@ -506,6 +513,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly decksPageSize = 10;
   decksPage = signal(1);
   decksSearchTerm = signal('');
+  deckSortMode = signal<'name' | 'type' | 'colors'>('name');
 
   filteredDecks = computed(() => {
     const decks = this.sortedDecks();
@@ -531,9 +539,14 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.decksPage.set(1); // Reset to first page when search changes
   }
 
+  setDeckSortMode(mode: 'name' | 'type' | 'colors'): void {
+    this.deckSortMode.set(mode);
+    this.decksPage.set(1);
+  }
+
   sortedDecks = computed(() => {
     const decks = this.group()?.decks || [];
-    return sortDecksByName(decks);
+    return sortDecks(decks, this.deckSortMode());
   });
 
   filteredStatsDecks = computed(() => {
@@ -1417,6 +1430,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.inviteUserSearchQuery = '';
     this.inviteUserSearchResults.set([]);
     this.inviteUserSearchError.set(null);
+    this.inviteUserSearchInfo.set(null);
     this.inviteUserActionError.set(null);
     this.inviteUserActionSuccess.set(null);
     this.inviteEmailAddress = '';
@@ -1436,22 +1450,26 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!query) {
       this.inviteUserSearchResults.set([]);
       this.inviteUserSearchError.set('Please enter a user name');
+      this.inviteUserSearchInfo.set(null);
       return;
     }
 
     this.inviteUserSearchLoading.set(true);
     this.inviteUserSearchError.set(null);
+    this.inviteUserSearchInfo.set(null);
     this.inviteUserActionError.set(null);
     this.inviteUserActionSuccess.set(null);
 
     this.groupDetailApiService.searchInvitableUsers(this.groupId, query).subscribe({
-      next: (users) => {
-        this.inviteUserSearchResults.set(users);
+      next: (response) => {
+        this.inviteUserSearchResults.set(response.items);
+        this.inviteUserSearchInfo.set(response.infoMessage ?? null);
         this.inviteUserSearchLoading.set(false);
       },
       error: (err) => {
         this.inviteUserSearchLoading.set(false);
-        this.inviteUserSearchError.set(err.error?.message || 'Failed to search users');
+        this.inviteUserSearchInfo.set(null);
+        this.inviteUserSearchError.set(this.resolveApiErrorMessage(err, 'Failed to search users'));
       },
     });
   }
@@ -1462,6 +1480,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.inviteUserActionLoading.set(true);
     this.inviteUserActionError.set(null);
     this.inviteUserActionSuccess.set(null);
+    this.inviteUserSearchInfo.set(null);
 
     this.groupDetailApiService.createUserInvite(this.groupId, targetUserId).subscribe({
       next: (result) => {
@@ -1473,7 +1492,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.inviteUserActionLoading.set(false);
-        this.inviteUserActionError.set(err.error?.message || 'Failed to send invite');
+        this.inviteUserActionError.set(this.resolveApiErrorMessage(err, 'Failed to send invite'));
       },
     });
   }
@@ -1497,9 +1516,19 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.inviteEmailLoading.set(false);
-        this.inviteEmailError.set(err.error?.message || 'Failed to send email invite');
+        this.inviteEmailError.set(this.resolveApiErrorMessage(err, 'Failed to send email invite'));
       },
     });
+  }
+
+  private resolveApiErrorMessage(err: unknown, fallback: string): string {
+    const status = (err as { status?: number } | null)?.status;
+    if (status === 401) {
+      return 'Session expired or unauthorized. Please log in again.';
+    }
+
+    const apiMessage = (err as { error?: { message?: string } } | null)?.error?.message;
+    return apiMessage || fallback;
   }
 
   updateGroup(): void {

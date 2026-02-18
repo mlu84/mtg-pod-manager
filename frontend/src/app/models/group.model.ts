@@ -161,6 +161,11 @@ export interface InvitableUser {
   inAppName: string;
 }
 
+export interface InvitableUsersSearchResponse {
+  items: InvitableUser[];
+  infoMessage: string | null;
+}
+
 export interface GroupApplication {
   userId: string;
   user: {

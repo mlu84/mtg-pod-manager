@@ -76,3 +76,21 @@
     color: var(--color-text-muted);
   }
 }
+
+@media (min-width: 761px) {
+  .winners-banner__item {
+    order: 4;
+  }
+
+  .winners-banner__item--first {
+    order: 2;
+  }
+
+  .winners-banner__item--second {
+    order: 1;
+  }
+
+  .winners-banner__item--third {
+    order: 3;
+  }
+}

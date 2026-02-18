@@ -16,21 +16,36 @@
     @if (decksLength === 0) {
       <p class="text-muted">No decks added yet.</p>
     } @else {
-      <div class="decks-search">
-        <i class="fas fa-search"></i>
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Search decks..."
-          [value]="decksSearchTerm"
-          (input)="decksSearchChange.emit($any($event.target).value)"
-          autocomplete="off"
-        />
-        @if (decksSearchTerm) {
-          <button class="decks-search__clear" (click)="decksSearchChange.emit('')">
-            <i class="fas fa-times"></i>
-          </button>
-        }
+      <div class="decks-toolbar">
+        <div class="decks-search">
+          <i class="fas fa-search"></i>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Search decks..."
+            [value]="decksSearchTerm"
+            (input)="decksSearchChange.emit($any($event.target).value)"
+            autocomplete="off"
+          />
+          @if (decksSearchTerm) {
+            <button class="decks-search__clear" (click)="decksSearchChange.emit('')">
+              <i class="fas fa-times"></i>
+            </button>
+          }
+        </div>
+        <div class="decks-sort">
+          <label for="deckSortMode">Sort by</label>
+          <select
+            id="deckSortMode"
+            class="form-control"
+            [value]="deckSortMode"
+            (change)="deckSortModeChange.emit($any($event.target).value)"
+          >
+            <option value="colors">Color combination</option>
+            <option value="type">Deck type</option>
+            <option value="name">Name</option>
+          </select>
+        </div>
       </div>
       @if (filteredDecks.length === 0) {
         <p class="text-muted">No decks match your search.</p>
@@ -58,6 +73,7 @@
               @if (!deck.isActive) {
                 <span class="deck-item__badge">Inactive</span>
               }
+              <span class="deck-item__type">{{ getDeckTypeLabel(deck.type) }}</span>
             </div>
             <div class="deck-item__actions">
               <span class="deck-item__owner">{{ deck.owner.inAppName }}</span>

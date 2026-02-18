@@ -24,6 +24,7 @@ describe('color-utils', () => {
 
   it('maps combo labels to human-readable names', () => {
     expect(getColorComboName('WU')).toBe('Azorius');
+    expect(getColorComboName('UBG')).toBe('Sultai');
     expect(getColorComboName('R', true)).toBe('Mono-Red');
     expect(getColorComboName('Colorless')).toBe('Colorless');
   });

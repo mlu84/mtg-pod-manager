@@ -242,6 +242,10 @@
   margin-bottom: var(--spacing-lg);
 }
 
+.invite-user-search-feedback {
+  margin-bottom: calc(var(--spacing-xl) + var(--spacing-sm));
+}
+
 .application-item {
   display: flex;
   align-items: center;

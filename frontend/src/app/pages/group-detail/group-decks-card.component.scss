@@ -1,8 +1,15 @@
+.decks-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--spacing-sm);
+  align-items: end;
+  margin-bottom: var(--spacing-md);
+}
+
 .decks-search {
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-md);
 
   > i {
     position: absolute;
@@ -31,6 +38,24 @@
     &:hover {
       color: var(--color-text);
     }
+  }
+}
+
+.decks-sort {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .form-control {
+    min-width: 130px;
+    height: 40px;
+    padding-top: 0;
+    padding-bottom: 0;
   }
 }
 
@@ -88,6 +113,11 @@
     font-weight: 600;
   }
 
+  &__type {
+    font-size: 0.75rem;
+    color: rgba(26, 22, 19, 0.75);
+  }
+
   &__actions {
     display: flex;
     align-items: center;
@@ -108,6 +138,16 @@
     font-size: 0.875rem;
     color: rgba(26, 22, 19, 0.7);
     white-space: nowrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .decks-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .decks-sort .form-control {
+    min-width: 0;
   }
 }
 

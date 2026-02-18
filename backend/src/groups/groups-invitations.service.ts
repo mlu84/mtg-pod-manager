@@ -25,7 +25,7 @@ export class GroupsInvitationsService {
 
     const trimmed = query.trim();
     if (!trimmed) {
-      return [];
+      return { items: [], infoMessage: null };
     }
 
     const users = await this.prisma.user.findMany({
@@ -44,7 +44,7 @@ export class GroupsInvitationsService {
     });
 
     if (users.length === 0) {
-      return [];
+      return { items: [], infoMessage: null };
     }
 
     const userIds = users.map((user) => user.id);
@@ -90,24 +90,39 @@ export class GroupsInvitationsService {
     );
     const invitedEmails = new Set(invitesByEmail.map((entry) => this.normalizeEmail(entry.invitedEmail)));
 
-    return users
+    let alreadyInvitedMatches = 0;
+    const items = users
       .filter((user) => {
         if (memberIds.has(user.id)) return false;
         if (applicantIds.has(user.id)) return false;
-        if (invitedUserIds.has(user.id)) return false;
-        if (invitedEmails.has(this.normalizeEmail(user.email))) return false;
+        if (invitedUserIds.has(user.id) || invitedEmails.has(this.normalizeEmail(user.email))) {
+          alreadyInvitedMatches += 1;
+          return false;
+        }
         return true;
       })
       .map((user) => ({
         id: user.id,
         inAppName: user.inAppName,
       }));
+
+    const infoMessage =
+      items.length === 0 && alreadyInvitedMatches > 0
+        ? 'A matching user already has a pending invite from this group.'
+        : null;
+
+    return { items, infoMessage };
   }
 
   async createUserInvite(groupId: string, adminUserId: string, targetUserId: string) {
+    const normalizedTargetUserId = targetUserId?.trim();
+    if (!normalizedTargetUserId) {
+      throw new BadRequestException('Target user is required');
+    }
+
     await this.membershipService.ensureAdmin(groupId, adminUserId);
 
-    if (targetUserId === adminUserId) {
+    if (normalizedTargetUserId === adminUserId) {
       throw new ConflictException('You cannot invite yourself');
     }
 
@@ -117,7 +132,7 @@ export class GroupsInvitationsService {
         select: { id: true },
       }),
       this.prisma.user.findUnique({
-        where: { id: targetUserId },
+        where: { id: normalizedTargetUserId },
         select: {
           id: true,
           email: true,
@@ -150,8 +165,15 @@ export class GroupsInvitationsService {
         },
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const errorCode = this.getPrismaErrorCode(error);
+      if (errorCode === 'P2002') {
         throw new ConflictException('An invite for this user is already pending');
+      }
+      if (errorCode === 'P2003' || errorCode === 'P2025') {
+        throw new NotFoundException('User not found');
+      }
+      if (error instanceof Prisma.PrismaClientValidationError) {
+        throw new BadRequestException('Invalid invite payload');
       }
       throw error;
     }
@@ -221,8 +243,12 @@ export class GroupsInvitationsService {
         select: { id: true },
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const errorCode = this.getPrismaErrorCode(error);
+      if (errorCode === 'P2002') {
         throw new ConflictException('An invite for this email is already pending');
+      }
+      if (error instanceof Prisma.PrismaClientValidationError) {
+        throw new BadRequestException('Invalid invite payload');
       }
       throw error;
     }
@@ -505,6 +531,15 @@ export class GroupsInvitationsService {
 
   private normalizeEmail(value: string): string {
     return value.trim().toLowerCase();
+  }
+
+  private getPrismaErrorCode(error: unknown): string | null {
+    if (typeof error !== 'object' || error === null) {
+      return null;
+    }
+
+    const maybeCode = (error as { code?: unknown }).code;
+    return typeof maybeCode === 'string' ? maybeCode : null;
   }
 
   private async ensureInvitable(groupId: string, targetUserId: string | null, targetEmail: string) {
