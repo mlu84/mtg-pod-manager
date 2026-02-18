@@ -16,8 +16,14 @@ export class MailService {
 
   constructor(private configService: ConfigService) {
     this.resend = new Resend(this.configService.get<string>('RESEND_API_KEY'));
-    // Resend's free tier requires using their test domain
-    this.fromEmail = 'MTG Pod-Manager <onboarding@resend.dev>';
+    const configuredFromEmail = this.configService
+      .get<string>('MAIL_FROM_EMAIL')
+      ?.trim();
+    // Fallback keeps local/dev environments working until a verified sender domain is configured.
+    this.fromEmail =
+      configuredFromEmail && configuredFromEmail.length > 0
+        ? configuredFromEmail
+        : 'MTG Pod-Manager <onboarding@resend.dev>';
   }
 
   async sendVerificationEmail(
