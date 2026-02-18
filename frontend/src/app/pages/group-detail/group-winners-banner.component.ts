@@ -15,6 +15,7 @@ type WinnersBanner = NonNullable<GroupDetail['winnersBanner']>;
 })
 export class GroupWinnersBannerComponent {
   @Input({ required: true }) banner!: WinnersBanner;
+  @Input({ required: true }) defaultDeckImage!: string;
   @Output() dismiss = new EventEmitter<void>();
 
   get info(): string | null {

@@ -29,6 +29,13 @@
         >
           <i class="fas fa-trophy"></i>
         </span>
+        <span class="winners-banner__deck-icon">
+          <img
+            [src]="winner.deckImageUrl || defaultDeckImage"
+            [alt]="winner.deckName"
+            class="winners-banner__deck-image"
+          />
+        </span>
         <span class="winners-banner__deck">{{ winner.deckName }}</span>
         <span class="winners-banner__owner">{{ winner.ownerName }}</span>
         <span class="mana-symbols mana-symbols--inline">

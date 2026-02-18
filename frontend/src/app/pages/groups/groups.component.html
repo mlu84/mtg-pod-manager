@@ -413,24 +413,26 @@
             }
           </div>
 
-          <div class="applications">
+          <div class="applications applications--sent-invites">
             <h3>My Sent Invites</h3>
             @if (sentInvites().length === 0) {
               <p class="text-muted">No sent invites.</p>
             } @else {
               <div class="application-list">
                 @for (invite of sentInvites(); track invite.id) {
-                  <div class="application-item">
-                    <div class="application-item__info">
+                  <div class="application-item application-item--sent-invite">
+                    <div class="application-item__info application-item__info--sent-invite">
                       <span class="application-item__name">
                         {{ invite.invitedUser?.inAppName || invite.invitedEmail }}
                       </span>
                       <span class="application-item__format">{{ invite.group.name }}</span>
                       <span class="application-item__date">{{ formatDate(invite.createdAt) }}</span>
                     </div>
-                    <button class="btn btn--outline" [disabled]="requestsActionLoading()" (click)="cancelSentInvite(invite.id)">
-                      Cancel
-                    </button>
+                    <div class="application-item__actions application-item__actions--sent-invite">
+                      <button class="btn btn--outline application-item__cancel-btn" [disabled]="requestsActionLoading()" (click)="cancelSentInvite(invite.id)">
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 }
               </div>

@@ -621,6 +621,13 @@ export class GroupsSeasonService {
         decks: {
           orderBy: { position: 'asc' },
           take: 3,
+          include: {
+            deck: {
+              select: {
+                archidektImageUrl: true,
+              },
+            },
+          },
         },
         dismissals: {
           where: { userId },
@@ -648,9 +655,11 @@ export class GroupsSeasonService {
       endedAt: snapshot.endedAt,
       winners: snapshot.decks.map((d) => ({
         position: d.position,
+        deckId: d.deckId,
         deckName: d.deckName,
         ownerName: d.ownerName,
         colors: d.colors,
+        deckImageUrl: d.deck?.archidektImageUrl ?? null,
       })),
     };
   }

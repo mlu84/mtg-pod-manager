@@ -41,9 +41,11 @@ export interface GroupDetail extends Group {
     endedAt: string;
     winners: {
       position: number;
+      deckId?: string | null;
       deckName: string;
       ownerName: string;
       colors: string;
+      deckImageUrl?: string | null;
     }[];
   } | null;
 }
@@ -54,6 +56,7 @@ export interface GroupMember {
   user: {
     id: string;
     inAppName: string;
+    avatarUrl?: string | null;
   };
 }
 

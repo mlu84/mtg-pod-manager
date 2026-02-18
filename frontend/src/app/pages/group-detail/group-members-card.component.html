@@ -15,6 +15,9 @@
       @for (member of members; track member.userId) {
         <div class="member-item">
           <div class="member-item__info">
+            @if (member.user.avatarUrl) {
+              <img class="member-item__avatar" [src]="member.user.avatarUrl" [alt]="member.user.inAppName" />
+            }
             <span class="member-item__name">{{ member.user.inAppName }}</span>
             @if (member.role === 'ADMIN') {
               <span class="member-item__badge">Admin</span>

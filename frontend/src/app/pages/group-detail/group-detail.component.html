@@ -32,6 +32,7 @@
       <div class="container">
         <app-group-winners-banner
           [banner]="group()!.winnersBanner!"
+          [defaultDeckImage]="defaultDeckImage"
           (dismiss)="dismissWinnersBanner()"
         />
       </div>

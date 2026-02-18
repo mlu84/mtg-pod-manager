@@ -108,6 +108,8 @@ export class GroupsQueryService {
               select: {
                 id: true,
                 inAppName: true,
+                avatarImage: true,
+                avatarImageMime: true,
               },
             },
           },
@@ -145,10 +147,19 @@ export class GroupsQueryService {
 
     const banner = await this.seasonService.getWinnersBanner(groupId, userId);
 
-    const { groupImage, groupImageMime, ...groupData } = group;
+    const { groupImage, groupImageMime, members, ...groupData } = group;
 
     return {
       ...groupData,
+      members: members.map((member) => ({
+        userId: member.userId,
+        role: member.role,
+        user: {
+          id: member.user.id,
+          inAppName: member.user.inAppName,
+          avatarUrl: toImageDataUrl(member.user.avatarImage, member.user.avatarImageMime),
+        },
+      })),
       userRole: membership.role,
       inviteCode: membership.role === 'ADMIN' ? group.inviteCode : undefined,
       imageUrl: toImageDataUrl(groupImage, groupImageMime),
