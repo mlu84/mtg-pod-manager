@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminApiService } from '../../core/services/admin-api.service';
+import { AuthService } from '../../core/services/auth.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { AdminGroup, AdminGroupMember } from '../../models/group.model';
 
 @Component({
@@ -39,6 +41,8 @@ export class SysadminUsersComponent implements OnInit {
 
   private adminApiService = inject(AdminApiService);
   private router = inject(Router);
+  private authService = inject(AuthService);
+  private navigationHistoryService = inject(NavigationHistoryService);
 
   totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.pageSize))
@@ -244,6 +248,9 @@ export class SysadminUsersComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/groups']);
+    const fallback = this.authService.isAuthenticated() ? '/groups' : '/login';
+    this.router.navigateByUrl(
+      this.navigationHistoryService.getBackTarget(this.router.url, fallback),
+    );
   }
 }

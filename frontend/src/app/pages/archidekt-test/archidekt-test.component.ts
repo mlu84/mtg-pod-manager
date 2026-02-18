@@ -4,7 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../core/services/auth.service';
 import { ErrorReportingService } from '../../core/services/error-reporting.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { formatLocalDate } from '../../core/utils/date-utils';
 
 interface ArchidektCardEntry {
@@ -80,11 +82,16 @@ export class ArchidektTestComponent {
   constructor(
     private router: Router,
     private http: HttpClient,
+    private authService: AuthService,
     private errorReporting: ErrorReportingService,
+    private navigationHistoryService: NavigationHistoryService,
   ) {}
 
   goBack(): void {
-    this.router.navigate(['/groups']);
+    const fallback = this.authService.isAuthenticated() ? '/groups' : '/login';
+    this.router.navigateByUrl(
+      this.navigationHistoryService.getBackTarget(this.router.url, fallback),
+    );
   }
 
   extractDeckId(url: string): string | null {

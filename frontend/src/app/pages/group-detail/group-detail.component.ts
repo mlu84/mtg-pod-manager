@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { GroupHistoryCardComponent } from './group-history-card.component';
 import { GroupRankingCardComponent } from './group-ranking-card.component';
 import { GroupWinnersBannerComponent } from './group-winners-banner.component';
@@ -410,6 +411,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   private router = inject(Router);
   private groupDetailApiService = inject(GroupDetailApiService);
   private authService = inject(AuthService);
+  private navigationHistoryService = inject(NavigationHistoryService);
 
   isAdmin = computed(() => this.group()?.userRole === 'ADMIN');
   currentUserId = this.authService.currentUserId;
@@ -807,7 +809,10 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/groups']);
+    const fallback = this.authService.isAuthenticated() ? '/groups' : '/login';
+    this.router.navigateByUrl(
+      this.navigationHistoryService.getBackTarget(this.router.url, fallback),
+    );
   }
 
   copyInviteCode(): void {

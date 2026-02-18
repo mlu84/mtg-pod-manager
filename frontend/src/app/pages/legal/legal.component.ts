@@ -16,6 +16,8 @@ export class LegalComponent {
 
   goBack(): void {
     const fallback = this.authService.isAuthenticated() ? '/groups' : '/login';
-    this.router.navigateByUrl(this.navigationHistoryService.getPreviousUrl() ?? fallback);
+    this.router.navigateByUrl(
+      this.navigationHistoryService.getBackTarget(this.router.url, fallback),
+    );
   }
 }

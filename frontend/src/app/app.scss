@@ -78,6 +78,7 @@
   color: var(--color-text-muted);
   font-size: 0.78rem;
   font-weight: 600;
+  text-decoration: none;
   transition: all var(--transition-fast);
 
   &:hover {
@@ -90,6 +91,25 @@
     color: var(--color-text);
     border-color: var(--color-primary);
     background-color: rgba(92, 77, 125, 0.25);
+  }
+}
+
+.meta-header__link--filled {
+  background-color: var(--color-secondary);
+  color: var(--color-text-dark);
+  border-color: transparent;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-secondary-dark);
+    color: #000;
+    border-color: transparent;
+  }
+
+  &.is-active {
+    background-color: var(--color-secondary-dark);
+    color: #000;
+    border-color: transparent;
   }
 }
 

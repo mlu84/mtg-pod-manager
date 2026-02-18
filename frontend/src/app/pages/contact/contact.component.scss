@@ -1,4 +1,4 @@
-.impressum-page {
+.contact-page {
   min-height: 100%;
 }
 
@@ -26,13 +26,13 @@
   }
 }
 
-.impressum-content {
+.contact-content {
   display: grid;
   gap: var(--spacing-md);
   padding-bottom: var(--spacing-xl);
 }
 
-.impressum-card {
+.contact-card {
   h1,
   h2 {
     margin-bottom: var(--spacing-sm);

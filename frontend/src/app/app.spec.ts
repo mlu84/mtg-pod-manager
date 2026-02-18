@@ -34,9 +34,9 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    const links = Array.from(compiled.querySelectorAll('.meta-header__link')).map((el) =>
-      el.textContent?.trim()
-    );
+    const links = Array.from(
+      compiled.querySelectorAll('.meta-header__nav a, .meta-header__nav button')
+    ).map((el) => el.textContent?.trim());
 
     expect(links).toContain('Profile');
     expect(links).toContain('Legal');
@@ -49,9 +49,9 @@ describe('App', () => {
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const links = Array.from(compiled.querySelectorAll('.meta-header__link')).map((el) =>
-      el.textContent?.trim()
-    );
+    const links = Array.from(
+      compiled.querySelectorAll('.meta-header__nav a, .meta-header__nav button')
+    ).map((el) => el.textContent?.trim());
 
     expect(links).not.toContain('Profile');
   });

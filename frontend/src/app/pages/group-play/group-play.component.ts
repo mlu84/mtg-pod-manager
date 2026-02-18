@@ -2,7 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
+import { AuthService } from '../../core/services/auth.service';
 import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { Deck, GroupDetail } from '../../models/group.model';
 import { GroupPlayModalsComponent } from './group-play-modals.component';
 import { GroupPlayPanelComponent } from './group-play-panel.component';
@@ -24,7 +26,9 @@ import { PlaySlot } from './group-play.models';
 export class GroupPlayComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private authService = inject(AuthService);
   private groupDetailApiService = inject(GroupDetailApiService);
+  private navigationHistoryService = inject(NavigationHistoryService);
   readonly defaultDeckImage = '/assets/images/deckBG_default.jpg';
 
   groupId = '';
@@ -424,7 +428,10 @@ export class GroupPlayComponent {
   }
 
   goBack(): void {
-    this.router.navigate(['/groups', this.groupId]);
+    const fallback = this.authService.isAuthenticated() ? '/groups' : '/login';
+    this.router.navigateByUrl(
+      this.navigationHistoryService.getBackTarget(this.router.url, fallback),
+    );
   }
 
   getAvailableDecksForSlot(index: number): Deck[] {

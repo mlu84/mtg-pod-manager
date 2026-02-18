@@ -3,7 +3,9 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { createEnvironmentInjector, runInInjectionContext } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupPlayComponent } from './group-play.component';
+import { AuthService } from '../../core/services/auth.service';
 import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { of } from 'rxjs';
 
 describe('GroupPlayComponent', () => {
@@ -20,6 +22,11 @@ describe('GroupPlayComponent', () => {
         {
           provide: GroupDetailApiService,
           useValue: { getGroup: vi.fn().mockReturnValue(of({ format: 'Commander', decks: [] })) },
+        },
+        { provide: AuthService, useValue: { isAuthenticated: () => true } },
+        {
+          provide: NavigationHistoryService,
+          useValue: { getBackTarget: vi.fn().mockReturnValue('/groups') },
         },
       ],
       null,

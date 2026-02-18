@@ -45,8 +45,8 @@ export const routes: Routes = [
   {
     path: 'contact',
     loadComponent: () =>
-      import('./pages/impressum/impressum.component').then(
-        (m) => m.ImpressumComponent
+      import('./pages/contact/contact.component').then(
+        (m) => m.ContactComponent
       ),
   },
   {
