@@ -8,6 +8,7 @@ import {
   HttpStatus,
   Res,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -15,6 +16,8 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser, CurrentUserType } from './decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -59,6 +62,13 @@ export class AuthController {
     @Req() req: Request,
   ) {
     return this.authService.resetPassword(resetPasswordDto, this.getClientIp(req));
+  }
+
+  @Post('resend-verification')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  resendVerificationEmail(@CurrentUser() user: CurrentUserType) {
+    return this.authService.resendVerificationEmail(user.id);
   }
 
   private getClientIp(req: Request): string {

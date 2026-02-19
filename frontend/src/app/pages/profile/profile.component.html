@@ -124,6 +124,29 @@
         </div>
       </div>
 
+      @if (!profile()!.emailVerified) {
+        <div class="verification-help">
+          <p class="text-muted">
+            You can request a new verification email once your previous verification link has expired.
+          </p>
+          <button
+            type="button"
+            class="btn btn--outline"
+            (click)="resendVerificationEmail()"
+            [disabled]="resendVerificationLoading() || deleteLoading()"
+          >
+            @if (resendVerificationLoading()) { Sending... } @else { Resend verification email }
+          </button>
+
+          @if (resendVerificationSuccess()) {
+            <div class="alert alert--success">{{ resendVerificationSuccess() }}</div>
+          }
+          @if (resendVerificationError()) {
+            <div class="alert alert--danger">{{ resendVerificationError() }}</div>
+          }
+        </div>
+      }
+
       <div class="modal__actions modal__actions--split">
         <div class="account-actions">
           <button type="button" class="btn btn--outline" (click)="logout()" [disabled]="deleteLoading()">

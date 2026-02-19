@@ -26,6 +26,7 @@ describe('AuthService', () => {
     createUser: ReturnType<typeof vi.fn>;
     findByVerificationToken: ReturnType<typeof vi.fn>;
     verifyEmail: ReturnType<typeof vi.fn>;
+    setEmailVerificationToken: ReturnType<typeof vi.fn>;
     findOne: ReturnType<typeof vi.fn>;
     setPasswordResetToken: ReturnType<typeof vi.fn>;
     consumePasswordResetToken: ReturnType<typeof vi.fn>;
@@ -46,6 +47,7 @@ describe('AuthService', () => {
       createUser: vi.fn(),
       findByVerificationToken: vi.fn(),
       verifyEmail: vi.fn(),
+      setEmailVerificationToken: vi.fn(),
       findOne: vi.fn(),
       setPasswordResetToken: vi.fn(),
       consumePasswordResetToken: vi.fn(),
@@ -87,6 +89,7 @@ describe('AuthService', () => {
       inAppName: 'Alice',
       password: 'hashed',
       emailVerificationToken: '746f6b656e',
+      emailVerificationTokenExpiresAt: expect.any(Date),
     });
     expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
       'a@b.c',
@@ -124,13 +127,69 @@ describe('AuthService', () => {
   });
 
   it('verifyEmail returns redirect URL for valid token', async () => {
-    usersService.findByVerificationToken.mockResolvedValue({ id: 'user-1' });
+    usersService.findByVerificationToken.mockResolvedValue({
+      id: 'user-1',
+      emailVerificationTokenExpiresAt: new Date(Date.now() + 60_000),
+    });
     configService.get.mockReturnValue('http://localhost:4200');
 
     const url = await service.verifyEmail('token');
 
     expect(usersService.verifyEmail).toHaveBeenCalledWith('user-1');
     expect(url).toBe('http://localhost:4200/login?verified=true');
+  });
+
+  it('verifyEmail throws on expired token', async () => {
+    usersService.findByVerificationToken.mockResolvedValue({
+      id: 'user-1',
+      emailVerificationTokenExpiresAt: new Date(Date.now() - 60_000),
+    });
+
+    await expect(service.verifyEmail('expired')).rejects.toThrow(
+      'Invalid or expired verification token.',
+    );
+  });
+
+  it('resendVerificationEmail throws while token is still valid', async () => {
+    usersService.findOne.mockResolvedValue({
+      id: 'user-1',
+      email: 'a@b.c',
+      inAppName: 'Alice',
+      emailVerified: null,
+      emailVerificationToken: 'old-token',
+      emailVerificationTokenExpiresAt: new Date(Date.now() + 60_000),
+    });
+
+    await expect(service.resendVerificationEmail('user-1')).rejects.toThrow(
+      'Your current verification link is still valid. Please use it first.',
+    );
+    expect(usersService.setEmailVerificationToken).not.toHaveBeenCalled();
+  });
+
+  it('resendVerificationEmail rotates expired token and sends mail', async () => {
+    cryptoRandomBytes.mockReturnValue(Buffer.from('new-token'));
+    usersService.findOne.mockResolvedValue({
+      id: 'user-1',
+      email: 'a@b.c',
+      inAppName: 'Alice',
+      emailVerified: null,
+      emailVerificationToken: 'old-token',
+      emailVerificationTokenExpiresAt: new Date(Date.now() - 60_000),
+    });
+
+    const result = await service.resendVerificationEmail('user-1');
+
+    expect(usersService.setEmailVerificationToken).toHaveBeenCalledWith(
+      'user-1',
+      '6e65772d746f6b656e',
+      expect.any(Date),
+    );
+    expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+      'a@b.c',
+      'Alice',
+      '6e65772d746f6b656e',
+    );
+    expect(result).toEqual({ message: 'A new verification email has been sent.' });
   });
 
   it('signIn throws on invalid credentials', async () => {

@@ -50,6 +50,21 @@ export class UsersService {
       data: {
         emailVerified: new Date(),
         emailVerificationToken: null,
+        emailVerificationTokenExpiresAt: null,
+      },
+    });
+  }
+
+  async setEmailVerificationToken(
+    userId: string,
+    token: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerificationToken: token,
+        emailVerificationTokenExpiresAt: expiresAt,
       },
     });
   }

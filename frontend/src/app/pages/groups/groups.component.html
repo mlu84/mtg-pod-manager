@@ -319,7 +319,7 @@
 <!-- Group Requests Modal -->
 @if (showRequestsModal()) {
   <div class="modal-overlay" (click)="closeRequestsModal()">
-    <div class="modal modal--wide card" (click)="$event.stopPropagation()">
+    <div class="modal card" (click)="$event.stopPropagation()">
       <div class="modal__header">
         <h2>Group Requests</h2>
         <button class="modal__close" (click)="closeRequestsModal()">

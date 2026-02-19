@@ -38,6 +38,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
   deleteConfirmOpen = signal(false);
   deleteLoading = signal(false);
   deleteError = signal<string | null>(null);
+  resendVerificationLoading = signal(false);
+  resendVerificationError = signal<string | null>(null);
+  resendVerificationSuccess = signal<string | null>(null);
 
   private selectedAvatarFile: File | null = null;
   private avatarObjectUrl: string | null = null;
@@ -63,6 +66,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.editName = profile.inAppName;
         this.avatarPreview.set(null);
         this.avatarError.set(null);
+        this.resendVerificationError.set(null);
+        this.resendVerificationSuccess.set(null);
         this.loading.set(false);
       },
       error: (err) => {
@@ -204,6 +209,30 @@ export class ProfileComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.deleteLoading.set(false);
         this.deleteError.set(err.error?.message || 'Failed to delete account');
+      },
+    });
+  }
+
+  resendVerificationEmail(): void {
+    const currentProfile = this.profile();
+    if (!currentProfile || currentProfile.emailVerified || this.resendVerificationLoading()) {
+      return;
+    }
+
+    this.resendVerificationLoading.set(true);
+    this.resendVerificationError.set(null);
+    this.resendVerificationSuccess.set(null);
+
+    this.authService.resendVerificationEmail().subscribe({
+      next: (response) => {
+        this.resendVerificationLoading.set(false);
+        this.resendVerificationSuccess.set(response.message || 'Verification email sent.');
+      },
+      error: (err) => {
+        this.resendVerificationLoading.set(false);
+        this.resendVerificationError.set(
+          err.error?.message || 'Failed to resend verification email',
+        );
       },
     });
   }

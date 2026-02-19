@@ -27,6 +27,7 @@ type AuthenticatedUser = {
 
 @Injectable()
 export class AuthService {
+  private static readonly EMAIL_VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
   private static readonly FORGOT_PASSWORD_RATE_LIMIT_MAX = 5;
   private static readonly RESET_PASSWORD_RATE_LIMIT_MAX = 10;
   private static readonly RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -45,6 +46,7 @@ export class AuthService {
   async signUp(createAuthDto: CreateAuthDto): Promise<{ message: string }> {
     const hashedPassword = await bcrypt.hash(createAuthDto.password, 10);
     const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpiresAt = this.getEmailVerificationExpiry();
 
     try {
       const user = await this.usersService.createUser({
@@ -52,6 +54,7 @@ export class AuthService {
         inAppName: createAuthDto.inAppName,
         password: hashedPassword,
         emailVerificationToken: verificationToken,
+        emailVerificationTokenExpiresAt: verificationTokenExpiresAt,
       });
 
       await this.mailService.sendVerificationEmail(
@@ -78,7 +81,11 @@ export class AuthService {
   async verifyEmail(token: string): Promise<string> {
     const user = await this.usersService.findByVerificationToken(token);
 
-    if (!user) {
+    const tokenExpired =
+      !user?.emailVerificationTokenExpiresAt ||
+      user.emailVerificationTokenExpiresAt.getTime() <= Date.now();
+
+    if (!user || tokenExpired) {
       throw new BadRequestException('Invalid or expired verification token.');
     }
 
@@ -86,6 +93,46 @@ export class AuthService {
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     return `${frontendUrl}/login?verified=true`;
+  }
+
+  async resendVerificationEmail(userId: string): Promise<{ message: string }> {
+    const user = await this.usersService.findOne({ id: userId });
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.emailVerified) {
+      throw new ConflictException('Email is already verified.');
+    }
+
+    if (!user.emailVerificationToken || !user.emailVerificationTokenExpiresAt) {
+      throw new BadRequestException(
+        'Verification link cannot be renewed yet. Please contact support.',
+      );
+    }
+
+    if (user.emailVerificationTokenExpiresAt.getTime() > Date.now()) {
+      throw new BadRequestException(
+        'Your current verification link is still valid. Please use it first.',
+      );
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpiresAt = this.getEmailVerificationExpiry();
+
+    await this.usersService.setEmailVerificationToken(
+      user.id,
+      verificationToken,
+      verificationTokenExpiresAt,
+    );
+
+    await this.mailService.sendVerificationEmail(
+      user.email,
+      user.inAppName,
+      verificationToken,
+    );
+
+    return { message: 'A new verification email has been sent.' };
   }
 
   async signIn(loginAuthDto: LoginAuthDto): Promise<{
@@ -190,5 +237,9 @@ export class AuthService {
       return result as AuthenticatedUser;
     }
     return null;
+  }
+
+  private getEmailVerificationExpiry(): Date {
+    return new Date(Date.now() + AuthService.EMAIL_VERIFICATION_TOKEN_TTL_MS);
   }
 }

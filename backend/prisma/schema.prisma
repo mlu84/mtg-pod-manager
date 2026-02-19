@@ -41,6 +41,7 @@ model User {
   systemRole             SystemRole @default(USER)
   emailVerified          DateTime?
   emailVerificationToken String?    @unique
+  emailVerificationTokenExpiresAt DateTime?
   passwordResetTokenHash String?    @unique
   passwordResetTokenExpiresAt DateTime?
   createdAt              DateTime   @default(now())

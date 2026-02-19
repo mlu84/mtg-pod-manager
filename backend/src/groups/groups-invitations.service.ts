@@ -506,10 +506,6 @@ export class GroupsInvitationsService {
         id: true,
         groupId: true,
         inviterUserId: true,
-        invitedUser: {
-          select: { inAppName: true },
-        },
-        invitedEmail: true,
       },
     });
 
@@ -530,13 +526,6 @@ export class GroupsInvitationsService {
     await this.prisma.groupInvite.delete({
       where: { id: inviteId },
     });
-
-    const targetLabel = invite.invitedUser?.inAppName || invite.invitedEmail;
-    await this.eventsService.log(
-      invite.groupId,
-      'INVITE_CANCELED',
-      `Invite for ${targetLabel} was canceled`,
-    );
 
     return { message: 'Invite canceled' };
   }

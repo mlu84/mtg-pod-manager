@@ -48,4 +48,13 @@ describe('AuthService', () => {
       },
     );
   });
+
+  it('resendVerificationEmail posts to /auth/resend-verification', () => {
+    service.resendVerificationEmail().subscribe();
+
+    expect(http.post).toHaveBeenCalledWith(
+      `${environment.apiUrl}/auth/resend-verification`,
+      {},
+    );
+  });
 });
