@@ -1,0 +1,34 @@
+<div class="home-page">
+  <section class="hero container">
+    <p class="hero__eyebrow">Magic: The Gathering Group Organizer</p>
+    <h1>Track MTG games, decks, and standings with your playgroup.</h1>
+    <p class="hero__lead">
+      MTG Pod-Manager helps your group run sessions better and more fun with deck selection, game
+      recording, ranking history, and season-ready statistics.
+    </p>
+
+    <div class="hero__actions">
+      @if (isAuthenticated()) {
+        <a class="btn btn--primary hero__cta" routerLink="/groups">Open Group Manager</a>
+      } @else {
+        <a class="btn btn--primary hero__cta" routerLink="/register">Create Account</a>
+        <a class="btn btn--outline hero__cta" routerLink="/login">Log In</a>
+      }
+    </div>
+  </section>
+
+  <section class="features container" aria-label="Core features">
+    <article class="feature-card card">
+      <h2>Organize Groups and Seasons</h2>
+      <p>Set up your group structure and run season-based standings with clear progression.</p>
+    </article>
+    <article class="feature-card card">
+      <h2>Play and Record</h2>
+      <p>Start live games, track outcomes, and save placements back into group history.</p>
+    </article>
+    <article class="feature-card card">
+      <h2>Rank and Analyze</h2>
+      <p>See standings, performance trends, and deck usage over time.</p>
+    </article>
+  </section>
+</div>

@@ -62,9 +62,16 @@
   flex: 1;
 
   h3 {
-    margin: 0 0 var(--spacing-sm);
+    margin: 0;
     font-size: 1.5rem;
   }
+}
+
+.profile-name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
 }
 
 .edit-form {
@@ -184,10 +191,5 @@
     flex-direction: column;
     align-items: stretch;
   }
-}
-
-.btn--sm {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 0.875rem;
 }
 

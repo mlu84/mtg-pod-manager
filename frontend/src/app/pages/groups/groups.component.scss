@@ -21,6 +21,13 @@
     }
   }
 
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    min-width: 0;
+  }
+
   &__actions {
     display: flex;
     gap: var(--spacing-sm);
@@ -405,6 +412,10 @@
     gap: var(--spacing-sm);
   }
 
+  .header__left {
+    width: 100%;
+  }
+
   .header__actions {
     width: 100%;
     justify-content: flex-start;
@@ -437,6 +448,10 @@
 }
 
 @media (max-width: 640px) {
+  .header__left {
+    gap: var(--spacing-sm);
+  }
+
   .header__content h1 {
     font-size: 1.25rem;
   }

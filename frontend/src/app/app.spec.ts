@@ -22,6 +22,15 @@ describe('App', () => {
         provideRouter([
           { path: '', component: TestPageComponent },
           { path: 'groups', component: TestPageComponent },
+          {
+            path: 'legal',
+            component: TestPageComponent,
+            data: {
+              metaTitle: 'Legal | MTG Pod-Manager',
+              metaDescription: 'Legal information for MTG Pod-Manager.',
+              canonicalPath: '/legal',
+            },
+          },
           { path: 'groups/:id/play', component: TestPageComponent },
         ]),
         {
@@ -76,5 +85,23 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.meta-header')).toBeNull();
     expect(compiled.querySelector('.app-shell')?.classList.contains('app-shell--play')).toBe(true);
+  });
+
+  it('should set title, description and canonical from route data', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/legal');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(document.title).toBe('Legal | MTG Pod-Manager');
+    const metaDescription = document
+      .querySelector('meta[name="description"]')
+      ?.getAttribute('content');
+    expect(metaDescription).toBe('Legal information for MTG Pod-Manager.');
+    const canonicalHref = document
+      .querySelector('link[rel="canonical"]')
+      ?.getAttribute('href');
+    expect(canonicalHref?.endsWith('/legal')).toBe(true);
   });
 });
