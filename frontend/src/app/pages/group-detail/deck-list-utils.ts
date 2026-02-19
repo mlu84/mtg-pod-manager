@@ -55,7 +55,7 @@ export function sortDecksByType(decks: Deck[]): Deck[] {
 
 export function sortDecksByPlayers(decks: Deck[]): Deck[] {
   return [...decks].sort((a, b) => {
-    const ownerCompare = b.owner.inAppName.localeCompare(a.owner.inAppName, undefined, {
+    const ownerCompare = a.owner.inAppName.localeCompare(b.owner.inAppName, undefined, {
       sensitivity: 'base',
     });
     if (ownerCompare !== 0) {
