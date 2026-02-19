@@ -10,7 +10,7 @@ import { Deck } from '../../models/group.model';
   styleUrl: './group-decks-card.component.scss',
 })
 export class GroupDecksCardComponent {
-  @Input({ required: true }) deckSortMode!: 'name' | 'type' | 'colors';
+  @Input({ required: true }) deckSortMode!: 'name' | 'type' | 'colors' | 'players';
   @Input({ required: true }) decksCollapsed!: boolean;
   @Input({ required: true }) isEmailVerified!: boolean;
   @Input({ required: true }) decksLength!: number;
@@ -29,6 +29,6 @@ export class GroupDecksCardComponent {
   @Output() addDeck = new EventEmitter<void>();
   @Output() editDeck = new EventEmitter<Deck>();
   @Output() decksSearchChange = new EventEmitter<string>();
-  @Output() deckSortModeChange = new EventEmitter<'name' | 'type' | 'colors'>();
+  @Output() deckSortModeChange = new EventEmitter<'name' | 'type' | 'colors' | 'players'>();
   @Output() decksPageChange = new EventEmitter<number>();
 }

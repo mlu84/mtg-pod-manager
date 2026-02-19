@@ -2,7 +2,7 @@ import { Deck } from '../../models/group.model';
 import { VALID_DECK_TYPES } from './deck-constants';
 import { getSortedColors } from './color-utils';
 
-type DeckSortMode = 'name' | 'type' | 'colors';
+type DeckSortMode = 'name' | 'type' | 'colors' | 'players';
 
 const UNKNOWN_DECK_TYPE_LABEL = 'Unknown';
 const COLOR_INDEX_MAP = new Map(
@@ -47,6 +47,19 @@ export function sortDecksByType(decks: Deck[]): Deck[] {
     });
     if (typeLabelCompare !== 0) {
       return typeLabelCompare;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
+export function sortDecksByPlayers(decks: Deck[]): Deck[] {
+  return [...decks].sort((a, b) => {
+    const ownerCompare = b.owner.inAppName.localeCompare(a.owner.inAppName, undefined, {
+      sensitivity: 'base',
+    });
+    if (ownerCompare !== 0) {
+      return ownerCompare;
     }
 
     return a.name.localeCompare(b.name);
@@ -101,6 +114,9 @@ export function sortDecksByColorCombination(decks: Deck[]): Deck[] {
 export function sortDecks(decks: Deck[], mode: DeckSortMode): Deck[] {
   if (mode === 'colors') {
     return sortDecksByColorCombination(decks);
+  }
+  if (mode === 'players') {
+    return sortDecksByPlayers(decks);
   }
   if (mode === 'type') {
     return sortDecksByType(decks);

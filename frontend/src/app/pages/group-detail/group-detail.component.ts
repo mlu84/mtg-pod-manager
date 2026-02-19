@@ -540,7 +540,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly decksPageSize = 10;
   decksPage = signal(1);
   decksSearchTerm = signal('');
-  deckSortMode = signal<'name' | 'type' | 'colors'>('name');
+  deckSortMode = signal<'name' | 'type' | 'colors' | 'players'>('name');
 
   filteredDecks = computed(() => {
     const decks = this.sortedDecks();
@@ -566,7 +566,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.decksPage.set(1); // Reset to first page when search changes
   }
 
-  setDeckSortMode(mode: 'name' | 'type' | 'colors'): void {
+  setDeckSortMode(mode: 'name' | 'type' | 'colors' | 'players'): void {
     this.deckSortMode.set(mode);
     this.decksPage.set(1);
   }

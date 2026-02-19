@@ -9,6 +9,7 @@ import {
   sortDecks,
   sortDecksByColorCombination,
   sortDecksByName,
+  sortDecksByPlayers,
   sortDecksByType,
 } from './deck-list-utils';
 
@@ -85,9 +86,15 @@ describe('deck-list-utils', () => {
     expect(sorted.map((deck) => deck.id)).toEqual(['d1', 'd6', 'd3', 'd2', 'd5', 'd4']);
   });
 
-  it('supports name and type sort mode', () => {
+  it('sorts decks by owner name descending', () => {
+    const sorted = sortDecksByPlayers(decks);
+    expect(sorted.map((deck) => deck.id)).toEqual(['d5', 'd4', 'd3', 'd1', 'd6', 'd2']);
+  });
+
+  it('supports name, type and players sort mode', () => {
     expect(sortDecks(decks, 'name').map((deck) => deck.id)).toEqual(['d1', 'd6', 'd3', 'd5', 'd4', 'd2']);
     expect(sortDecks(decks, 'type').map((deck) => deck.id)).toEqual(['d1', 'd6', 'd3', 'd2', 'd5', 'd4']);
+    expect(sortDecks(decks, 'players').map((deck) => deck.id)).toEqual(['d5', 'd4', 'd3', 'd1', 'd6', 'd2']);
   });
 
   it('sorts decks by color combination from mono to WUBRG', () => {
