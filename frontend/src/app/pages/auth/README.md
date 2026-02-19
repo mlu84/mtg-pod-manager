@@ -10,5 +10,5 @@ Inputs/Outputs
 
 Invariants
 - Access tokens are stored in localStorage by `AuthService`.
-- Email verification redirects to login with `verified=true`.
+- Email verification opens `/verify-email?token=...` and requires explicit user confirmation before redirecting to login with `verified=true`.
 - Password reset uses `reset-password?token=...` route and redirects back to login on success.

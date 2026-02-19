@@ -118,34 +118,41 @@ describe('AuthService', () => {
     ).rejects.toThrow('Email or inAppName already exists.');
   });
 
-  it('verifyEmail throws on invalid token', async () => {
+  it('verifyEmailToken throws on invalid token', async () => {
     usersService.findByVerificationToken.mockResolvedValue(null);
 
-    await expect(service.verifyEmail('bad-token')).rejects.toThrow(
+    await expect(service.verifyEmailToken('bad-token')).rejects.toThrow(
       'Invalid or expired verification token.',
     );
   });
 
-  it('verifyEmail returns redirect URL for valid token', async () => {
+  it('getEmailVerificationRedirectUrl points to verify-email page with token', () => {
+    configService.get.mockReturnValue('http://localhost:4200');
+
+    const url = service.getEmailVerificationRedirectUrl('token');
+
+    expect(url).toBe('http://localhost:4200/verify-email?token=token');
+  });
+
+  it('verifyEmailToken marks user as verified when token is valid', async () => {
     usersService.findByVerificationToken.mockResolvedValue({
       id: 'user-1',
       emailVerificationTokenExpiresAt: new Date(Date.now() + 60_000),
     });
-    configService.get.mockReturnValue('http://localhost:4200');
 
-    const url = await service.verifyEmail('token');
+    const response = await service.verifyEmailToken('token');
 
     expect(usersService.verifyEmail).toHaveBeenCalledWith('user-1');
-    expect(url).toBe('http://localhost:4200/login?verified=true');
+    expect(response).toEqual({ message: 'Email verified successfully.' });
   });
 
-  it('verifyEmail throws on expired token', async () => {
+  it('verifyEmailToken throws on expired token', async () => {
     usersService.findByVerificationToken.mockResolvedValue({
       id: 'user-1',
       emailVerificationTokenExpiresAt: new Date(Date.now() - 60_000),
     });
 
-    await expect(service.verifyEmail('expired')).rejects.toThrow(
+    await expect(service.verifyEmailToken('expired')).rejects.toThrow(
       'Invalid or expired verification token.',
     );
   });

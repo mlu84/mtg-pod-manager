@@ -11,6 +11,7 @@ Inputs/Outputs
 
 Invariants
 - Passwords are stored as bcrypt hashes.
-- Email verification requires a valid token.
+- `GET /auth/verify` only redirects to frontend verify screen; token consumption happens via `POST /auth/verify`.
+- Email verification requires a valid, non-expired token.
 - Password reset tokens are one-time and expire after 15 minutes.
 - Forgot/reset endpoints are rate-limited.

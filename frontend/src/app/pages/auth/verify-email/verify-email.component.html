@@ -1,0 +1,35 @@
+<div class="verify-page">
+  <div class="verify-card card">
+    <h1>Verify Email</h1>
+    <p class="text-muted">
+      Confirm your email address to unlock all MTG Pod-Manager features.
+    </p>
+
+    @if (error()) {
+      <div class="alert alert--danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ error() }}
+      </div>
+    }
+
+    @if (verified()) {
+      <div class="alert alert--success">
+        <i class="fas fa-check-circle"></i>
+        Email verified successfully. Redirecting to login...
+      </div>
+    } @else {
+      <button
+        type="button"
+        class="btn btn--primary btn--block"
+        (click)="verifyEmail()"
+        [disabled]="verifying() || !token"
+      >
+        @if (verifying()) { Verifying... } @else { Verify email }
+      </button>
+    }
+
+    <div class="verify-actions">
+      <a routerLink="/login">Back to login</a>
+    </div>
+  </div>
+</div>

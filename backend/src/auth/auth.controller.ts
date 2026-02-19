@@ -16,6 +16,7 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserType } from './decorators/current-user.decorator';
 
@@ -33,8 +34,14 @@ export class AuthController {
     @Query('token') token: string,
     @Res() res: Response,
   ): Promise<void> {
-    const redirectUrl = await this.authService.verifyEmail(token);
+    const redirectUrl = this.authService.getEmailVerificationRedirectUrl(token);
     res.redirect(redirectUrl);
+  }
+
+  @Post('verify')
+  @HttpCode(HttpStatus.OK)
+  verifyEmailToken(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmailToken(verifyEmailDto.token);
   }
 
   @Post('signin')

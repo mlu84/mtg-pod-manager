@@ -57,4 +57,12 @@ describe('AuthService', () => {
       {},
     );
   });
+
+  it('verifyEmailToken posts to /auth/verify', () => {
+    service.verifyEmailToken('token-123').subscribe();
+
+    expect(http.post).toHaveBeenCalledWith(`${environment.apiUrl}/auth/verify`, {
+      token: 'token-123',
+    });
+  });
 });

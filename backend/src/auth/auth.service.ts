@@ -78,7 +78,17 @@ export class AuthService {
     }
   }
 
-  async verifyEmail(token: string): Promise<string> {
+  getEmailVerificationRedirectUrl(token: string): string {
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
+    const normalizedToken = token?.trim();
+    if (!normalizedToken) {
+      return `${frontendUrl}/verify-email`;
+    }
+    return `${frontendUrl}/verify-email?token=${encodeURIComponent(normalizedToken)}`;
+  }
+
+  async verifyEmailToken(token: string): Promise<{ message: string }> {
     const user = await this.usersService.findByVerificationToken(token);
 
     const tokenExpired =
@@ -91,8 +101,7 @@ export class AuthService {
 
     await this.usersService.verifyEmail(user.id);
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    return `${frontendUrl}/login?verified=true`;
+    return { message: 'Email verified successfully.' };
   }
 
   async resendVerificationEmail(userId: string): Promise<{ message: string }> {
