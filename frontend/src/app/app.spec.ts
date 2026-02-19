@@ -1,8 +1,14 @@
 import { TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { Component, signal } from '@angular/core';
+import { provideRouter, Router } from '@angular/router';
 import { App } from './app';
 import { AuthService } from './core/services/auth.service';
+
+@Component({
+  standalone: true,
+  template: '',
+})
+class TestPageComponent {}
 
 describe('App', () => {
   let isAuthenticated: ReturnType<typeof signal<boolean>>;
@@ -13,7 +19,11 @@ describe('App', () => {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
-        provideRouter([]),
+        provideRouter([
+          { path: '', component: TestPageComponent },
+          { path: 'groups', component: TestPageComponent },
+          { path: 'groups/:id/play', component: TestPageComponent },
+        ]),
         {
           provide: AuthService,
           useValue: {
@@ -54,5 +64,17 @@ describe('App', () => {
     ).map((el) => el.textContent?.trim());
 
     expect(links).not.toContain('Profile');
+  });
+
+  it('should hide global header on group-play route', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/groups/test-id/play');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.meta-header')).toBeNull();
+    expect(compiled.querySelector('.app-shell')?.classList.contains('app-shell--play')).toBe(true);
   });
 });

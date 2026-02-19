@@ -1,62 +1,64 @@
-<div class="app-shell">
-  <header class="meta-header">
-    <div class="meta-header__content container">
-      <a class="meta-header__brand" routerLink="/groups">
-        <img
-          class="meta-header__brand-logo"
-          src="assets/images/MTG_Pod_Manager_logo_cropped.svg"
-          alt="MTG Pod-Manager logo"
-        />
-        <span>MTG Pod-Manager</span>
-      </a>
-      <nav class="meta-header__nav">
-        @if (isAuthenticated()) {
-          <button
-            type="button"
-            class="meta-header__link meta-header__link--filled"
-            (click)="openProfileModal()"
-          >
-            Profile
-          </button>
-        }
-        <a
-          class="meta-header__link"
-          routerLink="/legal"
-          routerLinkActive="is-active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          Legal
+<div class="app-shell" [class.app-shell--play]="hideGlobalHeader()">
+  @if (!hideGlobalHeader()) {
+    <header class="meta-header">
+      <div class="meta-header__content container">
+        <a class="meta-header__brand" routerLink="/groups">
+          <img
+            class="meta-header__brand-logo"
+            src="assets/images/MTG_Pod_Manager_logo_cropped.svg"
+            alt="MTG Pod-Manager logo"
+          />
+          <span>MTG Pod-Manager</span>
         </a>
-        <a
-          class="meta-header__link"
-          routerLink="/contact"
-          routerLinkActive="is-active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          Contact
-        </a>
-        <div class="donate-inline">
-          <span class="donate-prefix">Buy me a booster</span>
+        <nav class="meta-header__nav">
+          @if (isAuthenticated()) {
+            <button
+              type="button"
+              class="meta-header__link meta-header__link--filled"
+              (click)="openProfileModal()"
+            >
+              Profile
+            </button>
+          }
           <a
-            class="btn btn--secondary btn--paypal"
-            href="https://paypal.me/mluckeystrauss/5"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Buy me a booster on PayPal"
-            title="yes, i am a cardboard addict :)"
+            class="meta-header__link"
+            routerLink="/legal"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: true }"
           >
-            <i class="fab fa-paypal"></i>
+            Legal
           </a>
-        </div>
-      </nav>
-    </div>
-  </header>
+          <a
+            class="meta-header__link"
+            routerLink="/contact"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Contact
+          </a>
+          <div class="donate-inline">
+            <span class="donate-prefix">Buy me a booster</span>
+            <a
+              class="btn btn--secondary btn--paypal"
+              href="https://paypal.me/mluckeystrauss/5"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Buy me a booster on PayPal"
+              title="yes, i am a cardboard addict :)"
+            >
+              <i class="fab fa-paypal"></i>
+            </a>
+          </div>
+        </nav>
+      </div>
+    </header>
+  }
 
   <main class="app-shell__content">
     <router-outlet />
   </main>
 
-  @if (showProfileModal() && isAuthenticated()) {
+  @if (!hideGlobalHeader() && showProfileModal() && isAuthenticated()) {
     <app-profile (close)="closeProfileModal()" />
   }
 </div>
