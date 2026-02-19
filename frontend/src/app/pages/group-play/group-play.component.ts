@@ -82,6 +82,8 @@ export class GroupPlayComponent {
   private lifeHoldTimer: ReturnType<typeof setTimeout> | null = null;
   private lifeHoldInterval: ReturnType<typeof setInterval> | null = null;
   private lifeHoldTriggered = false;
+  private chromeMinimizeTimers: ReturnType<typeof setTimeout>[] = [];
+  private lastChromeMinimizeAt = 0;
 
   activeDecks = computed(() => (this.group()?.decks || []).filter((d) => d.isActive));
   activeSlots = computed(() => this.slots().slice(0, this.playerCount()));
@@ -126,11 +128,13 @@ export class GroupPlayComponent {
       window.addEventListener('orientationchange', this.onViewportChange);
     }
     this.tryLockLandscape();
+    this.minimizeBrowserChrome();
     this.groupId = this.route.snapshot.params['id'];
     this.loadGroup();
   }
 
   ngOnDestroy(): void {
+    this.clearChromeMinimizeTimers();
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this.onViewportChange);
       window.removeEventListener('orientationchange', this.onViewportChange);
@@ -147,6 +151,7 @@ export class GroupPlayComponent {
     if (!wasCompact && this.isCompactViewport()) {
       this.tryLockLandscape();
     }
+    this.minimizeBrowserChrome();
   };
 
   private updateViewportState(): void {
@@ -169,6 +174,45 @@ export class GroupPlayComponent {
       this.orientationLocked = true;
     } catch {
       this.orientationLocked = false;
+    }
+  }
+
+  handlePlaySurfaceContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+  }
+
+  handlePlaySurfaceTouchStart(): void {
+    if (
+      this.showSlotModal() ||
+      this.showPoisonModal() ||
+      this.showCommanderModal() ||
+      this.rollVisible()
+    ) {
+      return;
+    }
+    const now = Date.now();
+    if (now - this.lastChromeMinimizeAt < 300) return;
+    this.minimizeBrowserChrome(false);
+  }
+
+  private clearChromeMinimizeTimers(): void {
+    for (const timer of this.chromeMinimizeTimers) {
+      clearTimeout(timer);
+    }
+    this.chromeMinimizeTimers = [];
+  }
+
+  private minimizeBrowserChrome(scheduleRetries = true): void {
+    if (typeof window === 'undefined' || !this.isCompactViewport()) return;
+    this.lastChromeMinimizeAt = Date.now();
+    const minimize = () => window.scrollTo(0, 1);
+    minimize();
+    if (!scheduleRetries) return;
+    this.clearChromeMinimizeTimers();
+    window.requestAnimationFrame(() => minimize());
+    for (const delay of [120, 300, 550]) {
+      const timer = setTimeout(() => minimize(), delay);
+      this.chromeMinimizeTimers.push(timer);
     }
   }
 
@@ -208,11 +252,13 @@ export class GroupPlayComponent {
   }
 
   setPlayerCount(count: number): void {
+    if (this.startingRoll() || this.gameStarted()) return;
     if (count < 2 || count > 6) return;
     this.playerCount.set(count);
   }
 
   cyclePlayerCount(): void {
+    if (this.startingRoll() || this.gameStarted()) return;
     const next = this.playerCount() >= 6 ? 2 : this.playerCount() + 1;
     this.setPlayerCount(next);
   }

@@ -1,5 +1,12 @@
 <div class="play-panel">
-  <button class="panel-btn" (click)="cyclePlayerCount.emit()">
+  <button
+    class="panel-btn"
+    (click)="cyclePlayerCount.emit()"
+    [disabled]="gameStarted || startingRoll"
+    [title]="
+      gameStarted || startingRoll ? 'Player count is locked while a game is active' : ''
+    "
+  >
     <span class="panel-btn__label">Players</span>
     <span class="panel-btn__value">{{ playerCount }}</span>
   </button>

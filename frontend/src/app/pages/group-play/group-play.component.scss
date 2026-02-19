@@ -11,6 +11,8 @@
   padding: var(--spacing-lg);
   gap: var(--spacing-lg);
   overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .play-screen--loading,

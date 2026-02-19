@@ -13,6 +13,9 @@
   justify-content: space-between;
   gap: var(--spacing-md);
   touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   background-size: cover;
   background-position: center;
   overflow: hidden;
@@ -121,6 +124,9 @@
   color: #e9ecf4;
   font-size: 1.6rem;
   touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   z-index: 2;
 }
 
@@ -212,6 +218,9 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .counter-icon:not(:disabled):hover {

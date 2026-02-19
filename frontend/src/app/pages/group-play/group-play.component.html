@@ -20,6 +20,8 @@
     [class.play-screen--portrait]="isCompactViewport() && isPortraitViewport()"
     [style.--viewport-width.px]="viewportWidth()"
     [style.--viewport-height.px]="viewportHeight()"
+    (contextmenu)="handlePlaySurfaceContextMenu($event)"
+    (touchstart)="handlePlaySurfaceTouchStart()"
   >
     <div class="play-layout" [attr.data-count]="playerCount()">
       <div class="play-column play-column--left" [attr.data-count]="playerCount()">

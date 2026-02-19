@@ -31,11 +31,19 @@
   letter-spacing: 0.05em;
   font-size: 0.72rem;
   touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   min-height: 84px;
 }
 
 .panel-btn:not(:disabled):hover {
   box-shadow: 0 0 18px rgba(255, 255, 255, 0.2);
+}
+
+.panel-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .panel-btn__label {
