@@ -1,6 +1,7 @@
 import '@angular/compiler';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { createEnvironmentInjector, runInInjectionContext } from '@angular/core';
+import { createEnvironmentInjector, EnvironmentInjector, runInInjectionContext } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupPlayComponent } from './group-play.component';
 import { AuthService } from '../../core/services/auth.service';
@@ -12,6 +13,9 @@ describe('GroupPlayComponent', () => {
   let component: GroupPlayComponent;
 
   beforeEach(() => {
+    TestBed.configureTestingModule({});
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+
     const injector = createEnvironmentInjector(
       [
         {
@@ -29,7 +33,7 @@ describe('GroupPlayComponent', () => {
           useValue: { getBackTarget: vi.fn().mockReturnValue('/groups') },
         },
       ],
-      null,
+      parentInjector,
     );
 
     component = runInInjectionContext(injector, () => new GroupPlayComponent());

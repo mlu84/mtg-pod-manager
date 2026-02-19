@@ -1,6 +1,7 @@
 import '@angular/compiler';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { createEnvironmentInjector, runInInjectionContext, signal } from '@angular/core';
+import { createEnvironmentInjector, EnvironmentInjector, runInInjectionContext, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { Router } from '@angular/router';
 import { GroupsComponent } from './groups.component';
@@ -19,6 +20,9 @@ describe('GroupsComponent', () => {
   let usersApi: { getMyApplications: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
+    TestBed.configureTestingModule({});
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+
     groupsApi = {
       getGroups: vi.fn(),
       createGroup: vi.fn(),
@@ -42,7 +46,7 @@ describe('GroupsComponent', () => {
         },
         { provide: Router, useValue: { navigate: vi.fn() } },
       ],
-      null,
+      parentInjector,
     );
 
     component = runInInjectionContext(injector, () => new GroupsComponent());
