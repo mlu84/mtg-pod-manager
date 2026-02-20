@@ -32,6 +32,9 @@ export class App {
   private defaultTitle = 'MTG Pod-Manager';
   private defaultMetaDescription =
     'MTG Pod-Manager helps Magic: The Gathering playgroups organize players, decks, and game results in one place.';
+  private defaultMetaRobots = 'noindex,nofollow';
+  private siteName = 'MTG Pod-Manager';
+  private defaultOgImagePath = '/assets/images/mtg_pod_manager_logo.png';
 
   isAuthenticated = this.authService.isAuthenticated;
   showProfileModal = signal(false);
@@ -74,6 +77,7 @@ export class App {
 
     const routeTitle = currentRoute.snapshot.data['metaTitle'];
     const routeDescription = currentRoute.snapshot.data['metaDescription'];
+    const routeRobots = currentRoute.snapshot.data['metaRobots'];
     const routeCanonicalPath = currentRoute.snapshot.data['canonicalPath'];
     const title =
       typeof routeTitle === 'string' && routeTitle.trim()
@@ -83,26 +87,29 @@ export class App {
       typeof routeDescription === 'string' && routeDescription.trim()
         ? routeDescription.trim()
         : this.defaultMetaDescription;
+    const robots =
+      typeof routeRobots === 'string' && routeRobots.trim()
+        ? routeRobots.trim()
+        : this.defaultMetaRobots;
 
     this.titleService.setTitle(title);
     this.metaService.updateTag({
       name: 'description',
       content: description,
     });
-    this.updateCanonicalTag(routeCanonicalPath, url);
+    this.metaService.updateTag({
+      name: 'robots',
+      content: robots,
+    });
+    const canonicalHref = this.buildCanonicalHref(routeCanonicalPath, url);
+    this.updateCanonicalTag(canonicalHref);
+    this.updateOpenGraphTags(title, description, canonicalHref);
+    this.updateTwitterTags(title, description);
+    this.updateWebsiteStructuredData();
   }
 
-  private updateCanonicalTag(routeCanonicalPath: unknown, url: string): void {
+  private updateCanonicalTag(canonicalHref: string): void {
     if (!this.document?.head) return;
-
-    const hasCanonicalPath =
-      typeof routeCanonicalPath === 'string' && routeCanonicalPath.trim().length > 0;
-    const canonicalPath = hasCanonicalPath
-      ? routeCanonicalPath.trim()
-      : this.buildCanonicalPath(url);
-    const href = canonicalPath.startsWith('http')
-      ? canonicalPath
-      : `${this.document.location?.origin || ''}${canonicalPath}`;
 
     let canonicalLink = this.document.head.querySelector(
       'link[rel="canonical"]'
@@ -112,7 +119,66 @@ export class App {
       canonicalLink.setAttribute('rel', 'canonical');
       this.document.head.appendChild(canonicalLink);
     }
-    canonicalLink.setAttribute('href', href);
+    canonicalLink.setAttribute('href', canonicalHref);
+  }
+
+  private updateOpenGraphTags(title: string, description: string, canonicalHref: string): void {
+    const imageUrl = this.buildAbsoluteUrl(this.defaultOgImagePath);
+    this.metaService.updateTag({ property: 'og:title', content: title });
+    this.metaService.updateTag({ property: 'og:description', content: description });
+    this.metaService.updateTag({ property: 'og:type', content: 'website' });
+    this.metaService.updateTag({ property: 'og:url', content: canonicalHref });
+    this.metaService.updateTag({ property: 'og:site_name', content: this.siteName });
+    this.metaService.updateTag({ property: 'og:image', content: imageUrl });
+  }
+
+  private updateTwitterTags(title: string, description: string): void {
+    const imageUrl = this.buildAbsoluteUrl(this.defaultOgImagePath);
+    this.metaService.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+    this.metaService.updateTag({ name: 'twitter:title', content: title });
+    this.metaService.updateTag({ name: 'twitter:description', content: description });
+    this.metaService.updateTag({ name: 'twitter:image', content: imageUrl });
+  }
+
+  private updateWebsiteStructuredData(): void {
+    if (!this.document?.head) return;
+
+    const rootUrl = this.buildAbsoluteUrl('/');
+    const content = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: this.siteName,
+      url: rootUrl,
+    });
+
+    let script = this.document.head.querySelector(
+      'script[data-seo-jsonld="website"]'
+    ) as HTMLScriptElement | null;
+    if (!script) {
+      script = this.document.createElement('script');
+      script.setAttribute('type', 'application/ld+json');
+      script.setAttribute('data-seo-jsonld', 'website');
+      this.document.head.appendChild(script);
+    }
+    script.textContent = content;
+  }
+
+  private buildCanonicalHref(routeCanonicalPath: unknown, url: string): string {
+    const hasCanonicalPath =
+      typeof routeCanonicalPath === 'string' && routeCanonicalPath.trim().length > 0;
+    const canonicalPath = hasCanonicalPath
+      ? routeCanonicalPath.trim()
+      : this.buildCanonicalPath(url);
+
+    return this.buildAbsoluteUrl(canonicalPath);
+  }
+
+  private buildAbsoluteUrl(pathOrUrl: string): string {
+    if (pathOrUrl.startsWith('http')) {
+      return pathOrUrl;
+    }
+
+    return `${this.document.location?.origin || ''}${pathOrUrl}`;
   }
 
   private buildCanonicalPath(url: string): string {

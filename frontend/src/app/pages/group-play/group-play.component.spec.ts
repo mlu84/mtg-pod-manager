@@ -90,6 +90,18 @@ describe('GroupPlayComponent', () => {
     expect(component.playerCount()).toBe(4);
   });
 
+  it('unlocks player count changes after reset game', () => {
+    component.playerCount.set(4);
+    component.gameStarted.set(true);
+
+    component.cyclePlayerCount();
+    expect(component.playerCount()).toBe(4);
+
+    component.resetGame();
+    component.cyclePlayerCount();
+    expect(component.playerCount()).toBe(5);
+  });
+
   it('toggleTopHalfMirror toggles the mirror state', () => {
     component.mirroredTopHalf.set(false);
     component.toggleTopHalfMirror();

@@ -1,4 +1,4 @@
-<div class="play-panel">
+<div class="play-panel" (contextmenu)="$event.preventDefault()">
   <button
     class="panel-btn"
     (click)="cyclePlayerCount.emit()"

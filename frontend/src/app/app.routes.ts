@@ -11,6 +11,7 @@ export const routes: Routes = [
       canonicalPath: '/',
       metaDescription:
         'MTG Pod-Manager helps Magic: The Gathering playgroups organize players, decks, game records, and rankings.',
+      metaRobots: 'index,follow',
     },
   },
   {
@@ -23,6 +24,7 @@ export const routes: Routes = [
       canonicalPath: '/login',
       metaDescription:
         'Log in to MTG Pod-Manager to manage your Magic: The Gathering groups, decks, and game history.',
+      metaRobots: 'noindex,nofollow',
     },
   },
   {
@@ -37,6 +39,7 @@ export const routes: Routes = [
       canonicalPath: '/register',
       metaDescription:
         'Create your MTG Pod-Manager account to organize MTG groups, track games, and monitor standings.',
+      metaRobots: 'noindex,nofollow',
     },
   },
   {
@@ -51,6 +54,7 @@ export const routes: Routes = [
       canonicalPath: '/forgot-password',
       metaDescription:
         'Request a secure password reset link for your MTG Pod-Manager account.',
+      metaRobots: 'noindex,nofollow',
     },
   },
   {
@@ -65,6 +69,7 @@ export const routes: Routes = [
       canonicalPath: '/reset-password',
       metaDescription:
         'Set a new password for your MTG Pod-Manager account and return to your groups.',
+      metaRobots: 'noindex,nofollow',
     },
   },
   {
@@ -78,6 +83,7 @@ export const routes: Routes = [
       canonicalPath: '/verify-email',
       metaDescription:
         'Verify your email address to activate all MTG Pod-Manager features.',
+      metaRobots: 'noindex,nofollow',
     },
   },
   {
@@ -89,6 +95,7 @@ export const routes: Routes = [
       canonicalPath: '/legal',
       metaDescription:
         'Read MTG Pod-Manager legal information including privacy and terms details.',
+      metaRobots: 'index,follow',
     },
   },
   {
@@ -102,6 +109,7 @@ export const routes: Routes = [
       canonicalPath: '/contact',
       metaDescription:
         'Contact MTG Pod-Manager for legal, service, and data protection inquiries.',
+      metaRobots: 'index,follow',
     },
   },
   {
@@ -109,6 +117,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/groups/groups.component').then((m) => m.GroupsComponent),
     canActivate: [authGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
   },
   {
     path: 'groups/:id',
@@ -117,6 +128,9 @@ export const routes: Routes = [
         (m) => m.GroupDetailComponent
       ),
     canActivate: [authGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
   },
   {
     path: 'groups/:id/play',
@@ -125,6 +139,9 @@ export const routes: Routes = [
         (m) => m.GroupPlayComponent
       ),
     canActivate: [authGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
   },
   {
     path: 'archidekt-test',
@@ -133,6 +150,9 @@ export const routes: Routes = [
         (m) => m.ArchidektTestComponent
       ),
     canActivate: [sysadminGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
   },
   {
     path: 'sysadmin-users',
@@ -141,6 +161,9 @@ export const routes: Routes = [
         (m) => m.SysadminUsersComponent
       ),
     canActivate: [sysadminGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
   },
   {
     path: '**',

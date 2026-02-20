@@ -126,9 +126,11 @@ export class GroupPlayComponent {
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this.onViewportChange);
       window.addEventListener('orientationchange', this.onViewportChange);
+      window.addEventListener('scroll', this.onViewportScroll, { passive: true });
     }
     this.tryLockLandscape();
     this.minimizeBrowserChrome();
+    this.scheduleDeferredChromeMinimize();
     this.groupId = this.route.snapshot.params['id'];
     this.loadGroup();
   }
@@ -138,6 +140,7 @@ export class GroupPlayComponent {
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this.onViewportChange);
       window.removeEventListener('orientationchange', this.onViewportChange);
+      window.removeEventListener('scroll', this.onViewportScroll);
     }
     if (this.orientationLocked && typeof screen !== 'undefined' && screen.orientation?.unlock) {
       screen.orientation.unlock();
@@ -152,6 +155,16 @@ export class GroupPlayComponent {
       this.tryLockLandscape();
     }
     this.minimizeBrowserChrome();
+  };
+
+  private onViewportScroll = (): void => {
+    if (!this.isCompactViewport()) return;
+    if (typeof window === 'undefined') return;
+    if (window.scrollY <= 0) {
+      const now = Date.now();
+      if (now - this.lastChromeMinimizeAt < 280) return;
+      this.minimizeBrowserChrome(false);
+    }
   };
 
   private updateViewportState(): void {
@@ -212,6 +225,14 @@ export class GroupPlayComponent {
     window.requestAnimationFrame(() => minimize());
     for (const delay of [120, 300, 550]) {
       const timer = setTimeout(() => minimize(), delay);
+      this.chromeMinimizeTimers.push(timer);
+    }
+  }
+
+  private scheduleDeferredChromeMinimize(): void {
+    if (typeof window === 'undefined' || !this.isCompactViewport()) return;
+    for (const delay of [850, 1400]) {
+      const timer = setTimeout(() => this.minimizeBrowserChrome(false), delay);
       this.chromeMinimizeTimers.push(timer);
     }
   }
