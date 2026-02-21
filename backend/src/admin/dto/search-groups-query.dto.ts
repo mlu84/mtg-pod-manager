@@ -2,7 +2,7 @@ import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { TrimString } from '../../common/transformers/string.transformers';
 
-export class SearchGroupsQueryDto {
+export class AdminSearchGroupsQueryDto {
   @IsString()
   @IsOptional()
   @TrimString()
@@ -26,4 +26,3 @@ export class SearchGroupsQueryDto {
   @IsOptional()
   pageSize?: number;
 }
-

@@ -11,6 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SysAdminGuard } from '../auth/guards/sysadmin.guard';
 import { AdminService } from './admin.service';
+import { AdminSearchGroupsQueryDto } from './dto/search-groups-query.dto';
 import { RenameUserDto } from './dto/rename-user.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe';
@@ -22,11 +23,13 @@ export class AdminController {
 
   @Get('groups')
   searchGroups(
-    @Query('query') query: string,
-    @Query('page') page: string,
-    @Query('pageSize') pageSize: string,
+    @Query() queryDto: AdminSearchGroupsQueryDto,
   ) {
-    return this.adminService.searchGroups(query, page, pageSize);
+    return this.adminService.searchGroups(
+      queryDto.query ?? '',
+      queryDto.page,
+      queryDto.pageSize,
+    );
   }
 
   @Delete('groups/:id')

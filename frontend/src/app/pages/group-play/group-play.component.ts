@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
+import { sanitizeSearchInput, sanitizeSingleLineInput } from '../../core/utils/input-validation';
 import { Deck, GroupDetail } from '../../models/group.model';
 import { GroupPlayModalsComponent } from './group-play-modals.component';
 import { GroupPlayPanelComponent } from './group-play-panel.component';
@@ -82,6 +83,8 @@ export class GroupPlayComponent {
   private lifeHoldTimer: ReturnType<typeof setTimeout> | null = null;
   private lifeHoldInterval: ReturnType<typeof setInterval> | null = null;
   private lifeHoldTriggered = false;
+  private chromeMinimizeTimers: ReturnType<typeof setTimeout>[] = [];
+  private lastChromeMinimizeAt = 0;
 
   activeDecks = computed(() => (this.group()?.decks || []).filter((d) => d.isActive));
   activeSlots = computed(() => this.slots().slice(0, this.playerCount()));
@@ -124,16 +127,21 @@ export class GroupPlayComponent {
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this.onViewportChange);
       window.addEventListener('orientationchange', this.onViewportChange);
+      window.addEventListener('scroll', this.onViewportScroll, { passive: true });
     }
     this.tryLockLandscape();
+    this.minimizeBrowserChrome();
+    this.scheduleDeferredChromeMinimize();
     this.groupId = this.route.snapshot.params['id'];
     this.loadGroup();
   }
 
   ngOnDestroy(): void {
+    this.clearChromeMinimizeTimers();
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this.onViewportChange);
       window.removeEventListener('orientationchange', this.onViewportChange);
+      window.removeEventListener('scroll', this.onViewportScroll);
     }
     if (this.orientationLocked && typeof screen !== 'undefined' && screen.orientation?.unlock) {
       screen.orientation.unlock();
@@ -146,6 +154,17 @@ export class GroupPlayComponent {
     this.updateViewportState();
     if (!wasCompact && this.isCompactViewport()) {
       this.tryLockLandscape();
+    }
+    this.minimizeBrowserChrome();
+  };
+
+  private onViewportScroll = (): void => {
+    if (!this.isCompactViewport()) return;
+    if (typeof window === 'undefined') return;
+    if (window.scrollY <= 0) {
+      const now = Date.now();
+      if (now - this.lastChromeMinimizeAt < 280) return;
+      this.minimizeBrowserChrome(false);
     }
   };
 
@@ -169,6 +188,53 @@ export class GroupPlayComponent {
       this.orientationLocked = true;
     } catch {
       this.orientationLocked = false;
+    }
+  }
+
+  handlePlaySurfaceContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+  }
+
+  handlePlaySurfaceTouchStart(): void {
+    if (
+      this.showSlotModal() ||
+      this.showPoisonModal() ||
+      this.showCommanderModal() ||
+      this.rollVisible()
+    ) {
+      return;
+    }
+    const now = Date.now();
+    if (now - this.lastChromeMinimizeAt < 300) return;
+    this.minimizeBrowserChrome(false);
+  }
+
+  private clearChromeMinimizeTimers(): void {
+    for (const timer of this.chromeMinimizeTimers) {
+      clearTimeout(timer);
+    }
+    this.chromeMinimizeTimers = [];
+  }
+
+  private minimizeBrowserChrome(scheduleRetries = true): void {
+    if (typeof window === 'undefined' || !this.isCompactViewport()) return;
+    this.lastChromeMinimizeAt = Date.now();
+    const minimize = () => window.scrollTo(0, 1);
+    minimize();
+    if (!scheduleRetries) return;
+    this.clearChromeMinimizeTimers();
+    window.requestAnimationFrame(() => minimize());
+    for (const delay of [120, 300, 550]) {
+      const timer = setTimeout(() => minimize(), delay);
+      this.chromeMinimizeTimers.push(timer);
+    }
+  }
+
+  private scheduleDeferredChromeMinimize(): void {
+    if (typeof window === 'undefined' || !this.isCompactViewport()) return;
+    for (const delay of [850, 1400]) {
+      const timer = setTimeout(() => this.minimizeBrowserChrome(false), delay);
+      this.chromeMinimizeTimers.push(timer);
     }
   }
 
@@ -208,11 +274,13 @@ export class GroupPlayComponent {
   }
 
   setPlayerCount(count: number): void {
+    if (this.startingRoll() || this.gameStarted()) return;
     if (count < 2 || count > 6) return;
     this.playerCount.set(count);
   }
 
   cyclePlayerCount(): void {
+    if (this.startingRoll() || this.gameStarted()) return;
     const next = this.playerCount() >= 6 ? 2 : this.playerCount() + 1;
     this.setPlayerCount(next);
   }
@@ -307,9 +375,14 @@ export class GroupPlayComponent {
   setPlayerName(name: string): void {
     const index = this.activeSlotIndex();
     if (index === null) return;
+    const normalizedName = sanitizeSingleLineInput(name, 50);
     const next = [...this.slots()];
-    next[index] = { ...next[index], playerName: name };
+    next[index] = { ...next[index], playerName: normalizedName };
     this.slots.set(next);
+  }
+
+  setDeckSearchTerm(term: string): void {
+    this.deckSearchTerm.set(sanitizeSearchInput(term, 100));
   }
 
   rollD20(): void {

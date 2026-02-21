@@ -15,14 +15,12 @@ export class AdminService {
     private eventsService: EventsService,
   ) {}
 
-  async searchGroups(query: string, page?: string, pageSize?: string) {
+  async searchGroups(query: string, page?: number, pageSize?: number) {
     const trimmedQuery = (query || '').trim();
-    const parsedPage = Number(page);
-    const parsedPageSize = Number(pageSize);
-    const safePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const safePage = Number.isFinite(page) && Number(page) > 0 ? Number(page) : 1;
     const safePageSize =
-      Number.isFinite(parsedPageSize) && parsedPageSize > 0
-        ? Math.min(parsedPageSize, 20)
+      Number.isFinite(pageSize) && Number(pageSize) > 0
+        ? Math.min(Number(pageSize), 20)
         : 10;
 
     const where = trimmedQuery

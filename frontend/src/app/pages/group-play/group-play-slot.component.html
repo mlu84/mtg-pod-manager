@@ -6,6 +6,7 @@
   [class.play-slot--mirrored]="isMirrored"
   [style.background-image]="slot.deckId ? 'url(' + getDeckBackgroundImage(slot.deckId) + ')' : ''"
   [style.background-color]="slot.deckId ? 'transparent' : getSlotFallbackColor(index)"
+  (contextmenu)="$event.preventDefault()"
   (click)="handleOpenSlot()"
 >
   @if (isWinner) {

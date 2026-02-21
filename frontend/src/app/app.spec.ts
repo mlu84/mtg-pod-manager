@@ -22,6 +22,16 @@ describe('App', () => {
         provideRouter([
           { path: '', component: TestPageComponent },
           { path: 'groups', component: TestPageComponent },
+          {
+            path: 'legal',
+            component: TestPageComponent,
+            data: {
+              metaTitle: 'Legal | MTG Pod-Manager',
+              metaDescription: 'Legal information for MTG Pod-Manager.',
+              canonicalPath: '/legal',
+              metaRobots: 'index,follow',
+            },
+          },
           { path: 'groups/:id/play', component: TestPageComponent },
         ]),
         {
@@ -76,5 +86,58 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.meta-header')).toBeNull();
     expect(compiled.querySelector('.app-shell')?.classList.contains('app-shell--play')).toBe(true);
+  });
+
+  it('should set title, description, robots and canonical from route data', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/legal');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(document.title).toBe('Legal | MTG Pod-Manager');
+    const metaDescription = document
+      .querySelector('meta[name="description"]')
+      ?.getAttribute('content');
+    expect(metaDescription).toBe('Legal information for MTG Pod-Manager.');
+    const robots = document.querySelector('meta[name="robots"]')?.getAttribute('content');
+    expect(robots).toBe('index,follow');
+    const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+    expect(ogTitle).toBe('Legal | MTG Pod-Manager');
+    const ogUrl = document.querySelector('meta[property="og:url"]')?.getAttribute('content');
+    expect(ogUrl?.endsWith('/legal')).toBe(true);
+    const twitterCard = document
+      .querySelector('meta[name="twitter:card"]')
+      ?.getAttribute('content');
+    expect(twitterCard).toBe('summary_large_image');
+    const canonicalHref = document
+      .querySelector('link[rel="canonical"]')
+      ?.getAttribute('href');
+    expect(canonicalHref?.endsWith('/legal')).toBe(true);
+  });
+
+  it('should default robots to noindex,nofollow when route data is missing', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/groups');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const robots = document.querySelector('meta[name="robots"]')?.getAttribute('content');
+    expect(robots).toBe('noindex,nofollow');
+  });
+
+  it('should render website structured data', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const structuredDataContent = document
+      .querySelector('script[data-seo-jsonld="website"]')
+      ?.textContent;
+    expect(structuredDataContent).toBeTruthy();
+    const structuredData = JSON.parse(structuredDataContent || '{}');
+    expect(structuredData['@type']).toBe('WebSite');
+    expect(structuredData['name']).toBe('MTG Pod-Manager');
   });
 });

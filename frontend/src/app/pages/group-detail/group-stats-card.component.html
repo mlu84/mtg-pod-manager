@@ -57,6 +57,7 @@
               (blur)="closeStatsDeckDropdownDelayed.emit()"
               [placeholder]="statsDeckId ? '' : 'Search deck...'"
               autocomplete="off"
+              maxlength="100"
             />
             @if (statsDeckId) {
               <button type="button" class="deck-search__clear" (click)="clearStatsDeckSelection.emit()">

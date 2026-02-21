@@ -22,6 +22,8 @@
           [ngModel]="editSeasonName"
           (ngModelChange)="editSeasonNameChange.emit($event)"
           name="editSeasonName"
+          maxlength="100"
+          autocomplete="off"
           [disabled]="seasonSettingsLoading"
           placeholder="Active Season"
         />
@@ -82,6 +84,8 @@
           [ngModel]="editNextSeasonName"
           (ngModelChange)="editNextSeasonNameChange.emit($event)"
           name="editNextSeasonName"
+          maxlength="100"
+          autocomplete="off"
           [disabled]="seasonSettingsLoading"
           placeholder="Next Season"
         />

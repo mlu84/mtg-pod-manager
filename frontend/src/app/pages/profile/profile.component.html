@@ -81,6 +81,9 @@
                   id="editName"
                   class="form-control"
                   [(ngModel)]="editName"
+                  minlength="2"
+                  maxlength="50"
+                  autocomplete="nickname"
                   [disabled]="editLoading()"
                   placeholder="Your display name"
                 />
@@ -95,10 +98,12 @@
               </div>
             </div>
           } @else {
-            <h3>{{ profile()!.inAppName }}</h3>
-            <button class="btn btn--outline btn--sm" (click)="startEditing()">
-              <i class="fas fa-edit"></i> Edit Name
-            </button>
+            <div class="profile-name-row">
+              <h3>{{ profile()!.inAppName }}</h3>
+              <button class="btn-icon" type="button" (click)="startEditing()" title="Edit display name">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
           }
         </div>
       </div>

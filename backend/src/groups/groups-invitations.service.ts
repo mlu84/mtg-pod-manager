@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GroupsMembershipService } from './groups-membership.service';
 import { GroupsInvitationsPolicyService } from './groups-invitations-policy.service';
 import { getPrismaErrorCode } from '../common/prisma/prisma-error.util';
+import { toImageDataUrl } from '../users/users-image.util';
 
 @Injectable()
 export class GroupsInvitationsService {
@@ -26,9 +27,17 @@ export class GroupsInvitationsService {
   async searchInvitableUsers(groupId: string, adminUserId: string, query: string) {
     await this.membershipService.ensureAdmin(groupId, adminUserId);
 
-    const trimmed = query.trim();
+    const trimmed = query.trim().replace(/\s+/g, ' ');
     if (!trimmed) {
       return { items: [], infoMessage: null };
+    }
+    if (trimmed.length > 100) {
+      throw new BadRequestException('Search term must be at most 100 characters');
+    }
+    if (!/^[\p{L}\p{N}\s._'-]+$/u.test(trimmed)) {
+      throw new BadRequestException(
+        'Search query may contain letters, numbers, spaces, apostrophes, dots, underscores, and hyphens only',
+      );
     }
 
     const users = await this.prisma.user.findMany({
@@ -41,6 +50,8 @@ export class GroupsInvitationsService {
         id: true,
         inAppName: true,
         email: true,
+        avatarImage: true,
+        avatarImageMime: true,
       },
       orderBy: { inAppName: 'asc' },
       take: 20,
@@ -112,6 +123,7 @@ export class GroupsInvitationsService {
       .map((user) => ({
         id: user.id,
         inAppName: user.inAppName,
+        avatarUrl: toImageDataUrl(user.avatarImage, user.avatarImageMime),
       }));
 
     const infoMessage =

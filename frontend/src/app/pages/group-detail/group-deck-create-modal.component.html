@@ -22,6 +22,8 @@
           (ngModelChange)="deckNameChange.emit($event)"
           name="deckName"
           placeholder="e.g., Atraxa Superfriends"
+          maxlength="100"
+          autocomplete="off"
           [disabled]="deckLoading"
         />
       </div>
@@ -93,6 +95,8 @@
           (ngModelChange)="deckArchidektUrlChange.emit($event)"
           name="deckArchidektUrl"
           placeholder="https://archidekt.com/decks/12345678"
+          maxlength="255"
+          autocomplete="off"
           [disabled]="deckLoading"
         />
         <small class="form-hint">Link or ID of your Archidekt deck</small>

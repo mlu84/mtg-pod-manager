@@ -6,6 +6,11 @@ import { AdminApiService } from '../../core/services/admin-api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { AdminGroup, AdminGroupMember } from '../../models/group.model';
+import {
+  normalizeText,
+  validateDisplayName,
+  validateSearchText,
+} from '../../core/utils/input-validation';
 
 @Component({
   selector: 'app-sysadmin-users',
@@ -72,6 +77,18 @@ export class SysadminUsersComponent implements OnInit {
   }
 
   search(): void {
+    const normalized = normalizeText(this.searchQuery).replace(/\s+/g, ' ');
+    if (!normalized) {
+      this.searchQuery = '';
+      this.loadGroups(1);
+      return;
+    }
+    const searchError = validateSearchText(normalized, 'Search term');
+    if (searchError) {
+      this.error.set(searchError);
+      return;
+    }
+    this.searchQuery = normalized;
     this.loadGroups(1);
   }
 
@@ -109,15 +126,24 @@ export class SysadminUsersComponent implements OnInit {
   }
 
   confirmRename(): void {
-    if (!this.renameTarget || !this.renameValue.trim()) {
-      this.renameError.set('Name is required');
+    const normalizedRenameValue = normalizeText(this.renameValue);
+    if (!this.renameTarget || !normalizedRenameValue) {
+      this.renameError.set('Display name is required');
+      return;
+    }
+    const renameError = validateDisplayName(normalizedRenameValue, {
+      minLength: 2,
+      maxLength: 50,
+    });
+    if (renameError) {
+      this.renameError.set(renameError);
       return;
     }
 
     this.renameLoading.set(true);
     this.renameError.set(null);
 
-    this.adminApiService.adminRenameUser(this.renameTarget.userId, this.renameValue.trim()).subscribe({
+    this.adminApiService.adminRenameUser(this.renameTarget.userId, normalizedRenameValue).subscribe({
       next: () => {
         this.renameLoading.set(false);
         this.closeRenameModal();

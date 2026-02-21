@@ -21,6 +21,8 @@
           [ngModel]="editDeckName"
           (ngModelChange)="editDeckNameChange.emit($event)"
           name="editDeckName"
+          maxlength="100"
+          autocomplete="off"
           [disabled]="editDeckLoading"
         />
       </div>
@@ -133,6 +135,8 @@
             (ngModelChange)="editDeckArchidektUrlChange.emit($event)"
             name="editDeckArchidektUrl"
             placeholder="https://archidekt.com/decks/12345678"
+            maxlength="255"
+            autocomplete="off"
             [disabled]="editDeckLoading"
           />
           @if (hasArchidektId) {

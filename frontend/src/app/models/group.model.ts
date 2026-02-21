@@ -162,6 +162,7 @@ export interface SentGroupInvite {
 export interface InvitableUser {
   id: string;
   inAppName: string;
+  avatarUrl?: string | null;
 }
 
 export interface InvitableUsersSearchResponse {

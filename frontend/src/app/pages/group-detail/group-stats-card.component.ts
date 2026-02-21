@@ -1,6 +1,7 @@
 import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Deck } from '../../models/group.model';
+import { sanitizeSearchInput } from '../../core/utils/input-validation';
 
 type StatsCategory = 'colors' | 'decks' | 'players';
 
@@ -44,6 +45,6 @@ export class GroupStatsCardComponent implements OnDestroy {
 
   handleDeckSearchInput(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.statsDeckSearchChange.emit(input.value);
+    this.statsDeckSearchChange.emit(sanitizeSearchInput(input.value, 100));
   }
 }

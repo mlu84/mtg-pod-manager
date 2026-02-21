@@ -6,9 +6,9 @@ import { UsersApiService } from '../../core/services/users-api.service';
 import { UserProfile } from '../../models/user.model';
 import { formatLocalDate } from '../../core/utils/date-utils';
 import {
+  validateDisplayName,
   normalizeText,
   validateImageUploadFile,
-  validateRequiredText,
 } from '../../core/utils/input-validation';
 
 @Component({
@@ -95,7 +95,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   saveProfile(): void {
     const normalizedName = normalizeText(this.editName);
-    const nameError = validateRequiredText(normalizedName, 'Display name', {
+    const nameError = validateDisplayName(normalizedName, {
       minLength: 2,
       maxLength: 50,
     });

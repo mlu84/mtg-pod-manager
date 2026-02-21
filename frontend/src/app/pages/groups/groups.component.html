@@ -1,7 +1,12 @@
 <div class="groups-page">
   <header class="header">
     <div class="header__content container">
-      <h1><i class="fas fa-layer-group"></i> My Groups</h1>
+      <div class="header__left">
+        <a class="btn btn--outline btn--back-vertical" routerLink="/" aria-label="Back to home">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1><i class="fas fa-layer-group"></i> My Groups</h1>
+      </div>
       <div class="header__actions">
         @if (isSysAdmin()) {
           <button class="btn btn--outline btn--sysadmin" (click)="goToArchidektTest()" title="Archidekt API Test">
@@ -117,6 +122,7 @@
             [(ngModel)]="newGroupName"
             name="groupName"
             placeholder="e.g., Friday Night Magic"
+            maxlength="100"
             [disabled]="createLoading()"
           />
         </div>
@@ -146,6 +152,7 @@
             name="groupDescription"
             placeholder="Describe your group..."
             rows="3"
+            maxlength="500"
             [disabled]="createLoading()"
           ></textarea>
         </div>
@@ -201,6 +208,7 @@
             [(ngModel)]="inviteCode"
             name="inviteCode"
             placeholder="Enter invite code"
+            maxlength="191"
             [disabled]="joinLoading()"
           />
         </div>
@@ -253,6 +261,7 @@
           [(ngModel)]="searchQuery"
           name="searchQuery"
           placeholder="Search by group name"
+          maxlength="100"
         />
         <button type="submit" class="btn btn--primary" [disabled]="searchLoading()">
           @if (searchLoading()) { Searching... } @else { Search }

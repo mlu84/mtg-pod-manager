@@ -3,6 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import {
+  normalizeText,
+  validateDisplayName,
+  validateEmail,
+  validatePassword,
+} from '../../../core/utils/input-validation';
 
 @Component({
   selector: 'app-register',
@@ -25,18 +31,32 @@ export class RegisterComponent {
   onSubmit(): void {
     this.error.set(null);
 
-    if (!this.email || !this.inAppName || !this.password || !this.confirmPassword) {
+    const normalizedEmail = normalizeText(this.email).toLowerCase();
+    const normalizedInAppName = normalizeText(this.inAppName);
+
+    if (!normalizedEmail || !normalizedInAppName || !this.password || !this.confirmPassword) {
       this.error.set('Please fill in all fields');
       return;
     }
 
-    if (this.inAppName.length < 3 || this.inAppName.length > 20) {
-      this.error.set('Display name must be between 3 and 20 characters');
+    const emailError = validateEmail(normalizedEmail);
+    if (emailError) {
+      this.error.set(emailError);
       return;
     }
 
-    if (this.password.length < 8) {
-      this.error.set('Password must be at least 8 characters');
+    const displayNameError = validateDisplayName(normalizedInAppName, {
+      minLength: 3,
+      maxLength: 20,
+    });
+    if (displayNameError) {
+      this.error.set(displayNameError);
+      return;
+    }
+
+    const passwordError = validatePassword(this.password);
+    if (passwordError) {
+      this.error.set(passwordError);
       return;
     }
 
@@ -49,8 +69,8 @@ export class RegisterComponent {
 
     this.authService
       .register({
-        email: this.email,
-        inAppName: this.inAppName,
+        email: normalizedEmail,
+        inAppName: normalizedInAppName,
         password: this.password,
       })
       .subscribe({

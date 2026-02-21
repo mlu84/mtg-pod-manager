@@ -38,6 +38,8 @@
             [(ngModel)]="email"
             name="email"
             placeholder="your@email.com"
+            maxlength="191"
+            autocomplete="email"
             [disabled]="loading()"
           />
         </div>
@@ -52,7 +54,9 @@
             name="inAppName"
             placeholder="Your in-game name"
             [disabled]="loading()"
+            minlength="3"
             maxlength="20"
+            autocomplete="username"
           />
           <small class="text-muted">3-20 characters, must be unique</small>
         </div>
@@ -65,6 +69,9 @@
             class="form-control"
             [(ngModel)]="password"
             name="password"
+            minlength="8"
+            maxlength="50"
+            autocomplete="new-password"
             placeholder="••••••••"
             [disabled]="loading()"
           />
@@ -79,6 +86,9 @@
             class="form-control"
             [(ngModel)]="confirmPassword"
             name="confirmPassword"
+            minlength="8"
+            maxlength="50"
+            autocomplete="new-password"
             placeholder="••••••••"
             [disabled]="loading()"
           />

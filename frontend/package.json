@@ -2,6 +2,12 @@
   "name": "frontend",
   "version": "0.0.0",
   "scripts": {
+    "generate:version": "node scripts/generate-version.js",
+    "prestart": "npm run generate:version",
+    "prebuild": "npm run generate:version",
+    "prewatch": "npm run generate:version",
+    "pretest": "npm run generate:version",
+    "pretest:unit": "npm run generate:version",
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",

@@ -34,7 +34,9 @@ export class AuthController {
     @Query('token') token: string,
     @Res() res: Response,
   ): Promise<void> {
-    const redirectUrl = this.authService.getEmailVerificationRedirectUrl(token);
+    const redirectUrl = this.authService.getEmailVerificationRedirectUrl(
+      this.normalizeHexToken(token),
+    );
     res.redirect(redirectUrl);
   }
 
@@ -90,5 +92,16 @@ export class AuthController {
     }
 
     return req.ip || 'unknown';
+  }
+
+  private normalizeHexToken(token: string | null | undefined): string {
+    const normalized = token?.trim() ?? '';
+    if (!normalized) {
+      return '';
+    }
+    if (normalized.length < 32 || normalized.length > 128) {
+      return '';
+    }
+    return /^[a-f0-9]+$/i.test(normalized) ? normalized : '';
   }
 }

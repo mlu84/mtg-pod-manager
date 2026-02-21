@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { validatePassword } from '../../../core/utils/input-validation';
 
 @Component({
   selector: 'app-reset-password',
@@ -35,14 +36,19 @@ export class ResetPasswordComponent {
       this.error.set('Missing reset token. Please request a new password reset link.');
       return;
     }
+    if (!/^[a-f0-9]+$/i.test(this.token) || this.token.length < 32 || this.token.length > 128) {
+      this.error.set('Invalid reset token format. Please request a new password reset link.');
+      return;
+    }
 
     if (!this.password || !this.confirmPassword) {
       this.error.set('Please fill in all fields');
       return;
     }
 
-    if (this.password.length < 8) {
-      this.error.set('Password must be at least 8 characters');
+    const passwordError = validatePassword(this.password);
+    if (passwordError) {
+      this.error.set(passwordError);
       return;
     }
 

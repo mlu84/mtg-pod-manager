@@ -1,0 +1,66 @@
+<div class="home-page">
+  <section class="hero container">
+    <img
+      class="hero__logo"
+      src="assets/images/MTG_Pod_Manager_logo_cropped.svg"
+      alt="MTG Pod-Manager logo"
+    />
+    <div class="hero__identity">
+      <div class="hero__eyebrow-wrapper">
+        <p class="hero__eyebrow">Magic: The Gathering Pod Manager</p>
+        <p class="hero__version">V. {{ appVersion }}</p>
+      </div>
+    </div>
+    <h1>Track MTG games, decks, and standings across every format.</h1>
+    <p class="hero__lead">
+      MTG Pod-Manager helps your group run sessions better and more fun with deck selection, game
+      recording, ranking history, and season-ready statistics for Commander, Standard, Modern, and
+      other formats.
+    </p>
+
+    <div class="hero__actions">
+      @if (isAuthenticated()) {
+        <a class="btn btn--primary hero__cta" routerLink="/groups">Open Pod Manager</a>
+      } @else {
+        <a class="btn btn--primary hero__cta" routerLink="/login">Login</a>
+        <a class="btn btn--outline hero__cta" routerLink="/register">Register</a>
+      }
+    </div>
+  </section>
+
+  <section class="features container" aria-label="Core features">
+    <article class="feature-card card">
+      <h2>Organize Groups and Seasons</h2>
+      <p>Set up your group structure and run season-based standings with clear progression.</p>
+    </article>
+    <article class="feature-card card">
+      <h2>Play and Record</h2>
+      <p>Start live games, track outcomes, and save placements back into group history.</p>
+    </article>
+    <article class="feature-card card">
+      <h2>Rank and Analyze</h2>
+      <p>See standings, performance trends, and deck usage over time.</p>
+    </article>
+  </section>
+
+  <section class="seo-content container" aria-label="How MTG Pod-Manager works">
+    <h2>How MTG Pod-Manager helps your Magic playgroup</h2>
+    <div class="seo-content__grid">
+      <article class="seo-point seo-point--compact card">
+        <h3>Built for all MTG formats</h3>
+        <p>
+          Run Commander, Standard, Modern, Pioneer, Limited, and custom group formats in one
+          shared workflow.
+        </p>
+      </article>
+      <article class="seo-point seo-point--compact card">
+        <h3>Fast game recording flow</h3>
+        <p>Select players and decks, save placements, and keep your game history complete.</p>
+      </article>
+      <article class="seo-point seo-point--compact card">
+        <h3>Clear standings and trends</h3>
+        <p>Track rankings, season progress, and long-term deck performance in one place.</p>
+      </article>
+    </div>
+  </section>
+</div>

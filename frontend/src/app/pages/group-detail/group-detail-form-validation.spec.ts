@@ -7,6 +7,7 @@ import {
   validateGroupImageSelection,
   validateInviteEmailInput,
   validateInviteSearchQuery,
+  sanitizeDeckSearchTerm,
   validateSeasonDayInputs,
 } from './group-detail-form-validation';
 
@@ -46,11 +47,18 @@ describe('group-detail-form-validation', () => {
       { deckId: 'd1', rank: 1, playerName: 'Alice' },
       { deckId: 'd2', rank: 2, playerName: undefined },
     ]);
+
+    const invalidChars = validateGamePlacementsInput([
+      { deckId: 'd1', rank: 1, playerName: 'bad@name' },
+      { deckId: 'd2', rank: 2, playerName: '' },
+    ]);
+    expect(invalidChars.error).toBe('Player names contain unsupported characters');
   });
 
   it('validates invite inputs', () => {
     expect(validateInviteSearchQuery('   ').error).toBe('Please enter a user name');
-    expect(validateInviteSearchQuery('user').value).toBe('user');
+    expect(validateInviteSearchQuery("  Anna   O'Neill  ").value).toBe("Anna O'Neill");
+    expect(validateInviteSearchQuery('bad@input').error).toContain('Search may contain');
     expect(validateInviteEmailInput(' test@example.com ').value).toBe('test@example.com');
   });
 
@@ -72,6 +80,8 @@ describe('group-detail-form-validation', () => {
       ownerId: 'user-2',
       noChange: false,
     });
+
+    expect(sanitizeDeckSearchTerm('  hello   world  ')).toBe('hello world');
   });
 
   it('validates season day ranges and group image file', () => {

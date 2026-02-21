@@ -24,8 +24,9 @@
             class="form-control"
             placeholder="Search decks..."
             [value]="decksSearchTerm"
-            (input)="decksSearchChange.emit($any($event.target).value)"
+            (input)="handleDeckSearchInput($event)"
             autocomplete="off"
+            maxlength="100"
           />
           @if (decksSearchTerm) {
             <button class="decks-search__clear" (click)="decksSearchChange.emit('')">

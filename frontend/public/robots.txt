@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /groups
+Disallow: /archidekt-test
+Disallow: /sysadmin-users
+
+Sitemap: https://mtgpodmanager.com/sitemap.xml

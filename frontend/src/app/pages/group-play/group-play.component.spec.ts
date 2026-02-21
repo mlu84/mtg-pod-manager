@@ -1,7 +1,6 @@
 import '@angular/compiler';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { createEnvironmentInjector, EnvironmentInjector, runInInjectionContext } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupPlayComponent } from './group-play.component';
 import { AuthService } from '../../core/services/auth.service';
@@ -13,8 +12,7 @@ describe('GroupPlayComponent', () => {
   let component: GroupPlayComponent;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const parentInjector = null as unknown as EnvironmentInjector;
 
     const injector = createEnvironmentInjector(
       [
@@ -68,6 +66,40 @@ describe('GroupPlayComponent', () => {
 
     component.cyclePlayerCount();
     expect(component.playerCount()).toBe(3);
+  });
+
+  it('does not change player count while start roll is active', () => {
+    component.playerCount.set(4);
+    component.startingRoll.set(true);
+
+    component.cyclePlayerCount();
+    expect(component.playerCount()).toBe(4);
+
+    component.setPlayerCount(6);
+    expect(component.playerCount()).toBe(4);
+  });
+
+  it('does not change player count while game is active', () => {
+    component.playerCount.set(4);
+    component.gameStarted.set(true);
+
+    component.cyclePlayerCount();
+    expect(component.playerCount()).toBe(4);
+
+    component.setPlayerCount(6);
+    expect(component.playerCount()).toBe(4);
+  });
+
+  it('unlocks player count changes after reset game', () => {
+    component.playerCount.set(4);
+    component.gameStarted.set(true);
+
+    component.cyclePlayerCount();
+    expect(component.playerCount()).toBe(4);
+
+    component.resetGame();
+    component.cyclePlayerCount();
+    expect(component.playerCount()).toBe(5);
   });
 
   it('toggleTopHalfMirror toggles the mirror state', () => {

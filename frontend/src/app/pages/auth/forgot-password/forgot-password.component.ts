@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { normalizeText, validateEmail } from '../../../core/utils/input-validation';
 
 @Component({
   selector: 'app-forgot-password',
@@ -20,8 +21,10 @@ export class ForgotPasswordComponent {
   constructor(private authService: AuthService) {}
 
   onSubmit(): void {
-    if (!this.email) {
-      this.error.set('Please enter your email address');
+    const normalizedEmail = normalizeText(this.email).toLowerCase();
+    const emailError = validateEmail(normalizedEmail);
+    if (emailError) {
+      this.error.set(emailError);
       return;
     }
 
@@ -29,7 +32,7 @@ export class ForgotPasswordComponent {
     this.error.set(null);
     this.success.set(null);
 
-    this.authService.forgotPassword({ email: this.email }).subscribe({
+    this.authService.forgotPassword({ email: normalizedEmail }).subscribe({
       next: (response) => {
         this.loading.set(false);
         this.success.set(response.message);

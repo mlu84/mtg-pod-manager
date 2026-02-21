@@ -1,9 +1,11 @@
 import {
   normalizeText,
+  sanitizeSearchInput,
   validateEmail,
   validateImageUploadFile,
   validateIntegerRange,
   validateOptionalText,
+  validateOptionalPlayerName,
 } from '../../core/utils/input-validation';
 
 type DeckFormInput = {
@@ -32,6 +34,10 @@ type ValidatedResult<T> = {
   error?: string;
 };
 
+const DECK_NAME_PATTERN = /^[\p{L}\p{N}\s._'&()#+:\/-]+$/u;
+const GROUP_NAME_PATTERN = /^[\p{L}\p{N}\s._'&()#+:-]+$/u;
+const DESCRIPTION_CONTROL_CHAR_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
+
 export function validateDeckFormInput(input: DeckFormInput): ValidatedResult<{
   name: string;
   colors: string;
@@ -49,6 +55,12 @@ export function validateDeckFormInput(input: DeckFormInput): ValidatedResult<{
   if (name.length > 100) {
     return { error: 'Name must be at most 100 characters' };
   }
+  if (!DECK_NAME_PATTERN.test(name)) {
+    return {
+      error:
+        'Name contains unsupported characters (allowed: letters, numbers, spaces, punctuation)',
+    };
+  }
   if (!input.allowedColors.includes(colors)) {
     return { error: 'Please select a valid color combination' };
   }
@@ -57,6 +69,9 @@ export function validateDeckFormInput(input: DeckFormInput): ValidatedResult<{
   }
   if (archidektUrl.length > 255) {
     return { error: 'Archidekt URL is too long' };
+  }
+  if (archidektUrl && /\s/u.test(archidektUrl)) {
+    return { error: 'Archidekt URL must not contain spaces' };
   }
 
   return {
@@ -95,8 +110,11 @@ export function validateGamePlacementsInput(
     return { error: 'Please select valid ranks between 1 and 6' };
   }
 
-  if (normalized.some((placement) => placement.playerName.length > 50)) {
-    return { error: 'Player names must be at most 50 characters' };
+  for (const placement of normalized) {
+    const playerNameError = validateOptionalPlayerName(placement.playerName);
+    if (playerNameError) {
+      return { error: playerNameError };
+    }
   }
 
   return {
@@ -109,12 +127,18 @@ export function validateGamePlacementsInput(
 }
 
 export function validateInviteSearchQuery(query: string): ValidatedResult<string> {
-  const normalized = normalizeText(query);
+  const normalized = normalizeText(query).replace(/\s+/g, ' ');
   if (!normalized) {
     return { error: 'Please enter a user name' };
   }
   if (normalized.length > 100) {
     return { error: 'Search term must be at most 100 characters' };
+  }
+  if (!/^[\p{L}\p{N}\s._'-]+$/u.test(normalized)) {
+    return {
+      error:
+        'Search may contain letters, numbers, spaces, apostrophes, dots, underscores, and hyphens only',
+    };
   }
   return { value: normalized };
 }
@@ -141,11 +165,20 @@ export function validateGroupEditInput(
   if (normalizedName.length > 100) {
     return { error: 'Name must be at most 100 characters' };
   }
+  if (!GROUP_NAME_PATTERN.test(normalizedName)) {
+    return {
+      error:
+        'Name contains unsupported characters (allowed: letters, numbers, spaces, punctuation)',
+    };
+  }
   const descriptionError = validateOptionalText(normalizedDescription, 'Description', {
     maxLength: 500,
   });
   if (descriptionError) {
     return { error: descriptionError };
+  }
+  if (DESCRIPTION_CONTROL_CHAR_PATTERN.test(normalizedDescription)) {
+    return { error: 'Description contains unsupported control characters' };
   }
 
   return {
@@ -170,6 +203,10 @@ export function validateDeckOwnerAssignmentInput(
       noChange: normalizedOwnerId === input.currentOwnerId,
     },
   };
+}
+
+export function sanitizeDeckSearchTerm(value: string): string {
+  return sanitizeSearchInput(value, 100);
 }
 
 export function validateSeasonDayInputs(
