@@ -17,6 +17,8 @@
         class="form-control"
         [(ngModel)]="searchQuery"
         placeholder="Search groups"
+        maxlength="100"
+        autocomplete="off"
         (keyup.enter)="search()"
       />
       <button class="btn btn--primary" (click)="search()">Search</button>
@@ -135,6 +137,9 @@
           type="text"
           class="form-control"
           [(ngModel)]="renameValue"
+          minlength="2"
+          maxlength="50"
+          autocomplete="off"
           [disabled]="renameLoading()"
         />
       </div>

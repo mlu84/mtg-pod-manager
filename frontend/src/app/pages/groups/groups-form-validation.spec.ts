@@ -17,6 +17,8 @@ describe('groups-form-validation', () => {
     expect(validateCreateGroupFormInput('Alpha', '', '').error).toBe('Name and format are required');
     expect(validateCreateGroupFormInput('A', 'Commander', 'x'.repeat(501)).error)
       .toBe('Description must be at most 500 characters');
+    expect(validateCreateGroupFormInput('Alpha<>', 'Commander', '').error)
+      .toContain('unsupported characters');
   });
 
   it('validates group search input', () => {
@@ -24,5 +26,7 @@ describe('groups-form-validation', () => {
     expect(validateGroupSearchInput('').error).toBe('Please enter a search term');
     expect(validateGroupSearchInput('x'.repeat(101)).error)
       .toBe('Search term must be at most 100 characters');
+    expect(validateGroupSearchInput('test@').error)
+      .toBe('Search term contains unsupported characters');
   });
 });

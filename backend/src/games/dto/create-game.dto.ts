@@ -11,6 +11,7 @@ import {
   ArrayMaxSize,
   IsDateString,
   MaxLength,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TrimString } from '../../common/transformers/string.transformers';
@@ -32,6 +33,10 @@ export class GamePlacementDto {
   @IsOptional()
   @TrimString()
   @MaxLength(50)
+  @Matches(/^[\p{L}\p{N}\s._'-]*$/u, {
+    message:
+      'Player name may contain letters, numbers, spaces, apostrophes, dots, underscores, and hyphens only',
+  })
   playerName?: string;
 }
 

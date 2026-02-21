@@ -1,8 +1,12 @@
 import {
   normalizeText,
+  validateSearchText,
   validateOptionalText,
   validateRequiredText,
 } from '../../core/utils/input-validation';
+
+const GROUP_NAME_PATTERN = /^[\p{L}\p{N}\s._'&()#+:-]+$/u;
+const GROUP_FORMAT_PATTERN = /^[\p{L}\p{N}\s._'&()#+:\/-]+$/u;
 
 export interface CreateGroupFormValue {
   name: string;
@@ -24,8 +28,20 @@ export function validateCreateGroupFormInput(
   }
   const nameError = validateRequiredText(name, 'Name', { maxLength: 100 });
   if (nameError) return { error: nameError };
+  if (!GROUP_NAME_PATTERN.test(name)) {
+    return {
+      error:
+        'Name contains unsupported characters (allowed: letters, numbers, spaces, punctuation)',
+    };
+  }
   const formatError = validateRequiredText(format, 'Format', { maxLength: 50 });
   if (formatError) return { error: formatError };
+  if (!GROUP_FORMAT_PATTERN.test(format)) {
+    return {
+      error:
+        'Format contains unsupported characters (allowed: letters, numbers, spaces, punctuation)',
+    };
+  }
 
   const descriptionError = validateOptionalText(description, 'Description', { maxLength: 500 });
   if (descriptionError) {
@@ -36,14 +52,13 @@ export function validateCreateGroupFormInput(
 }
 
 export function validateGroupSearchInput(queryRaw: string): { value?: string; error?: string } {
-  const query = normalizeText(queryRaw);
-  if (!query) {
-    return { error: 'Please enter a search term' };
-  }
-
-  const queryError = validateRequiredText(query, 'Search term', { maxLength: 100 });
+  const query = normalizeText(queryRaw).replace(/\s+/g, ' ');
+  const queryError = validateSearchText(query, 'Search term');
   if (queryError) {
-    if (queryError === 'Search term must be at most 100 characters') {
+    if (
+      queryError === 'Search term must be at most 100 characters' ||
+      queryError === 'Search term contains unsupported characters'
+    ) {
       return { error: queryError };
     }
     return { error: 'Please enter a search term' };

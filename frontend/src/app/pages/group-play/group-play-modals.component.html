@@ -16,6 +16,8 @@
           [value]="activeSlotIndex !== null ? slots[activeSlotIndex]?.playerName : ''"
           (input)="playerNameChange.emit($any($event.target).value)"
           placeholder="Enter player name"
+          maxlength="50"
+          autocomplete="off"
         />
       </div>
 
@@ -27,6 +29,8 @@
           [value]="deckSearchTerm"
           (input)="searchTermChange.emit($any($event.target).value)"
           placeholder="Search by deck name"
+          maxlength="100"
+          autocomplete="off"
         />
       </div>
 

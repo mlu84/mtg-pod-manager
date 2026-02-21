@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import {
+  normalizeText,
+  validateEmail,
+  validatePassword,
+} from '../../../core/utils/input-validation';
 
 @Component({
   selector: 'app-login',
@@ -30,15 +35,22 @@ export class LoginComponent {
   }
 
   onSubmit(): void {
-    if (!this.email || !this.password) {
-      this.error.set('Please fill in all fields');
+    const normalizedEmail = normalizeText(this.email).toLowerCase();
+    const emailError = validateEmail(normalizedEmail);
+    if (emailError) {
+      this.error.set(emailError);
+      return;
+    }
+    const passwordError = validatePassword(this.password);
+    if (passwordError) {
+      this.error.set(passwordError);
       return;
     }
 
     this.loading.set(true);
     this.error.set(null);
 
-    this.authService.login({ email: this.email, password: this.password }).subscribe({
+    this.authService.login({ email: normalizedEmail, password: this.password }).subscribe({
       next: () => {
         this.router.navigate(['/groups']);
       },

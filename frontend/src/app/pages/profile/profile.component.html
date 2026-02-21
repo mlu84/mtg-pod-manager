@@ -81,6 +81,9 @@
                   id="editName"
                   class="form-control"
                   [(ngModel)]="editName"
+                  minlength="2"
+                  maxlength="50"
+                  autocomplete="nickname"
                   [disabled]="editLoading()"
                   placeholder="Your display name"
                 />

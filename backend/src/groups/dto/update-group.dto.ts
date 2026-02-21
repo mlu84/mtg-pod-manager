@@ -1,6 +1,7 @@
 import {
   IsString,
   MaxLength,
+  Matches,
   IsOptional,
   IsInt,
   IsIn,
@@ -15,12 +16,19 @@ export class UpdateGroupDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @Matches(/^[\p{L}\p{N}\s._'&()#+:-]+$/u, {
+    message:
+      'Group name may contain letters, numbers, spaces, apostrophes, dots, underscores, ampersands, parentheses, plus, hash, colon, and hyphens only',
+  })
   @TrimString()
   name?: string;
 
   @IsString()
   @IsOptional()
   @MaxLength(500)
+  @Matches(/^(?!.*[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]).*$/u, {
+    message: 'Description contains unsupported control characters',
+  })
   @TrimString()
   description?: string;
 
@@ -32,6 +40,10 @@ export class UpdateGroupDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @Matches(/^[\p{L}\p{N}\s._'&()#+:-]*$/u, {
+    message:
+      'Season name may contain letters, numbers, spaces, apostrophes, dots, underscores, ampersands, parentheses, plus, hash, colon, and hyphens only',
+  })
   @TrimString()
   activeSeasonName?: string | null;
 
@@ -46,6 +58,10 @@ export class UpdateGroupDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @Matches(/^[\p{L}\p{N}\s._'&()#+:-]*$/u, {
+    message:
+      'Season name may contain letters, numbers, spaces, apostrophes, dots, underscores, ampersands, parentheses, plus, hash, colon, and hyphens only',
+  })
   @TrimString()
   nextSeasonName?: string | null;
 

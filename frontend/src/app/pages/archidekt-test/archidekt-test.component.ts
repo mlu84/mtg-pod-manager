@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ErrorReportingService } from '../../core/services/error-reporting.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { formatLocalDate } from '../../core/utils/date-utils';
+import { normalizeText } from '../../core/utils/input-validation';
 
 interface ArchidektCardEntry {
   categories?: string[];
@@ -112,7 +113,22 @@ export class ArchidektTestComponent {
   }
 
   fetchDeck(): void {
-    const deckId = this.extractDeckId(this.deckUrl);
+    const normalizedInput = normalizeText(this.deckUrl);
+    if (!normalizedInput) {
+      this.error.set('Please enter a deck URL or ID.');
+      return;
+    }
+    if (normalizedInput.length > 255) {
+      this.error.set('Deck URL/ID is too long.');
+      return;
+    }
+    if (!/^(https?:\/\/\S+|\d+|archidekt\.com\/decks\/\d+\/?)$/i.test(normalizedInput)) {
+      this.error.set('Invalid deck URL or ID. Please enter a valid Archidekt deck URL.');
+      return;
+    }
+
+    this.deckUrl = normalizedInput;
+    const deckId = this.extractDeckId(normalizedInput);
     if (!deckId) {
       this.error.set('Invalid deck URL or ID. Please enter a valid Archidekt deck URL.');
       return;

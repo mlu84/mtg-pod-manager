@@ -33,11 +33,13 @@
           type="email"
           id="email"
           class="form-control"
-          [(ngModel)]="email"
-          name="email"
-          placeholder="your@email.com"
-          [disabled]="loading()"
-        />
+            [(ngModel)]="email"
+            name="email"
+            placeholder="your@email.com"
+            maxlength="191"
+            autocomplete="email"
+            [disabled]="loading()"
+          />
       </div>
 
       <div class="form-group">
@@ -48,6 +50,9 @@
           class="form-control"
           [(ngModel)]="password"
           name="password"
+          minlength="8"
+          maxlength="50"
+          autocomplete="current-password"
           placeholder="••••••••"
           [disabled]="loading()"
         />

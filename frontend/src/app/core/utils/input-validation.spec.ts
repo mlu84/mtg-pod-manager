@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+  validateDisplayName,
   normalizeText,
   validateEmail,
   validateImageUploadFile,
   validateIntegerRange,
   validateInviteCode,
+  validateOptionalPlayerName,
   validateOptionalText,
+  validatePassword,
   validateRequiredText,
+  sanitizeSearchInput,
+  sanitizeSingleLineInput,
+  validateSearchText,
 } from './input-validation';
 
 describe('input-validation utils', () => {
@@ -43,6 +49,19 @@ describe('input-validation utils', () => {
     expect(validateInviteCode('abc123')).toBeNull();
   });
 
+  it('validates display names, passwords, and search text', () => {
+    expect(validateDisplayName('')).toBe('Display name is required');
+    expect(validateDisplayName('ab')).toBeNull();
+    expect(validateDisplayName('bad@name')).toBe('Display name contains unsupported characters');
+
+    expect(validatePassword('short')).toBe('Password must be at least 8 characters');
+    expect(validatePassword('validpassword')).toBeNull();
+
+    expect(validateSearchText('')).toBe('Search term is required');
+    expect(validateSearchText('ok name')).toBeNull();
+    expect(validateSearchText('bad@query')).toBe('Search term contains unsupported characters');
+  });
+
   it('validates image file constraints', () => {
     expect(validateImageUploadFile(null)).toBe('Please select an image first.');
     const invalidType = new File(['x'], 'invalid.gif', { type: 'image/gif' });
@@ -57,6 +76,20 @@ describe('input-validation utils', () => {
     expect(validateIntegerRange(1.5, 'Value', 0, 10)).toBe('Value must be a whole number');
     expect(validateIntegerRange(11, 'Value', 0, 10)).toBe('Value must be between 0 and 10');
     expect(validateIntegerRange(4, 'Value', 0, 10)).toBeNull();
+  });
+
+  it('sanitizes single-line and search inputs', () => {
+    expect(sanitizeSingleLineInput('abc\u0000def', 10)).toBe('abcdef');
+    expect(sanitizeSingleLineInput('123456', 4)).toBe('1234');
+    expect(sanitizeSearchInput("  Hello   O'Neill  ")).toBe("Hello O'Neill");
+  });
+
+  it('validates optional player names', () => {
+    expect(validateOptionalPlayerName('')).toBeNull();
+    expect(validateOptionalPlayerName('Alice')).toBeNull();
+    expect(validateOptionalPlayerName('bad@name')).toBe(
+      'Player names contain unsupported characters',
+    );
   });
 });
 

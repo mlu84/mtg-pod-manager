@@ -58,6 +58,7 @@
                   [placeholder]="placement.deckId ? '' : 'Search deck...'"
                   [disabled]="gameLoading || prefilledGame"
                   [name]="'deckSearch' + i"
+                  maxlength="100"
                   autocomplete="off"
                 />
                 @if (placement.deckId && !prefilledGame) {
@@ -95,6 +96,7 @@
                 [(ngModel)]="placement.playerName"
                 [name]="'player' + i"
                 placeholder="Guest name"
+                maxlength="50"
                 [disabled]="gameLoading"
                 list="memberNamesList"
                 autocomplete="off"

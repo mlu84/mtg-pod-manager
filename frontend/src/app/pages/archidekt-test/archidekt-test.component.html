@@ -20,6 +20,8 @@
           class="form-control"
           [(ngModel)]="deckUrl"
           placeholder="https://archidekt.com/decks/12784239/ or just the ID"
+          maxlength="255"
+          autocomplete="off"
           [disabled]="loading()"
         />
         <button class="btn btn--primary" (click)="fetchDeck()" [disabled]="loading() || !deckUrl">

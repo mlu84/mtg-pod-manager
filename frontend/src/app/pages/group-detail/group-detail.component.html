@@ -284,6 +284,8 @@
             class="form-control"
             [(ngModel)]="editGroupName"
             name="editGroupName"
+            maxlength="100"
+            autocomplete="off"
             [disabled]="editGroupLoading()"
           />
         </div>
@@ -296,6 +298,8 @@
             [(ngModel)]="editGroupDescription"
             name="editGroupDescription"
             rows="3"
+            maxlength="500"
+            autocomplete="off"
             [disabled]="editGroupLoading()"
           ></textarea>
         </div>
@@ -402,6 +406,8 @@
             [(ngModel)]="inviteUserSearchQuery"
             name="inviteUserSearchQuery"
             placeholder="Search by in-app name"
+            maxlength="100"
+            autocomplete="off"
             [disabled]="inviteUserSearchLoading()"
           />
           <button type="submit" class="btn btn--primary" [disabled]="inviteUserSearchLoading()">
@@ -416,7 +422,20 @@
             @for (user of inviteUserSearchResults(); track user.id) {
               <div class="application-item">
                 <div class="application-item__info">
-                  <span class="application-item__name">{{ user.inAppName }}</span>
+                  <span class="invite-result__identity">
+                    @if (user.avatarUrl) {
+                      <img
+                        class="invite-result__avatar"
+                        [src]="user.avatarUrl"
+                        [alt]="user.inAppName"
+                      />
+                    } @else {
+                      <span class="invite-result__avatar invite-result__avatar--fallback" aria-hidden="true">
+                        <i class="fas fa-user"></i>
+                      </span>
+                    }
+                    <span class="application-item__name">{{ user.inAppName }}</span>
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -449,6 +468,8 @@
               [(ngModel)]="inviteEmailAddress"
               name="inviteEmailAddress"
               placeholder="name@example.com"
+              maxlength="191"
+              autocomplete="email"
               [disabled]="inviteEmailLoading()"
             />
           </div>

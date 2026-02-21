@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Deck } from '../../models/group.model';
+import { sanitizeSearchInput } from '../../core/utils/input-validation';
 
 @Component({
   selector: 'app-group-decks-card',
@@ -31,4 +32,9 @@ export class GroupDecksCardComponent {
   @Output() decksSearchChange = new EventEmitter<string>();
   @Output() deckSortModeChange = new EventEmitter<'name' | 'type' | 'colors' | 'players'>();
   @Output() decksPageChange = new EventEmitter<number>();
+
+  handleDeckSearchInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.decksSearchChange.emit(sanitizeSearchInput(input.value, 100));
+  }
 }

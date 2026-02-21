@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
+import { sanitizeSearchInput, sanitizeSingleLineInput } from '../../core/utils/input-validation';
 import { Deck, GroupDetail } from '../../models/group.model';
 import { GroupPlayModalsComponent } from './group-play-modals.component';
 import { GroupPlayPanelComponent } from './group-play-panel.component';
@@ -374,9 +375,14 @@ export class GroupPlayComponent {
   setPlayerName(name: string): void {
     const index = this.activeSlotIndex();
     if (index === null) return;
+    const normalizedName = sanitizeSingleLineInput(name, 50);
     const next = [...this.slots()];
-    next[index] = { ...next[index], playerName: name };
+    next[index] = { ...next[index], playerName: normalizedName };
     this.slots.set(next);
+  }
+
+  setDeckSearchTerm(term: string): void {
+    this.deckSearchTerm.set(sanitizeSearchInput(term, 100));
   }
 
   rollD20(): void {

@@ -21,8 +21,8 @@ function loadConfig(workspaceRoot) {
     major: 0,
     phase: 3,
     baseRef: 'origin/main',
-    padPhase: 2,
-    padCommit: 2,
+    padPhase: 1,
+    padCommit: 1,
     commitOffset: 0,
   };
 
@@ -109,8 +109,8 @@ function main() {
   const major = Math.max(0, toInt(config.major, 0));
   const phase = Math.max(0, toInt(config.phase, 3));
   const commit = computeCommitCount(repoRoot, mergeBase, config.commitOffset);
-  const phaseWidth = Math.max(1, toInt(config.padPhase, 2));
-  const commitWidth = Math.max(1, toInt(config.padCommit, 2));
+  const phaseWidth = Math.max(1, toInt(config.padPhase, 1));
+  const commitWidth = Math.max(1, toInt(config.padCommit, 1));
   const formatted = `${major}.${String(phase).padStart(phaseWidth, '0')}.${String(commit).padStart(
     commitWidth,
     '0',

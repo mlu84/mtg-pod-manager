@@ -76,6 +76,7 @@ import {
   validateGroupImageSelection,
   validateInviteEmailInput,
   validateInviteSearchQuery,
+  sanitizeDeckSearchTerm,
   validateSeasonDayInputs,
 } from './group-detail-form-validation';
 import { resolveApiErrorMessage } from './group-detail-error.util';
@@ -369,7 +370,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   onDeckSearchInput(slotIndex: number, event: Event): void {
     if (this.prefilledGame()) return;
     const input = event.target as HTMLInputElement;
-    this.deckSearchTerms[slotIndex] = input.value;
+    this.deckSearchTerms[slotIndex] = sanitizeDeckSearchTerm(input.value);
     // Clear selection when user starts typing
     if (this.gamePlacements[slotIndex].deckId) {
       this.gamePlacements[slotIndex].deckId = '';
@@ -562,7 +563,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   setDecksSearch(term: string): void {
-    this.decksSearchTerm.set(term);
+    this.decksSearchTerm.set(sanitizeDeckSearchTerm(term));
     this.decksPage.set(1); // Reset to first page when search changes
   }
 
@@ -1978,7 +1979,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   setStatsDeckSearch(term: string): void {
-    this.statsDeckSearch.set(term);
+    this.statsDeckSearch.set(sanitizeDeckSearchTerm(term));
     const filtered = this.filteredStatsDecks();
     if (filtered.length > 0) {
       const selected = this.statsDeckId();
@@ -1993,7 +1994,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.statsDeckId()) {
       this.statsDeckId.set(null);
     }
-    this.statsDeckSearch.set(value);
+    this.statsDeckSearch.set(sanitizeDeckSearchTerm(value));
     this.statsDeckDropdownOpen.set(true);
   }
 

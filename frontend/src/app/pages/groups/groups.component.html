@@ -122,6 +122,7 @@
             [(ngModel)]="newGroupName"
             name="groupName"
             placeholder="e.g., Friday Night Magic"
+            maxlength="100"
             [disabled]="createLoading()"
           />
         </div>
@@ -151,6 +152,7 @@
             name="groupDescription"
             placeholder="Describe your group..."
             rows="3"
+            maxlength="500"
             [disabled]="createLoading()"
           ></textarea>
         </div>
@@ -206,6 +208,7 @@
             [(ngModel)]="inviteCode"
             name="inviteCode"
             placeholder="Enter invite code"
+            maxlength="191"
             [disabled]="joinLoading()"
           />
         </div>
@@ -258,6 +261,7 @@
           [(ngModel)]="searchQuery"
           name="searchQuery"
           placeholder="Search by group name"
+          maxlength="100"
         />
         <button type="submit" class="btn btn--primary" [disabled]="searchLoading()">
           @if (searchLoading()) { Searching... } @else { Search }

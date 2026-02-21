@@ -14,9 +14,9 @@ export interface AppVersionInfo {
 export const APP_VERSION: AppVersionInfo = {
   "major": 0,
   "phase": 3,
-  "commit": 2,
-  "formatted": "0.03.02",
-  "generatedAt": "2026-02-20T20:05:34.467Z",
+  "commit": 4,
+  "formatted": "0.3.4",
+  "generatedAt": "2026-02-21T01:38:00.000Z",
   "mergeBase": "a0f36a30e15772ebbfb96bf3fd2288239fd022c7",
   "baseRef": "origin/main"
 } as const;

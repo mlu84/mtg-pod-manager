@@ -196,6 +196,7 @@ export class GamesService {
 
   async findAllInGroup(groupId: string, userId: string, limit = 20) {
     await this.membershipService.getMembershipOrThrow(userId, groupId);
+    const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
 
     const games = await this.prisma.game.findMany({
       where: { groupId },
@@ -223,7 +224,7 @@ export class GamesService {
       orderBy: {
         playedAt: 'desc',
       },
-      take: limit,
+      take: normalizedLimit,
     });
 
     return games.map((game) => this.formatGameResponse(game));
