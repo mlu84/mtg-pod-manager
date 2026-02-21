@@ -32,6 +32,8 @@ describe('App', () => {
               metaRobots: 'index,follow',
             },
           },
+          { path: 'contact', component: TestPageComponent },
+          { path: 'news', component: TestPageComponent },
           { path: 'groups/:id/play', component: TestPageComponent },
         ]),
         {
@@ -61,6 +63,7 @@ describe('App', () => {
     expect(links).toContain('Profile');
     expect(links).toContain('Legal');
     expect(links).toContain('Contact');
+    expect(links).toContain('News');
   });
 
   it('should hide profile action for guests', async () => {

@@ -68,6 +68,7 @@ import {
 import Chart from 'chart.js/auto';
 import { ChartConfiguration } from 'chart.js';
 import { formatLocalDate } from '../../core/utils/date-utils';
+import { isSmartphoneWidth } from '../../core/config/viewport-breakpoints';
 import {
   validateDeckFormInput,
   validateDeckOwnerAssignmentInput,
@@ -272,6 +273,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   statsDeckSearch = signal('');
   statsDeckDropdownOpen = signal(false);
   private statsDeckDropdownCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private statsCollapseInitialized = false;
 
   // Member to remove (for confirmation)
   memberToRemove: { userId: string; user: { inAppName: string } } | null = null;
@@ -681,7 +683,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     const height = window.visualViewport?.height ?? window.innerHeight;
     this.viewportWidth.set(Math.round(width));
     this.viewportHeight.set(Math.round(height));
-    this.isSmartphoneViewport.set(width < 768);
+    this.isSmartphoneViewport.set(isSmartphoneWidth(width));
   }
 
   private updateScrollTopVisibility(): void {
@@ -710,6 +712,12 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.games.set(games);
       this.events.set(events);
+
+      if (!this.statsCollapseInitialized) {
+        const hasInitialStatsData = group.decks.length > 0 && games.length > 0;
+        this.statsCollapsed.set(!hasInitialStatsData);
+        this.statsCollapseInitialized = true;
+      }
 
       if (group.userRole === 'ADMIN') {
         this.loadGroupApplications();
@@ -955,14 +963,6 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Game Modal
   openPlayGame(): void {
-    if (this.isSmartphoneViewport()) {
-      this.showAlert(
-        'Display too small',
-        'New Game is not available on smartphones. Please use Record Game instead.',
-        'info'
-      );
-      return;
-    }
     if (!this.canStartPlayGame()) return;
     this.router.navigate(['/groups', this.groupId, 'play']);
   }
@@ -971,10 +971,18 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isEmailVerified()) return false;
     if (!this.isAdmin()) return false;
     if (this.isSeasonPaused()) return false;
-    if (this.isSmartphoneViewport()) return false;
-    const decks = this.group()?.decks || [];
-    const activeDecks = decks.filter((deck) => deck.isActive);
-    return activeDecks.length >= 2;
+    return this.activeDecks().length >= 2;
+  }
+
+  canRecordGame(): boolean {
+    if (!this.isEmailVerified()) return false;
+    if (!this.isAdmin()) return false;
+    if (this.isSeasonPaused()) return false;
+    return this.activeDecks().length >= 2;
+  }
+
+  showActionsCard(): boolean {
+    return this.canStartPlayGame() || this.canRecordGame();
   }
 
   playGameDisabledReason(): string {
@@ -991,12 +999,28 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       return 'Season is paused. Recording games is disabled.';
     }
-    if (this.isSmartphoneViewport()) {
-      return 'Display too small for New Game. Please use Record Game.';
-    }
     return this.canStartPlayGame()
       ? 'Start a new live game'
       : 'Add at least two active decks to start a live game';
+  }
+
+  recordGameDisabledReason(): string {
+    if (!this.isEmailVerified()) {
+      return 'Verify your email to record a game';
+    }
+    if (!this.isAdmin()) {
+      return 'Only group admins can record games';
+    }
+    if (this.isSeasonPaused()) {
+      const pauseUntil = this.group()?.seasonPauseUntil;
+      if (pauseUntil) {
+        return `Season is paused until ${this.formatDate(pauseUntil)}.`;
+      }
+      return 'Season is paused. Recording games is disabled.';
+    }
+    return this.canRecordGame()
+      ? 'Record a game manually'
+      : 'Add at least two active decks to record a game';
   }
 
   private openRecordGameFromDraft(): boolean {
@@ -1042,6 +1066,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openGameModal(): void {
+    if (!this.canRecordGame()) return;
+
     // Initialize with 2 slots (minimum for a game)
     this.gamePlacements = [
       { deckId: '', rank: 1, playerName: '' },

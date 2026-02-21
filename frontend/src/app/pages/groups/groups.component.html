@@ -7,21 +7,57 @@
         </a>
         <h1><i class="fas fa-layer-group"></i> My Groups</h1>
       </div>
-      <div class="header__actions">
-        @if (isSysAdmin()) {
+      @if (isSysAdmin()) {
+        <div class="header__actions">
           <button class="btn btn--outline btn--sysadmin" (click)="goToArchidektTest()" title="Archidekt API Test">
             <i class="fas fa-flask"></i>
           </button>
           <button class="btn btn--outline btn--sysadmin" (click)="goToSysadminUsers()" title="Sysadmin Users">
             <i class="fas fa-users-cog"></i>
           </button>
-        }
-        <button class="btn btn--outline" (click)="logout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-      </div>
+        </div>
+      }
+      <button
+        class="btn btn--outline header__burger"
+        type="button"
+        aria-label="Open mobile menu"
+        title="Menu"
+        (click)="toggleMobileMenu()"
+      >
+        <i class="fas fa-bars"></i>
+      </button>
     </div>
   </header>
+
+  @if (showMobileMenu()) {
+    <div class="mobile-menu-overlay" (click)="closeMobileMenu()">
+      <nav class="mobile-menu card" (click)="$event.stopPropagation()">
+        <div class="mobile-menu__header">
+          <h2>Menu</h2>
+          <button class="mobile-menu__close" type="button" (click)="closeMobileMenu()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="mobile-menu__list">
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="openProfileModal()">
+            <i class="fas fa-user"></i> Profile
+          </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/legal')">
+            <i class="fas fa-scale-balanced"></i> Legal
+          </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/contact')">
+            <i class="fas fa-envelope"></i> Contact
+          </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/news')">
+            <i class="fas fa-bullhorn"></i> News
+          </button>
+          <button type="button" class="btn btn--danger mobile-menu__item" (click)="logoutFromMobileMenu()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </nav>
+    </div>
+  }
 
   @if (!isEmailVerified()) {
     <div class="container">
@@ -51,17 +87,14 @@
             <i class="fas fa-plus"></i> Create Group
           </button>
         }
-        <button class="btn btn--secondary" (click)="openJoinModal()">
-          <i class="fas fa-door-open"></i> Join Group
-        </button>
-        <button class="btn btn--secondary btn--search" (click)="openSearchModal()">
-          <i class="fas fa-search"></i> Search Groups
-        </button>
         <button class="btn btn--primary btn--search" (click)="openRequestsModal()">
           <i class="fas fa-inbox"></i> Group Requests
           @if (requestsBadge() > 0) {
             <span class="btn-badge">{{ requestsBadge() }}</span>
           }
+        </button>
+        <button class="btn btn--secondary" (click)="openJoinModal()">
+          <i class="fas fa-door-open"></i> Join Group
         </button>
       </div>
 
@@ -87,6 +120,8 @@
                 <span class="group-card__format">{{ group.format }}</span>
                 @if (group.role === 'ADMIN') {
                   <span class="group-card__badge">Admin</span>
+                } @else {
+                  <span class="group-card__badge">Member</span>
                 }
               </div>
             </div>
@@ -235,91 +270,83 @@
           </button>
         </div>
       </form>
-    </div>
-  </div>
-}
 
-<!-- Search Groups Modal -->
-@if (showSearchModal()) {
-  <div class="modal-overlay" (click)="closeSearchModal()">
-    <div class="modal modal--wide card" (click)="$event.stopPropagation()">
-      <div class="modal__header">
-        <h2>Search Groups</h2>
-        <button class="modal__close" (click)="closeSearchModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+      <div class="join-search">
+        <h3>Search Groups</h3>
 
-      @if (searchError()) {
-        <div class="alert alert--danger">{{ searchError() }}</div>
-      }
+        @if (searchError()) {
+          <div class="alert alert--danger">{{ searchError() }}</div>
+        }
 
-      <form class="form-group search-form" (ngSubmit)="searchGroups(1)">
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="searchQuery"
-          name="searchQuery"
-          placeholder="Search by group name"
-          maxlength="100"
-        />
-        <button type="submit" class="btn btn--primary" [disabled]="searchLoading()">
-          @if (searchLoading()) { Searching... } @else { Search }
-        </button>
-      </form>
+        <form class="form-group search-form" (ngSubmit)="searchGroups(1)">
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="searchQuery"
+            name="searchQuery"
+            placeholder="Search by group name"
+            maxlength="100"
+          />
+          <button type="submit" class="btn btn--primary" [disabled]="searchLoading()">
+            @if (searchLoading()) { Searching... } @else { Search }
+          </button>
+        </form>
 
-      <div class="search-results">
-        <h3>Results</h3>
-        @if (searchLoading()) {
-          <div class="loading-inline">
-            <div class="spinner"></div>
-            <span>Searching...</span>
-          </div>
-        } @else if (searchResults().length === 0 && searchQuery) {
-          <p class="text-muted">No groups found.</p>
-        } @else {
-          <div class="result-list">
-            @for (result of searchResults(); track result.id) {
-              <div class="result-item">
-                <div class="result-item__image">
-                  <img [src]="result.imageUrl || defaultGroupImage" [alt]="result.name" />
-                </div>
-                <div class="result-item__info">
-                  <div class="result-item__title">
-                    <span class="result-item__name">{{ result.name }}</span>
-                    <span class="result-item__format">{{ result.format }}</span>
+        <div class="search-results">
+          <h3>Results</h3>
+          @if (searchLoading()) {
+            <div class="loading-inline">
+              <div class="spinner"></div>
+              <span>Searching...</span>
+            </div>
+          } @else if (searchResults().length === 0 && searchQuery) {
+            <p class="text-muted">No groups found.</p>
+          } @else {
+            <div class="result-list">
+              @for (result of searchResults(); track result.id) {
+                <div class="result-item">
+                  <div class="result-item__image">
+                    <img [src]="result.imageUrl || defaultGroupImage" [alt]="result.name" />
                   </div>
-                  @if (result.description) {
-                    <p class="result-item__description">{{ result.description }}</p>
-                  }
-                  <span class="result-item__meta">{{ result.memberCount }} members</span>
+                  <div class="result-item__info">
+                    <div class="result-item__title">
+                      <span class="result-item__name">{{ result.name }}</span>
+                      <span class="result-item__format">{{ result.format }}</span>
+                    </div>
+                    @if (result.description) {
+                      <p class="result-item__description">{{ result.description }}</p>
+                    }
+                    <span class="result-item__meta">{{ result.memberCount }} members</span>
+                  </div>
+                  <div class="result-item__actions">
+                    @if (memberRole(result.id) === 'ADMIN') {
+                      <button class="btn btn--outline" disabled>Admin</button>
+                    } @else if (memberRole(result.id) === 'MEMBER') {
+                      <button class="btn btn--outline" disabled>Member</button>
+                    } @else if (hasApplied(result.id)) {
+                      <button class="btn btn--outline" disabled>Applied</button>
+                    } @else {
+                      <button class="btn btn--secondary" (click)="applyToGroup(result.id)"
+                              [disabled]="searchLoading() || !isEmailVerified()">
+                        Apply
+                      </button>
+                    }
+                  </div>
                 </div>
-                <div class="result-item__actions">
-                  @if (isMember(result.id)) {
-                    <button class="btn btn--outline" disabled>Member</button>
-                  } @else if (hasApplied(result.id)) {
-                    <button class="btn btn--outline" disabled>Applied</button>
-                  } @else {
-                    <button class="btn btn--secondary" (click)="applyToGroup(result.id)"
-                            [disabled]="searchLoading() || !isEmailVerified()">
-                      Apply
-                    </button>
-                  }
-                </div>
+              }
+            </div>
+
+            @if (searchTotalPages() > 1) {
+              <div class="pagination">
+                <button class="btn btn--outline" (click)="setSearchPage(searchPage() - 1)"
+                        [disabled]="searchPage() === 1">Prev</button>
+                <span class="pagination__info">Page {{ searchPage() }} of {{ searchTotalPages() }}</span>
+                <button class="btn btn--outline" (click)="setSearchPage(searchPage() + 1)"
+                        [disabled]="searchPage() === searchTotalPages()">Next</button>
               </div>
             }
-          </div>
-
-          @if (searchTotalPages() > 1) {
-            <div class="pagination">
-              <button class="btn btn--outline" (click)="setSearchPage(searchPage() - 1)"
-                      [disabled]="searchPage() === 1">Prev</button>
-              <span class="pagination__info">Page {{ searchPage() }} of {{ searchTotalPages() }}</span>
-              <button class="btn btn--outline" (click)="setSearchPage(searchPage() + 1)"
-                      [disabled]="searchPage() === searchTotalPages()">Next</button>
-            </div>
           }
-        }
+        </div>
       </div>
     </div>
   </div>
@@ -451,5 +478,9 @@
       }
     </div>
   </div>
+}
+
+@if (showProfileModal()) {
+  <app-profile (close)="closeProfileModal()" />
 }
 

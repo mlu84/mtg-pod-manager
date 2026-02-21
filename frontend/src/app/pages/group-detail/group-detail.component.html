@@ -38,6 +38,17 @@
       </div>
     }
 
+    @if (group()!.decks.length === 0) {
+      <div class="container">
+        <section class="card group-onboarding-hint">
+          <h2><i class="fas fa-info-circle"></i> Group setup hint</h2>
+          <p>
+            No decks are available yet. Add at least two active decks to start or record games.
+          </p>
+        </section>
+      </div>
+    }
+
     <main class="container main-content">
       <div class="content-grid">
         <!-- Left Column: Ranking & History -->
@@ -86,19 +97,23 @@
         <!-- Right Column: Actions & Decks -->
         <div class="right-column">
           <!-- Actions -->
-          <app-group-actions-card
-            class="actions-card"
-            [isEmailVerified]="isEmailVerified()"
-            [isAdmin]="isAdmin()"
-            [isSeasonPaused]="isSeasonPaused()"
-            [seasonPauseUntil]="group()!.seasonPauseUntil"
-            [isSmartphoneViewport]="isSmartphoneViewport()"
-            [canStartPlayGame]="canStartPlayGame()"
-            [playGameDisabledReason]="playGameDisabledReason()"
-            [formatDate]="formatDate.bind(this)"
-            (playGame)="openPlayGame()"
-            (recordGame)="openGameModal()"
-          />
+          @if (showActionsCard()) {
+            <app-group-actions-card
+              class="actions-card"
+              [isEmailVerified]="isEmailVerified()"
+              [isAdmin]="isAdmin()"
+              [isSeasonPaused]="isSeasonPaused()"
+              [seasonPauseUntil]="group()!.seasonPauseUntil"
+              [isSmartphoneViewport]="isSmartphoneViewport()"
+              [canStartPlayGame]="canStartPlayGame()"
+              [canRecordGame]="canRecordGame()"
+              [playGameDisabledReason]="playGameDisabledReason()"
+              [recordGameDisabledReason]="recordGameDisabledReason()"
+              [formatDate]="formatDate.bind(this)"
+              (playGame)="openPlayGame()"
+              (recordGame)="openGameModal()"
+            />
+          }
 
           <!-- Statistics -->
           <app-group-stats-card

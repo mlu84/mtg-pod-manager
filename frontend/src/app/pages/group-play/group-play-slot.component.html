@@ -8,6 +8,12 @@
   [style.background-color]="slot.deckId ? 'transparent' : getSlotFallbackColor(index)"
   (contextmenu)="$event.preventDefault()"
   (click)="handleOpenSlot()"
+  (mousedown)="handleStartFeatureHold($event)"
+  (mouseup)="handleCancelFeatureHold($event)"
+  (mouseleave)="handleCancelFeatureHold($event)"
+  (touchstart)="handleStartFeatureHold($event)"
+  (touchend)="handleCancelFeatureHold($event)"
+  (touchcancel)="handleCancelFeatureHold($event)"
 >
   @if (isWinner) {
     <div class="play-slot__crown">
@@ -74,51 +80,53 @@
       </button>
     </div>
 
-    <div class="play-slot__bottom">
-      <div class="play-slot__counters">
-        <button
-          class="counter-icon counter-icon--poison"
-          type="button"
-          [disabled]="!isLocked"
-          [title]="isLocked ? 'Poison Counter' : 'Start the game to enable controls'"
-          (click)="handleIncrementPoison($event)"
-          (mousedown)="handleStartPoisonHold($event)"
-          (mouseup)="handleCancelHold($event)"
-          (mouseleave)="handleCancelHold($event)"
-          (touchstart)="handleStartPoisonHold($event)"
-          (touchend)="handleCancelHold($event)"
-          title="Poison Counter"
-        >
-          <i class="fas fa-tint"></i>
-          <span class="counter-badge">{{ slot.poison }}</span>
-        </button>
-        @for (opponentIndex of getOpponentIndices(); track opponentIndex) {
+    @if (showInlineCounters) {
+      <div class="play-slot__bottom">
+        <div class="play-slot__counters">
           <button
-            class="counter-icon counter-icon--deck"
+            class="counter-icon counter-icon--poison"
             type="button"
             [disabled]="!isLocked"
-            [title]="isLocked ? 'Commander Damage' : 'Start the game to enable controls'"
-            (click)="handleIncrementCommanderDamage(opponentIndex, $event)"
-            (mousedown)="handleStartCommanderHold(opponentIndex, $event)"
+            [title]="isLocked ? 'Poison Counter' : 'Start the game to enable controls'"
+            (click)="handleIncrementPoison($event)"
+            (mousedown)="handleStartPoisonHold($event)"
             (mouseup)="handleCancelHold($event)"
             (mouseleave)="handleCancelHold($event)"
-            (touchstart)="handleStartCommanderHold(opponentIndex, $event)"
+            (touchstart)="handleStartPoisonHold($event)"
             (touchend)="handleCancelHold($event)"
-            title="Commander Damage"
-            [style.background-color]="getCommanderIconBackground(opponentIndex)"
+            title="Poison Counter"
           >
-            @if (shouldShowCommanderImage(opponentIndex)) {
-              <img
-                [src]="getDeckImage(getOpponentSlot(opponentIndex)?.deckId || null)"
-                [alt]="getOpponentSlot(opponentIndex)?.deckName || 'Deck'"
-              />
-            }
-            <span class="counter-badge">
-              {{ slot.commanderDamage[opponentIndex] || 0 }}
-            </span>
+            <i class="fas fa-tint"></i>
+            <span class="counter-badge">{{ slot.poison }}</span>
           </button>
-        }
+          @for (opponentIndex of getOpponentIndices(); track opponentIndex) {
+            <button
+              class="counter-icon counter-icon--deck"
+              type="button"
+              [disabled]="!isLocked"
+              [title]="isLocked ? 'Commander Damage' : 'Start the game to enable controls'"
+              (click)="handleIncrementCommanderDamage(opponentIndex, $event)"
+              (mousedown)="handleStartCommanderHold(opponentIndex, $event)"
+              (mouseup)="handleCancelHold($event)"
+              (mouseleave)="handleCancelHold($event)"
+              (touchstart)="handleStartCommanderHold(opponentIndex, $event)"
+              (touchend)="handleCancelHold($event)"
+              title="Commander Damage"
+              [style.background-color]="getCommanderIconBackground(opponentIndex)"
+            >
+              @if (shouldShowCommanderImage(opponentIndex)) {
+                <img
+                  [src]="getDeckImage(getOpponentSlot(opponentIndex)?.deckId || null)"
+                  [alt]="getOpponentSlot(opponentIndex)?.deckName || 'Deck'"
+                />
+              }
+              <span class="counter-badge">
+                {{ slot.commanderDamage[opponentIndex] || 0 }}
+              </span>
+            </button>
+          }
+        </div>
       </div>
-    </div>
+    }
   </div>
 </div>

@@ -129,7 +129,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .meta-header {
     border-bottom: 1px solid var(--color-border);
   }
@@ -165,5 +165,9 @@
   .app-shell__content {
     padding-top: 0;
     padding-bottom: 0;
+  }
+
+  .app-shell--local-mobile-nav .meta-header__nav {
+    display: none;
   }
 }

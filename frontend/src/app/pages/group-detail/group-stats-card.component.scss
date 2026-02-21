@@ -50,7 +50,7 @@
   grid-template-columns: 1fr;
   gap: var(--spacing-sm);
 
-  @media (min-width: 900px) {
+  @media (min-width: 1200px) {
     grid-template-columns: 1fr 1fr;
   }
 }

@@ -4,29 +4,42 @@
       <button class="btn btn--outline btn--back-vertical" (click)="back.emit()">
         <i class="fas fa-arrow-left"></i>
       </button>
-      <div class="header__image">
-        <img
-          [src]="group.imageUrl || defaultGroupImage"
-          [alt]="group.name"
-        />
-      </div>
-      <div class="header__info">
-        <h1>
-          {{ group.name }}
-          @if (isAdmin) {
-            <button class="btn-icon" (click)="editGroup.emit()" title="Edit group">
-              <i class="fas fa-edit"></i>
-            </button>
-          }
-        </h1>
-        <div class="header__format-row">
-          <span class="header__format">{{ group.format }}</span>
+      <div class="header__main">
+        <div class="header__image">
+          <img
+            [src]="group.imageUrl || defaultGroupImage"
+            [alt]="group.name"
+          />
         </div>
-        @if (group.description) {
-          <div class="header__description">{{ group.description }}</div>
-        }
+        <div class="header__info">
+          <h1>
+            {{ group.name }}
+            @if (isAdmin) {
+              <button class="btn-icon" (click)="editGroup.emit()" title="Edit group">
+                <i class="fas fa-edit"></i>
+              </button>
+            }
+          </h1>
+          <div class="header__format-row">
+            <span class="header__format">{{ group.format }}</span>
+          </div>
+        </div>
       </div>
+      <button
+        class="btn btn--outline header__burger"
+        type="button"
+        title="Menu"
+        aria-label="Open mobile menu"
+        (click)="toggleMobileMenu()"
+      >
+        <i class="fas fa-bars"></i>
+      </button>
     </div>
+
+    @if (group.description) {
+      <div class="header__description">{{ group.description }}</div>
+    }
+
     <div class="header__actions">
       <div class="header__actions-buttons">
         @if (isAdmin && group.inviteCode) {
@@ -59,3 +72,73 @@
   </div>
 </header>
 
+@if (showMobileMenu()) {
+  <div class="mobile-menu-overlay" (click)="closeMobileMenu()">
+    <nav class="mobile-menu card" (click)="$event.stopPropagation()">
+      <div class="mobile-menu__header">
+        <h2>Menu</h2>
+        <button class="mobile-menu__close" type="button" (click)="closeMobileMenu()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-menu__list">
+        @if (isAdmin && group.inviteCode) {
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="openInviteCodeDetails()">
+            <i class="fas fa-ticket-alt"></i> Invite Code
+          </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="openMemberSettingsFromMenu()">
+            <i class="fas fa-users-cog"></i> Member settings
+          </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="openSeasonSettingsFromMenu()">
+            <i class="fas fa-clock"></i> Season settings
+          </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="openGroupSettingsFromMenu()">
+            <i class="fas fa-sliders-h"></i> Group settings
+          </button>
+        }
+
+        <button type="button" class="btn btn--outline mobile-menu__item" (click)="openProfileModal()">
+          <i class="fas fa-user"></i> Profile
+        </button>
+        <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/legal')">
+          <i class="fas fa-scale-balanced"></i> Legal
+        </button>
+        <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/contact')">
+          <i class="fas fa-envelope"></i> Contact
+        </button>
+        <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/news')">
+          <i class="fas fa-bullhorn"></i> News
+        </button>
+        <button type="button" class="btn btn--danger mobile-menu__item" (click)="logoutFromMobileMenu()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </nav>
+  </div>
+}
+
+@if (showInviteCodeModal() && isAdmin && group.inviteCode) {
+  <div class="modal-overlay" (click)="closeInviteCodeDetails()">
+    <div class="modal card invite-code-modal" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Invite Code</h2>
+        <button class="modal__close" (click)="closeInviteCodeDetails()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <code class="invite-code-modal__value">{{ group.inviteCode }}</code>
+      <div class="modal__actions">
+        <button class="btn btn--outline" type="button" (click)="copyInviteCode.emit()">
+          <i class="fas fa-copy"></i> Copy
+        </button>
+        <button class="btn btn--outline" type="button" (click)="regenerateInviteCode.emit()">
+          <i class="fas fa-sync-alt"></i> Regenerate
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showProfileModal()) {
+  <app-profile (close)="closeProfileModal()" />
+}

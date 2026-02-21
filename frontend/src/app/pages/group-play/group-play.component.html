@@ -14,55 +14,160 @@
     </div>
   </div>
 } @else {
-  <div
-    class="play-screen"
-    [class.play-screen--compact]="isCompactViewport()"
-    [class.play-screen--portrait]="isCompactViewport() && isPortraitViewport()"
-    [style.--viewport-width.px]="viewportWidth()"
-    [style.--viewport-height.px]="viewportHeight()"
-    (contextmenu)="handlePlaySurfaceContextMenu($event)"
-    (touchstart)="handlePlaySurfaceTouchStart()"
-  >
-    <div class="play-layout" [attr.data-count]="playerCount()">
-      <div class="play-column play-column--left" [attr.data-count]="playerCount()">
-        @for (entry of leftSlots(); track entry.index; let rowIndex = $index) {
-          <app-group-play-slot
-            [slot]="entry.slot"
-            [index]="entry.index"
-            [isWinner]="startingWinnerIndex() === entry.index"
-            [isLocked]="gameStarted()"
-            [isEliminated]="isEliminated(entry.index)"
-            [isMirrored]="isSlotMirrored('left', rowIndex)"
-            [activeSlots]="activeSlots()"
-            [decks]="group()?.decks || []"
-            [defaultDeckImage]="defaultDeckImage"
-            [lifeDelta]="lifeDelta()[entry.index] || 0"
-            [lifeDeltaVisible]="lifeDeltaVisible()[entry.index] ?? false"
-            [showCommanderDamage]="isCommanderFormat()"
-            (openSlot)="openSlotModal($event)"
-            (incrementLife)="incrementLife($event)"
-            (decrementLife)="decrementLife($event)"
-            (startLifeHold)="startLifeHold($event.index, $event.delta)"
-            (cancelLifeHold)="cancelLifeHold()"
-            (incrementPoison)="incrementPoison($event)"
-            (startPoisonHold)="startPoisonHold($event)"
-            (cancelHold)="cancelCommanderHold()"
-            (incrementCommanderDamage)="incrementCommanderDamage($event.index, $event.opponentIndex)"
-            (startCommanderHold)="startCommanderHold($event.index, $event.opponentIndex)"
-          ></app-group-play-slot>
+  @if (isCompactViewport() && isPortraitViewport()) {
+    <div class="play-screen play-screen--orientation-lock">
+      <div class="orientation-lock card">
+        <h2><i class="fas fa-mobile-alt"></i> Landscape required</h2>
+        <p>Group Play is locked to landscape mode on smartphones and compact tablets.</p>
+        <p>Rotate your device to continue.</p>
+        <button class="btn btn--outline" (click)="goBack()">Back to Group</button>
+      </div>
+    </div>
+  } @else {
+    <div
+      class="play-screen"
+      [class.play-screen--compact]="isCompactViewport()"
+      [style.--viewport-width.px]="viewportWidth()"
+      [style.--viewport-height.px]="viewportHeight()"
+      (contextmenu)="handlePlaySurfaceContextMenu($event)"
+      (touchstart)="handlePlaySurfaceTouchStart()"
+    >
+      <div class="play-layout" [attr.data-count]="playerCount()">
+        <div class="play-column play-column--left" [attr.data-count]="playerCount()">
+          @for (entry of leftSlots(); track entry.index; let rowIndex = $index) {
+            <app-group-play-slot
+              [slot]="entry.slot"
+              [index]="entry.index"
+              [isWinner]="startingWinnerIndex() === entry.index"
+              [isLocked]="gameStarted()"
+              [isEliminated]="isEliminated(entry.index)"
+              [isMirrored]="isSlotMirrored('left', rowIndex)"
+              [activeSlots]="activeSlots()"
+              [decks]="group()?.decks || []"
+              [defaultDeckImage]="defaultDeckImage"
+              [lifeDelta]="lifeDelta()[entry.index] || 0"
+              [lifeDeltaVisible]="lifeDeltaVisible()[entry.index] ?? false"
+              [showCommanderDamage]="isCommanderFormat()"
+              [showInlineCounters]="!isCompactViewport()"
+              (openSlot)="openSlotModal($event)"
+              (incrementLife)="incrementLife($event)"
+              (decrementLife)="decrementLife($event)"
+              (startLifeHold)="startLifeHold($event.index, $event.delta)"
+              (cancelLifeHold)="cancelLifeHold()"
+              (incrementPoison)="incrementPoison($event)"
+              (startPoisonHold)="startPoisonHold($event)"
+              (cancelHold)="cancelCommanderHold()"
+              (incrementCommanderDamage)="incrementCommanderDamage($event.index, $event.opponentIndex)"
+              (startCommanderHold)="startCommanderHold($event.index, $event.opponentIndex)"
+              (startFeatureHold)="startSlotFeatureHold($event)"
+              (cancelFeatureHold)="cancelSlotFeatureHold()"
+            ></app-group-play-slot>
+          }
+        </div>
+
+        @if (!isCompactViewport()) {
+          <app-group-play-panel
+            [playerCount]="playerCount()"
+            [rolling]="rolling()"
+            [isCompactViewport]="isCompactViewport()"
+            [mirroredTopHalf]="mirroredTopHalf()"
+            [confirmAbortActive]="confirmAbortActive()"
+            [confirmResetActive]="confirmResetActive()"
+            [gameStarted]="gameStarted()"
+            [allDecksSelected]="allDecksSelected()"
+            [startingRoll]="startingRoll()"
+            (cyclePlayerCount)="cyclePlayerCount()"
+            (rollD20)="rollD20()"
+            (toggleTopHalfMirror)="toggleTopHalfMirror()"
+            (toggleAbortConfirm)="toggleAbortConfirm()"
+            (confirmAbort)="confirmAbort()"
+            (startGame)="startGame()"
+            (toggleResetConfirm)="toggleResetConfirm()"
+            (confirmReset)="confirmReset()"
+          ></app-group-play-panel>
+        } @else {
+          <button class="play-compact-fab" type="button" (click)="handleCompactFabAction()">
+            <i class="fas" [class.fa-flag-checkered]="showCompactEndGameCta()" [class.fa-sliders-h]="!showCompactEndGameCta()"></i>
+            <span>{{ showCompactEndGameCta() ? 'End Game' : 'Controls' }}</span>
+          </button>
         }
+
+        <div class="play-column play-column--right" [attr.data-count]="playerCount()">
+          @for (entry of rightSlots(); track entry.index; let rowIndex = $index) {
+            <app-group-play-slot
+              [slot]="entry.slot"
+              [index]="entry.index"
+              [isWinner]="startingWinnerIndex() === entry.index"
+              [isLocked]="gameStarted()"
+              [isEliminated]="isEliminated(entry.index)"
+              [isMirrored]="isSlotMirrored('right', rowIndex)"
+              [activeSlots]="activeSlots()"
+              [decks]="group()?.decks || []"
+              [defaultDeckImage]="defaultDeckImage"
+              [lifeDelta]="lifeDelta()[entry.index] || 0"
+              [lifeDeltaVisible]="lifeDeltaVisible()[entry.index] ?? false"
+              [showCommanderDamage]="isCommanderFormat()"
+              [showInlineCounters]="!isCompactViewport()"
+              (openSlot)="openSlotModal($event)"
+              (incrementLife)="incrementLife($event)"
+              (decrementLife)="decrementLife($event)"
+              (startLifeHold)="startLifeHold($event.index, $event.delta)"
+              (cancelLifeHold)="cancelLifeHold()"
+              (incrementPoison)="incrementPoison($event)"
+              (startPoisonHold)="startPoisonHold($event)"
+              (cancelHold)="cancelCommanderHold()"
+              (incrementCommanderDamage)="incrementCommanderDamage($event.index, $event.opponentIndex)"
+              (startCommanderHold)="startCommanderHold($event.index, $event.opponentIndex)"
+              (startFeatureHold)="startSlotFeatureHold($event)"
+              (cancelFeatureHold)="cancelSlotFeatureHold()"
+            ></app-group-play-slot>
+          }
+        </div>
       </div>
 
-      <app-group-play-panel
-        [playerCount]="playerCount()"
+      <app-group-play-modals
+        [showSlotModal]="showSlotModal()"
+        [activeSlotIndex]="activeSlotIndex()"
+        [slots]="slots()"
+        [deckSearchTerm]="deckSearchTerm()"
+        [filteredDecks]="activeSlotIndex() === null ? [] : getFilteredAvailableDecksForSlot(activeSlotIndex()!)"
+        [showRollModal]="rollVisible()"
         [rolling]="rolling()"
-        [isCompactViewport]="isCompactViewport()"
+        [rollResult]="rollResult()"
+        [showPoisonModal]="showPoisonModal()"
+        [poisonSlotIndex]="poisonModalSlotIndex()"
+        [showCommanderModal]="showCommanderModal()"
+        [commanderSlotIndex]="commanderModalSlotIndex()"
+        [commanderOpponentIndex]="commanderModalOpponentIndex()"
+        [activeSlots]="activeSlots()"
+        [decks]="group()?.decks || []"
+        [defaultDeckImage]="defaultDeckImage"
+        [showFeatureMenuModal]="showFeatureMenuModal()"
+        [featureMenuSlotIndex]="featureMenuSlotIndex()"
+        [isCommanderFormat]="isCommanderFormat()"
+        [showCompactControls]="showCompactControls()"
+        [playerCount]="playerCount()"
         [mirroredTopHalf]="mirroredTopHalf()"
         [confirmAbortActive]="confirmAbortActive()"
         [confirmResetActive]="confirmResetActive()"
         [gameStarted]="gameStarted()"
         [allDecksSelected]="allDecksSelected()"
         [startingRoll]="startingRoll()"
+        (closeSlotModal)="closeSlotModal()"
+        (selectDeck)="selectDeck($event)"
+        (playerNameChange)="setPlayerName($event)"
+        (searchTermChange)="setDeckSearchTerm($event)"
+        (closeRollModal)="closeRollModal()"
+        (closePoisonModal)="closePoisonModal()"
+        (incrementPoison)="incrementPoison($event)"
+        (decrementPoison)="decrementPoison($event)"
+        (closeCommanderModal)="closeCommanderModal()"
+        (incrementCommanderDamage)="incrementCommanderDamage($event.slotIndex, $event.opponentIndex)"
+        (decrementCommanderDamage)="decrementCommanderDamage($event.slotIndex, $event.opponentIndex)"
+        (closeFeatureMenu)="closeFeatureMenuModal()"
+        (openPoisonFromFeatureMenu)="openPoisonFromFeatureMenu()"
+        (openCommanderFromFeatureMenu)="openCommanderFromFeatureMenu($event)"
+        (closeCompactControls)="closeCompactControls()"
         (cyclePlayerCount)="cyclePlayerCount()"
         (rollD20)="rollD20()"
         (toggleTopHalfMirror)="toggleTopHalfMirror()"
@@ -71,66 +176,7 @@
         (startGame)="startGame()"
         (toggleResetConfirm)="toggleResetConfirm()"
         (confirmReset)="confirmReset()"
-      ></app-group-play-panel>
-
-      <div class="play-column play-column--right" [attr.data-count]="playerCount()">
-        @for (entry of rightSlots(); track entry.index; let rowIndex = $index) {
-          <app-group-play-slot
-            [slot]="entry.slot"
-            [index]="entry.index"
-            [isWinner]="startingWinnerIndex() === entry.index"
-            [isLocked]="gameStarted()"
-            [isEliminated]="isEliminated(entry.index)"
-            [isMirrored]="isSlotMirrored('right', rowIndex)"
-            [activeSlots]="activeSlots()"
-            [decks]="group()?.decks || []"
-            [defaultDeckImage]="defaultDeckImage"
-            [lifeDelta]="lifeDelta()[entry.index] || 0"
-            [lifeDeltaVisible]="lifeDeltaVisible()[entry.index] ?? false"
-            [showCommanderDamage]="isCommanderFormat()"
-            (openSlot)="openSlotModal($event)"
-            (incrementLife)="incrementLife($event)"
-            (decrementLife)="decrementLife($event)"
-            (startLifeHold)="startLifeHold($event.index, $event.delta)"
-            (cancelLifeHold)="cancelLifeHold()"
-            (incrementPoison)="incrementPoison($event)"
-            (startPoisonHold)="startPoisonHold($event)"
-            (cancelHold)="cancelCommanderHold()"
-            (incrementCommanderDamage)="incrementCommanderDamage($event.index, $event.opponentIndex)"
-            (startCommanderHold)="startCommanderHold($event.index, $event.opponentIndex)"
-          ></app-group-play-slot>
-        }
-      </div>
+      ></app-group-play-modals>
     </div>
-
-    <app-group-play-modals
-      [showSlotModal]="showSlotModal()"
-      [activeSlotIndex]="activeSlotIndex()"
-      [slots]="slots()"
-      [deckSearchTerm]="deckSearchTerm()"
-      [filteredDecks]="activeSlotIndex() === null ? [] : getFilteredAvailableDecksForSlot(activeSlotIndex()!)"
-      [showRollModal]="rollVisible()"
-      [rolling]="rolling()"
-      [rollResult]="rollResult()"
-      [showPoisonModal]="showPoisonModal()"
-      [poisonSlotIndex]="poisonModalSlotIndex()"
-      [showCommanderModal]="showCommanderModal()"
-      [commanderSlotIndex]="commanderModalSlotIndex()"
-      [commanderOpponentIndex]="commanderModalOpponentIndex()"
-      [activeSlots]="activeSlots()"
-      [decks]="group()?.decks || []"
-      [defaultDeckImage]="defaultDeckImage"
-      (closeSlotModal)="closeSlotModal()"
-      (selectDeck)="selectDeck($event)"
-      (playerNameChange)="setPlayerName($event)"
-      (searchTermChange)="setDeckSearchTerm($event)"
-      (closeRollModal)="closeRollModal()"
-      (closePoisonModal)="closePoisonModal()"
-      (incrementPoison)="incrementPoison($event)"
-      (decrementPoison)="decrementPoison($event)"
-      (closeCommanderModal)="closeCommanderModal()"
-      (incrementCommanderDamage)="incrementCommanderDamage($event.slotIndex, $event.opponentIndex)"
-      (decrementCommanderDamage)="decrementCommanderDamage($event.slotIndex, $event.opponentIndex)"
-    ></app-group-play-modals>
-  </div>
+  }
 }

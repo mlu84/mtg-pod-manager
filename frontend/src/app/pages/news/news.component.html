@@ -1,0 +1,35 @@
+<div class="news-page">
+  <header class="news-header">
+    <div class="news-header__content container">
+      <a class="btn btn--outline btn--back-vertical" routerLink="/" aria-label="Back to home">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+      <h1><i class="fas fa-bullhorn"></i> News Broadcast</h1>
+    </div>
+  </header>
+
+  <main class="container news-content">
+    <section class="card news-card">
+      <h2>Current Status</h2>
+      <p>Phase 4 delivery is in progress with focus on smartphone and tablet UX stability.</p>
+      <p class="news-meta"><strong>Last updated:</strong> {{ lastUpdated }}</p>
+    </section>
+
+    <section class="card news-card">
+      <h2>Rollout Focus</h2>
+      <ul>
+        <li>Unified viewport breakpoints for smartphone, tablet, and desktop.</li>
+        <li>Navigation consistency for global links and authenticated flows.</li>
+        <li>Mobile usability upgrades for Groups, Group Detail, and Group Play.</li>
+      </ul>
+    </section>
+
+    <section class="card news-card">
+      <h2>How To Use</h2>
+      <p>
+        This page is available for all users, including guests. New announcements and release notes
+        will be published here.
+      </p>
+    </section>
+  </main>
+</div>

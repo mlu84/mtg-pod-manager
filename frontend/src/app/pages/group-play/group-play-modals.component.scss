@@ -112,6 +112,49 @@
   object-fit: cover;
 }
 
+.feature-menu {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.feature-menu__group {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.feature-menu__opponents {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.feature-menu__btn {
+  justify-content: flex-start;
+}
+
+.modal--compact-controls {
+  max-width: 420px;
+}
+
+.compact-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.compact-controls-grid__btn {
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+}
+
+.compact-controls-grid__btn strong {
+  font-size: 1.05rem;
+}
+
 @media (max-width: 560px) {
   .deck-picker {
     --deck-card-width: 120px;
@@ -119,6 +162,10 @@
 
   .deck-picker__item img {
     height: 72px;
+  }
+
+  .compact-controls-grid {
+    grid-template-columns: 1fr;
   }
 }
 

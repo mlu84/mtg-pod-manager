@@ -14,7 +14,8 @@
         <button
           class="btn btn--secondary btn--square"
           (click)="recordGame.emit()"
-          [disabled]="isSeasonPaused"
+          [disabled]="!canRecordGame"
+          [title]="recordGameDisabledReason"
         >
           <i class="fas fa-gamepad"></i>
           <span>Record Game</span>

@@ -24,6 +24,7 @@ export class GroupPlaySlotComponent {
   @Input({ required: true }) lifeDelta = 0;
   @Input({ required: true }) lifeDeltaVisible = false;
   @Input({ required: true }) showCommanderDamage = true;
+  @Input({ required: true }) showInlineCounters = true;
 
   @Output() openSlot = new EventEmitter<number>();
   @Output() incrementLife = new EventEmitter<number>();
@@ -35,6 +36,8 @@ export class GroupPlaySlotComponent {
   @Output() cancelHold = new EventEmitter<void>();
   @Output() incrementCommanderDamage = new EventEmitter<{ index: number; opponentIndex: number }>();
   @Output() startCommanderHold = new EventEmitter<{ index: number; opponentIndex: number }>();
+  @Output() startFeatureHold = new EventEmitter<number>();
+  @Output() cancelFeatureHold = new EventEmitter<void>();
 
   handleOpenSlot(): void {
     this.openSlot.emit(this.index);
@@ -90,6 +93,18 @@ export class GroupPlaySlotComponent {
     event.stopPropagation();
     if (!this.isLocked) return;
     this.startCommanderHold.emit({ index: this.index, opponentIndex });
+  }
+
+  handleStartFeatureHold(event: Event): void {
+    event.stopPropagation();
+    if (!this.isLocked || this.showInlineCounters) return;
+    this.startFeatureHold.emit(this.index);
+  }
+
+  handleCancelFeatureHold(event?: Event): void {
+    event?.stopPropagation();
+    if (!this.isLocked || this.showInlineCounters) return;
+    this.cancelFeatureHold.emit();
   }
 
   getOpponentIndices(): number[] {

@@ -282,7 +282,7 @@
   cursor: default;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1199px) {
   .life-value {
     font-size: clamp(2rem, 6vw, 3rem);
   }
@@ -295,8 +295,8 @@
   }
 
   :host-context(.play-screen--compact) .life-btn {
-    width: 56px;
-    font-size: 1.2rem;
+    width: 64px;
+    font-size: 1.35rem;
   }
 
   :host-context(.play-screen--compact) .counter-icon {
@@ -339,7 +339,7 @@
 
   :host-context(.play-screen--compact) .life-value {
     top: 42%;
-    font-size: clamp(1.9rem, 4.3vw, 3.1rem);
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
   }
 
   :host-context(.play-screen--compact) .life-delta {

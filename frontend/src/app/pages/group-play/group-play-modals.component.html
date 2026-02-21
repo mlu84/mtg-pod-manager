@@ -168,3 +168,107 @@
     </div>
   </div>
 }
+
+@if (showFeatureMenuModal) {
+  <div class="modal-overlay" (click)="closeFeatureMenu.emit()">
+    <div class="modal modal--confirm card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Slot Controls</h2>
+        <button class="modal__close" (click)="closeFeatureMenu.emit()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="feature-menu">
+        <button class="btn btn--outline feature-menu__btn" (click)="openPoisonFromFeatureMenu.emit()">
+          <i class="fas fa-tint"></i> Poison Counter
+        </button>
+
+        @if (isCommanderFormat) {
+          <div class="feature-menu__group">
+            <p class="text-muted">Commander damage from:</p>
+            <div class="feature-menu__opponents">
+              @for (opponent of getFeatureMenuOpponents(); track opponent.index) {
+                <button
+                  class="btn btn--outline feature-menu__btn"
+                  (click)="openCommanderFromFeatureMenu.emit(opponent.index)"
+                >
+                  <i class="fas fa-user-shield"></i> {{ opponent.name }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+@if (showCompactControls) {
+  <div class="modal-overlay" (click)="closeCompactControls.emit()">
+    <div class="modal modal--compact-controls card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Game Controls</h2>
+        <button class="modal__close" (click)="closeCompactControls.emit()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="compact-controls-grid">
+        <button
+          class="btn btn--outline compact-controls-grid__btn"
+          (click)="cyclePlayerCount.emit()"
+          [disabled]="gameStarted || startingRoll"
+        >
+          <span>Players</span>
+          <strong>{{ playerCount }}</strong>
+        </button>
+
+        <button class="btn btn--outline compact-controls-grid__btn" (click)="rollD20.emit()" [disabled]="rolling">
+          <span>d20</span>
+          <strong>Roll</strong>
+        </button>
+
+        <button class="btn btn--outline compact-controls-grid__btn" (click)="toggleTopHalfMirror.emit()">
+          <span>Top Side</span>
+          <strong>{{ mirroredTopHalf ? 'Normal' : 'Mirror' }}</strong>
+        </button>
+
+        @if (!confirmAbortActive) {
+          <button class="btn btn--danger compact-controls-grid__btn" (click)="toggleAbortConfirm.emit()">
+            <span>End</span>
+            <strong>Game</strong>
+          </button>
+        } @else {
+          <button class="btn btn--danger compact-controls-grid__btn" (click)="confirmAbort.emit()">
+            <span>Confirm</span>
+            <strong>End</strong>
+          </button>
+        }
+
+        @if (!gameStarted) {
+          <button
+            class="btn compact-controls-grid__btn"
+            [class.btn--primary]="allDecksSelected"
+            [class.btn--outline]="!allDecksSelected"
+            (click)="startGame.emit()"
+            [disabled]="!allDecksSelected || startingRoll"
+          >
+            <span>Start</span>
+            <strong>Game</strong>
+          </button>
+        } @else if (!confirmResetActive) {
+          <button class="btn btn--outline compact-controls-grid__btn" (click)="toggleResetConfirm.emit()">
+            <span>Reset</span>
+            <strong>Game</strong>
+          </button>
+        } @else {
+          <button class="btn btn--outline compact-controls-grid__btn" (click)="confirmReset.emit()">
+            <span>Confirm</span>
+            <strong>Reset</strong>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}

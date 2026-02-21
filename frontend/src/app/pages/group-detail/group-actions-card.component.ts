@@ -16,7 +16,9 @@ export class GroupActionsCardComponent {
   @Input({ required: true }) formatDate!: (date: string) => string;
   @Input({ required: true }) isSmartphoneViewport!: boolean;
   @Input({ required: true }) canStartPlayGame!: boolean;
+  @Input({ required: true }) canRecordGame!: boolean;
   @Input() playGameDisabledReason: string | null | undefined;
+  @Input() recordGameDisabledReason: string | null | undefined;
 
   @Output() playGame = new EventEmitter<void>();
   @Output() recordGame = new EventEmitter<void>();

@@ -41,13 +41,19 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 1024px) {
+.actions-card .btn:disabled {
+  opacity: 0.72;
+  filter: saturate(0.35);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+@media (max-width: 1199px) {
   .actions-card__buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .actions-card__buttons {
     grid-template-columns: 1fr;
   }

@@ -1,6 +1,10 @@
 .modal__section-title {
   margin: var(--spacing-md) 0 var(--spacing-sm);
   font-size: 1rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-left: 3px solid var(--color-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
 }
 
 .checkbox-inline {

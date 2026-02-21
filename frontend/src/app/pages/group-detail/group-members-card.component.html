@@ -2,7 +2,7 @@
   <div class="card__header">
     <h2 class="card__title"><i class="fas fa-users"></i> Members</h2>
     @if (isAdmin) {
-      <button class="btn btn--outline members-invite-btn" (click)="inviteUser.emit()">
+      <button class="btn btn--secondary btn--sm card__icon-button members-invite-btn" (click)="inviteUser.emit()">
         <i class="fas fa-user-plus"></i> Invite User
       </button>
     }

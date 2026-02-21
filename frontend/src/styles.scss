@@ -78,7 +78,7 @@ body {
   min-height: 100vh;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 768px) {
   *:not(html):not(body) {
     scrollbar-width: thin;
     scrollbar-color: var(--color-primary) var(--color-bg-light);

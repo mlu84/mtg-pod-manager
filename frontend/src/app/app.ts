@@ -39,6 +39,7 @@ export class App {
   isAuthenticated = this.authService.isAuthenticated;
   showProfileModal = signal(false);
   hideGlobalHeader = signal(false);
+  useLocalMobileNav = signal(false);
 
   constructor() {
     this.navigationHistoryService.recordNavigation(this.router.url);
@@ -65,8 +66,10 @@ export class App {
       primarySegments.length === 3 &&
       primarySegments[0] === 'groups' &&
       primarySegments[2] === 'play';
+    const isGroupsAreaRoute = primarySegments[0] === 'groups' && !isGroupPlayRoute;
 
     this.hideGlobalHeader.set(isGroupPlayRoute);
+    this.useLocalMobileNav.set(isGroupsAreaRoute);
   }
 
   private updateSeoTags(url: string): void {
