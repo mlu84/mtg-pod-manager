@@ -19,7 +19,8 @@ function loadConfig(workspaceRoot) {
   const configPath = path.join(workspaceRoot, 'version.config.json');
   const defaults = {
     major: 0,
-    phase: 3,
+    phase: 4,
+    commit: undefined,
     baseRef: 'origin/main',
     padPhase: 1,
     padCommit: 1,
@@ -89,9 +90,6 @@ export interface AppVersionInfo {
   phase: number;
   commit: number;
   formatted: string;
-  generatedAt: string;
-  mergeBase: string;
-  baseRef: string;
 }
 
 export const APP_VERSION: AppVersionInfo = ${JSON.stringify(payload, null, 2)} as const;
@@ -104,11 +102,19 @@ export const APP_VERSION: AppVersionInfo = ${JSON.stringify(payload, null, 2)} a
 function main() {
   const workspaceRoot = process.cwd();
   const config = loadConfig(workspaceRoot);
-  const repoRoot = resolveRepoRoot(workspaceRoot);
-  const { mergeBase, baseRef } = resolveMergeBase(repoRoot, config.baseRef);
   const major = Math.max(0, toInt(config.major, 0));
-  const phase = Math.max(0, toInt(config.phase, 3));
-  const commit = computeCommitCount(repoRoot, mergeBase, config.commitOffset);
+  const phase = Math.max(0, toInt(config.phase, 4));
+  const commitFromConfig = Number.isFinite(Number(config.commit))
+    ? Math.max(0, toInt(config.commit, 0))
+    : null;
+  const commit =
+    commitFromConfig !== null
+      ? commitFromConfig
+      : computeCommitCount(
+          resolveRepoRoot(workspaceRoot),
+          resolveMergeBase(resolveRepoRoot(workspaceRoot), config.baseRef).mergeBase,
+          config.commitOffset,
+        );
   const phaseWidth = Math.max(1, toInt(config.padPhase, 1));
   const commitWidth = Math.max(1, toInt(config.padCommit, 1));
   const formatted = `${major}.${String(phase).padStart(phaseWidth, '0')}.${String(commit).padStart(
@@ -121,9 +127,6 @@ function main() {
     phase,
     commit,
     formatted,
-    generatedAt: new Date().toISOString(),
-    mergeBase,
-    baseRef,
   });
 }
 

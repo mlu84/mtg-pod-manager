@@ -6,17 +6,11 @@ export interface AppVersionInfo {
   phase: number;
   commit: number;
   formatted: string;
-  generatedAt: string;
-  mergeBase: string;
-  baseRef: string;
 }
 
 export const APP_VERSION: AppVersionInfo = {
   "major": 0,
   "phase": 4,
   "commit": 0,
-  "formatted": "0.4.0",
-  "generatedAt": "2026-02-21T08:06:17.544Z",
-  "mergeBase": "3efd1cb2e5d16a55754b74fd2dcca41fc933d8ee",
-  "baseRef": "origin/main"
+  "formatted": "0.4.0"
 } as const;
