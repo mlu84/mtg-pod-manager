@@ -16,7 +16,7 @@ export const APP_VERSION: AppVersionInfo = {
   "phase": 4,
   "commit": 0,
   "formatted": "0.4.0",
-  "generatedAt": "2026-02-21T02:10:00.000Z",
-  "mergeBase": "a0f36a30e15772ebbfb96bf3fd2288239fd022c7",
+  "generatedAt": "2026-02-21T08:06:17.544Z",
+  "mergeBase": "3efd1cb2e5d16a55754b74fd2dcca41fc933d8ee",
   "baseRef": "origin/main"
 } as const;
