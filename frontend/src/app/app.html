@@ -1,4 +1,8 @@
-<div class="app-shell" [class.app-shell--play]="hideGlobalHeader()">
+<div
+  class="app-shell"
+  [class.app-shell--play]="hideGlobalHeader()"
+  [class.app-shell--local-mobile-nav]="useLocalMobileNav()"
+>
   @if (!hideGlobalHeader()) {
     <header class="meta-header">
       <div class="meta-header__content container">
@@ -35,6 +39,14 @@
             [routerLinkActiveOptions]="{ exact: true }"
           >
             Contact
+          </a>
+          <a
+            class="meta-header__link"
+            routerLink="/news"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            News
           </a>
           <div class="donate-inline">
             <span class="donate-prefix">Buy me a booster</span>

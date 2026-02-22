@@ -78,7 +78,7 @@ body {
   min-height: 100vh;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 768px) {
   *:not(html):not(body) {
     scrollbar-width: thin;
     scrollbar-color: var(--color-primary) var(--color-bg-light);
@@ -234,7 +234,7 @@ body {
   padding: 0;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 767px) {
   .btn--back-vertical {
     width: 36px;
     height: 44px;

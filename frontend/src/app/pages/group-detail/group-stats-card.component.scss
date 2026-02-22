@@ -3,10 +3,22 @@
 
   .card__header {
     margin-bottom: var(--spacing-sm);
+    align-items: center;
+  }
+
+  .card__header-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
   }
 
   .card__toggle {
-    margin-left: auto;
+    position: static;
+  }
+
+  .stats-card__expand {
+    font-size: 1rem;
   }
 
   .deck-dropdown {
@@ -33,6 +45,18 @@
   border-radius: var(--radius-md);
 }
 
+:host(.stats-card--expanded) {
+  width: 100%;
+
+  .stats-card {
+    margin: 0;
+  }
+
+  .stats-chart {
+    height: min(60vh, 560px);
+  }
+}
+
 .stats-controls {
   display: flex;
   flex-direction: column;
@@ -50,7 +74,7 @@
   grid-template-columns: 1fr;
   gap: var(--spacing-sm);
 
-  @media (min-width: 900px) {
+  @media (min-width: 1200px) {
     grid-template-columns: 1fr 1fr;
   }
 }

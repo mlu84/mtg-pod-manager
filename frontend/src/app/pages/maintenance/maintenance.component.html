@@ -1,0 +1,28 @@
+<div class="maintenance-page">
+  <header class="maintenance-header">
+    <div class="maintenance-header__content container">
+      <a class="btn btn--outline btn--back-vertical" routerLink="/" aria-label="Back to home">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+      <h1><i class="fas fa-tools"></i> Maintenance</h1>
+    </div>
+  </header>
+
+  <main class="container maintenance-content">
+    <section class="card maintenance-card">
+      <h2>Status</h2>
+      <p>The MTG Pod-Manager service is currently in maintenance mode.</p>
+      <p>Please check back in a few minutes.</p>
+      <p class="maintenance-meta"><strong>Last updated:</strong> {{ lastUpdated }}</p>
+    </section>
+
+    <section class="card maintenance-card">
+      <h2>What Is Affected</h2>
+      <ul>
+        <li>Login and registration can be temporarily unavailable.</li>
+        <li>Group actions and game updates can be delayed.</li>
+        <li>Read-only access may also be restricted during deployment windows.</li>
+      </ul>
+    </section>
+  </main>
+</div>

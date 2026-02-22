@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { formatLocalDate } from '../../core/utils/date-utils';
+import { ProfileComponent } from '../profile/profile.component';
 import {
   normalizeText,
   validateInviteCode,
@@ -27,7 +28,7 @@ import {
 @Component({
   selector: 'app-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, ProfileComponent],
   templateUrl: './groups.component.html',
   styleUrl: './groups.component.scss',
 })
@@ -40,8 +41,9 @@ export class GroupsComponent implements OnInit {
   // Modal states
   showCreateModal = signal(false);
   showJoinModal = signal(false);
-  showSearchModal = signal(false);
   showRequestsModal = signal(false);
+  showMobileMenu = signal(false);
+  showProfileModal = signal(false);
 
   // Create group form
   newGroupName = '';
@@ -131,6 +133,33 @@ export class GroupsComponent implements OnInit {
     this.router.navigate(['/groups', group.id]);
   }
 
+  toggleMobileMenu(): void {
+    this.showMobileMenu.update((value) => !value);
+  }
+
+  closeMobileMenu(): void {
+    this.showMobileMenu.set(false);
+  }
+
+  openProfileModal(): void {
+    this.showProfileModal.set(true);
+    this.closeMobileMenu();
+  }
+
+  closeProfileModal(): void {
+    this.showProfileModal.set(false);
+  }
+
+  navigateFromMobileMenu(path: string): void {
+    this.closeMobileMenu();
+    this.router.navigateByUrl(path);
+  }
+
+  logoutFromMobileMenu(): void {
+    this.closeMobileMenu();
+    this.logout();
+  }
+
   openCreateModal(): void {
     this.newGroupName = '';
     this.newGroupFormat = '';
@@ -165,10 +194,10 @@ export class GroupsComponent implements OnInit {
         description: description || undefined,
       })
       .subscribe({
-        next: (group) => {
+        next: () => {
           this.createLoading.set(false);
           this.showCreateModal.set(false);
-          this.router.navigate(['/groups', group.id]);
+          this.loadGroups();
         },
         error: (err) => {
           this.createLoading.set(false);
@@ -180,6 +209,11 @@ export class GroupsComponent implements OnInit {
   openJoinModal(): void {
     this.inviteCode = '';
     this.joinError.set(null);
+    this.searchQuery = '';
+    this.searchResults.set([]);
+    this.searchError.set(null);
+    this.searchTotal.set(0);
+    this.searchPage.set(1);
     this.showJoinModal.set(true);
   }
 
@@ -209,19 +243,6 @@ export class GroupsComponent implements OnInit {
         this.joinError.set(err.error?.message || 'Failed to join group');
       },
     });
-  }
-
-  openSearchModal(): void {
-    this.searchQuery = '';
-    this.searchResults.set([]);
-    this.searchError.set(null);
-    this.searchTotal.set(0);
-    this.searchPage.set(1);
-    this.showSearchModal.set(true);
-  }
-
-  closeSearchModal(): void {
-    this.showSearchModal.set(false);
   }
 
   openRequestsModal(): void {
@@ -305,6 +326,11 @@ export class GroupsComponent implements OnInit {
 
   isMember(groupId: string): boolean {
     return this.memberGroupIds().has(groupId);
+  }
+
+  memberRole(groupId: string): 'ADMIN' | 'MEMBER' | null {
+    const group = this.groups().find((entry) => entry.id === groupId);
+    return group?.role ?? null;
   }
 
   applyToGroup(groupId: string): void {

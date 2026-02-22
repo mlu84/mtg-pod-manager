@@ -23,8 +23,11 @@ export class GroupStatsCardComponent implements OnDestroy {
   @Input({ required: true }) filteredStatsDecks!: Deck[];
   @Input({ required: true }) getDeckNameById!: (id: string) => string;
   @Input({ required: true }) getManaSymbols!: (colors: string) => string[];
+  @Input() showCollapseToggle = true;
+  @Input() showExpandAction = false;
 
   @Output() toggleCollapsed = new EventEmitter<void>();
+  @Output() expand = new EventEmitter<void>();
   @Output() statsCategoryChange = new EventEmitter<StatsCategory>();
   @Output() statsOptionChange = new EventEmitter<string>();
   @Output() statsDeckSearchChange = new EventEmitter<string>();

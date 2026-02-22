@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
+import { isCompactWidth } from '../../core/config/viewport-breakpoints';
 import { sanitizeSearchInput, sanitizeSingleLineInput } from '../../core/utils/input-validation';
 import { Deck, GroupDetail } from '../../models/group.model';
 import { GroupPlayModalsComponent } from './group-play-modals.component';
@@ -78,6 +79,10 @@ export class GroupPlayComponent {
   commanderModalOpponentIndex = signal<number | null>(null);
   showPoisonModal = signal(false);
   poisonModalSlotIndex = signal<number | null>(null);
+  showFeatureMenuModal = signal(false);
+  featureMenuSlotIndex = signal<number | null>(null);
+  showCompactControls = signal(false);
+  private slotFeatureHoldTimer: ReturnType<typeof setTimeout> | null = null;
   private holdTimer: ReturnType<typeof setTimeout> | null = null;
   private holdTriggered = false;
   private lifeHoldTimer: ReturnType<typeof setTimeout> | null = null;
@@ -121,6 +126,12 @@ export class GroupPlayComponent {
         : [4, 5];
     return rightIndices.map((index) => ({ slot: slots[index], index }));
   });
+  alivePlayerCount = computed(() =>
+    this.activeSlots().filter((_, index) => !this.isEliminated(index)).length,
+  );
+  showCompactEndGameCta = computed(
+    () => this.gameStarted() && this.alivePlayerCount() <= 1,
+  );
 
   ngOnInit(): void {
     this.updateViewportState();
@@ -137,6 +148,10 @@ export class GroupPlayComponent {
   }
 
   ngOnDestroy(): void {
+    if (this.slotFeatureHoldTimer) {
+      clearTimeout(this.slotFeatureHoldTimer);
+      this.slotFeatureHoldTimer = null;
+    }
     this.clearChromeMinimizeTimers();
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this.onViewportChange);
@@ -172,7 +187,7 @@ export class GroupPlayComponent {
     if (typeof window === 'undefined') return;
     this.viewportWidth.set(window.innerWidth);
     this.viewportHeight.set(window.innerHeight);
-    this.isCompactViewport.set(window.innerWidth < 1200);
+    this.isCompactViewport.set(isCompactWidth(window.innerWidth));
     this.isPortraitViewport.set(window.innerHeight > window.innerWidth);
   }
 
@@ -293,6 +308,25 @@ export class GroupPlayComponent {
     if (!this.mirroredTopHalf()) return false;
     const columnSize = column === 'left' ? this.leftSlots().length : this.rightSlots().length;
     return rowIndex < Math.ceil(columnSize / 2);
+  }
+
+  toggleCompactControls(): void {
+    this.showCompactControls.update((value) => !value);
+  }
+
+  closeCompactControls(): void {
+    this.showCompactControls.set(false);
+  }
+
+  handleCompactFabAction(): void {
+    if (this.showCompactEndGameCta()) {
+      if (!this.confirmAbortActive()) {
+        this.toggleAbortConfirm();
+      }
+      this.showCompactControls.set(true);
+      return;
+    }
+    this.toggleCompactControls();
   }
 
   incrementLife(index: number): void {
@@ -480,6 +514,7 @@ export class GroupPlayComponent {
   confirmAbort(): void {
     if (this.endConfirmTimer) clearTimeout(this.endConfirmTimer);
     this.confirmAbortActive.set(false);
+    this.showCompactControls.set(false);
     this.endGame();
   }
 
@@ -497,6 +532,7 @@ export class GroupPlayComponent {
   confirmReset(): void {
     if (this.resetConfirmTimer) clearTimeout(this.resetConfirmTimer);
     this.confirmResetActive.set(false);
+    this.showCompactControls.set(false);
     this.resetGame();
   }
 
@@ -650,6 +686,44 @@ export class GroupPlayComponent {
     this.poisonModalSlotIndex.set(null);
   }
 
+  startSlotFeatureHold(slotIndex: number): void {
+    if (!this.isCompactViewport() || !this.gameStarted()) return;
+    if (this.slotFeatureHoldTimer) {
+      clearTimeout(this.slotFeatureHoldTimer);
+    }
+    this.slotFeatureHoldTimer = setTimeout(() => {
+      this.showFeatureMenuModal.set(true);
+      this.featureMenuSlotIndex.set(slotIndex);
+      this.slotFeatureHoldTimer = null;
+    }, 420);
+  }
+
+  cancelSlotFeatureHold(): void {
+    if (this.slotFeatureHoldTimer) {
+      clearTimeout(this.slotFeatureHoldTimer);
+      this.slotFeatureHoldTimer = null;
+    }
+  }
+
+  closeFeatureMenuModal(): void {
+    this.showFeatureMenuModal.set(false);
+    this.featureMenuSlotIndex.set(null);
+  }
+
+  openPoisonFromFeatureMenu(): void {
+    const slotIndex = this.featureMenuSlotIndex();
+    if (slotIndex === null) return;
+    this.closeFeatureMenuModal();
+    this.openPoisonModal(slotIndex);
+  }
+
+  openCommanderFromFeatureMenu(opponentIndex: number): void {
+    const slotIndex = this.featureMenuSlotIndex();
+    if (slotIndex === null) return;
+    this.closeFeatureMenuModal();
+    this.openCommanderModal(slotIndex, opponentIndex);
+  }
+
   isEliminated(index: number): boolean {
     const slot = this.activeSlots()[index];
     if (!slot) return false;
@@ -703,6 +777,11 @@ export class GroupPlayComponent {
   }
 
   private endGame(): void {
+    if (this.group()?.userRole !== 'ADMIN') {
+      this.router.navigate(['/groups', this.groupId]);
+      return;
+    }
+
     const placements = this.buildPlacementDraft();
     const payload = {
       groupId: this.groupId,

@@ -6,7 +6,7 @@
   padding: var(--spacing-md);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .auth-page {
     min-height: calc(100dvh - 54px - env(safe-area-inset-bottom, 0px));
   }

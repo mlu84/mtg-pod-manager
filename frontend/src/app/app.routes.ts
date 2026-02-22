@@ -113,6 +113,32 @@ export const routes: Routes = [
     },
   },
   {
+    path: 'news',
+    loadComponent: () =>
+      import('./pages/news/news.component').then((m) => m.NewsComponent),
+    data: {
+      metaTitle: 'News | MTG Pod-Manager',
+      canonicalPath: '/news',
+      metaDescription:
+        'Stay updated with MTG Pod-Manager announcements, release notes, and service updates.',
+      metaRobots: 'index,follow',
+    },
+  },
+  {
+    path: 'maintenance',
+    loadComponent: () =>
+      import('./pages/maintenance/maintenance.component').then(
+        (m) => m.MaintenanceComponent
+      ),
+    data: {
+      metaTitle: 'Maintenance | MTG Pod-Manager',
+      canonicalPath: '/maintenance',
+      metaDescription:
+        'MTG Pod-Manager maintenance status page for temporary service interruptions.',
+      metaRobots: 'noindex,nofollow',
+    },
+  },
+  {
     path: 'groups',
     loadComponent: () =>
       import('./pages/groups/groups.component').then((m) => m.GroupsComponent),
