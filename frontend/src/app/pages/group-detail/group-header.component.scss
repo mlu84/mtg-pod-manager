@@ -7,14 +7,24 @@
 
 .header__content {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--spacing-sm);
 }
 
 .header__left {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.header__left-top {
+  display: flex;
+  align-items: center;
   gap: var(--spacing-md);
+  width: 100%;
   min-width: 0;
 }
 
@@ -56,6 +66,12 @@
   margin: 0;
 }
 
+.header__title-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .header__format-row {
   margin-top: var(--spacing-xs);
 }
@@ -70,17 +86,24 @@
 }
 
 .header__description {
-  width: 100%;
   color: var(--color-text-muted);
   font-size: 0.95rem;
   margin: 0;
 }
 
+.header__description--mobile {
+  display: none;
+}
+
+.header__description--desktop {
+  display: block;
+  width: 100%;
+}
+
 .header__actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-end;
   gap: var(--spacing-sm);
 }
 
@@ -89,12 +112,15 @@
   align-items: center;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .invite-code {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .invite-code__label {
@@ -226,7 +252,11 @@
 }
 
 @media (max-width: 767px) {
-  .header__left {
+  .header__content {
+    display: block;
+  }
+
+  .header__left-top {
     gap: var(--spacing-sm);
   }
 
@@ -242,10 +272,25 @@
   .header__info h1 {
     font-size: 1.2rem;
     flex-wrap: wrap;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .header__title-text {
+    flex: 1 1 0;
   }
 
   .header__description {
     font-size: 0.875rem;
+  }
+
+  .header__description--mobile {
+    display: block;
+    width: 100%;
+  }
+
+  .header__description--desktop {
+    display: none;
   }
 
   .header__actions {
@@ -254,7 +299,8 @@
 
   .header__burger {
     display: inline-flex;
-    align-self: flex-start;
+    margin-left: auto;
+    flex: 0 0 auto;
   }
 
   .modal__actions {
@@ -265,9 +311,7 @@
     flex: 1 1 calc(50% - var(--spacing-xs));
     min-width: 0;
   }
-}
 
-@media (max-width: 560px) {
   .btn--back-vertical {
     width: 36px;
     height: 44px;

@@ -116,28 +116,32 @@
           }
 
           <!-- Statistics -->
-          <app-group-stats-card
-            class="stats-card"
-            [statsCollapsed]="statsCollapsed()"
-            [statsMessage]="statsMessage()"
-            [statsCategory]="statsCategory()"
-            [statsOption]="statsOption()"
-            [statsDeckId]="statsDeckId()"
-            [statsDeckSearch]="statsDeckSearch()"
-            [statsDeckDropdownOpen]="statsDeckDropdownOpen()"
-            [filteredStatsDecks]="filteredStatsDecks()"
-            [getDeckNameById]="getDeckNameById.bind(this)"
-            [getManaSymbols]="getManaSymbols.bind(this)"
-            (toggleCollapsed)="toggleStatsCollapsed()"
-            (statsCategoryChange)="setStatsCategory($event)"
-            (statsOptionChange)="setStatsOption($event)"
-            (statsDeckSearchChange)="onStatsDeckSearchChange($event)"
-            (openStatsDeckDropdown)="openStatsDeckDropdown()"
-            (closeStatsDeckDropdownDelayed)="closeStatsDeckDropdownDelayed()"
-            (selectStatsDeck)="selectStatsDeck($event)"
-            (clearStatsDeckSelection)="clearStatsDeckSelection()"
-            (chartReady)="onStatsChartReady($event)"
-          />
+          @if (!showStatsExpandedModal()) {
+            <app-group-stats-card
+              class="stats-card"
+              [statsCollapsed]="statsCollapsed()"
+              [statsMessage]="statsMessage()"
+              [statsCategory]="statsCategory()"
+              [statsOption]="statsOption()"
+              [statsDeckId]="statsDeckId()"
+              [statsDeckSearch]="statsDeckSearch()"
+              [statsDeckDropdownOpen]="statsDeckDropdownOpen()"
+              [filteredStatsDecks]="filteredStatsDecks()"
+              [getDeckNameById]="getDeckNameById.bind(this)"
+              [getManaSymbols]="getManaSymbols.bind(this)"
+              [showExpandAction]="true"
+              (toggleCollapsed)="toggleStatsCollapsed()"
+              (expand)="openStatsExpandedModal()"
+              (statsCategoryChange)="setStatsCategory($event)"
+              (statsOptionChange)="setStatsOption($event)"
+              (statsDeckSearchChange)="onStatsDeckSearchChange($event)"
+              (openStatsDeckDropdown)="openStatsDeckDropdown()"
+              (closeStatsDeckDropdownDelayed)="closeStatsDeckDropdownDelayed()"
+              (selectStatsDeck)="selectStatsDeck($event)"
+              (clearStatsDeckSelection)="clearStatsDeckSelection()"
+              (chartReady)="onStatsChartReady($event)"
+            />
+          }
 
           <!-- Decks List -->
           <app-group-decks-card
@@ -529,6 +533,43 @@
       </div>
     </div>
   }
+
+@if (showStatsExpandedModal()) {
+  <div class="modal-overlay" (click)="closeStatsExpandedModal()">
+    <div class="modal modal--stats-expanded card" (click)="$event.stopPropagation()">
+      <button
+        class="modal__close stats-expanded__close"
+        type="button"
+        aria-label="Close expanded statistics"
+        (click)="closeStatsExpandedModal()"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+      <app-group-stats-card
+        class="stats-card stats-card--expanded"
+        [statsCollapsed]="false"
+        [statsMessage]="statsMessage()"
+        [statsCategory]="statsCategory()"
+        [statsOption]="statsOption()"
+        [statsDeckId]="statsDeckId()"
+        [statsDeckSearch]="statsDeckSearch()"
+        [statsDeckDropdownOpen]="statsDeckDropdownOpen()"
+        [filteredStatsDecks]="filteredStatsDecks()"
+        [getDeckNameById]="getDeckNameById.bind(this)"
+        [getManaSymbols]="getManaSymbols.bind(this)"
+        [showCollapseToggle]="false"
+        (statsCategoryChange)="setStatsCategory($event)"
+        (statsOptionChange)="setStatsOption($event)"
+        (statsDeckSearchChange)="onStatsDeckSearchChange($event)"
+        (openStatsDeckDropdown)="openStatsDeckDropdown()"
+        (closeStatsDeckDropdownDelayed)="closeStatsDeckDropdownDelayed()"
+        (selectStatsDeck)="selectStatsDeck($event)"
+        (clearStatsDeckSelection)="clearStatsDeckSelection()"
+        (chartReady)="onStatsChartReady($event)"
+      />
+    </div>
+  </div>
+}
 
 <!-- Confirmation Modal -->
 @if (showConfirmModal()) {

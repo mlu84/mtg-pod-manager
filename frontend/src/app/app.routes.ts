@@ -125,6 +125,20 @@ export const routes: Routes = [
     },
   },
   {
+    path: 'maintenance',
+    loadComponent: () =>
+      import('./pages/maintenance/maintenance.component').then(
+        (m) => m.MaintenanceComponent
+      ),
+    data: {
+      metaTitle: 'Maintenance | MTG Pod-Manager',
+      canonicalPath: '/maintenance',
+      metaDescription:
+        'MTG Pod-Manager maintenance status page for temporary service interruptions.',
+      metaRobots: 'noindex,nofollow',
+    },
+  },
+  {
     path: 'groups',
     loadComponent: () =>
       import('./pages/groups/groups.component').then((m) => m.GroupsComponent),

@@ -3,10 +3,22 @@
 
   .card__header {
     margin-bottom: var(--spacing-sm);
+    align-items: center;
+  }
+
+  .card__header-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
   }
 
   .card__toggle {
-    margin-left: auto;
+    position: static;
+  }
+
+  .stats-card__expand {
+    font-size: 1rem;
   }
 
   .deck-dropdown {
@@ -31,6 +43,18 @@
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+}
+
+:host(.stats-card--expanded) {
+  width: 100%;
+
+  .stats-card {
+    margin: 0;
+  }
+
+  .stats-chart {
+    height: min(60vh, 560px);
+  }
 }
 
 .stats-controls {

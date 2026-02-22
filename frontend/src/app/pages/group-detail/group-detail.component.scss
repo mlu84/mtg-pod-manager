@@ -695,6 +695,18 @@
   }
 }
 
+.modal--stats-expanded {
+  max-width: min(1100px, 96vw);
+  position: relative;
+  padding-top: calc(var(--spacing-xl) + var(--spacing-sm));
+}
+
+.stats-expanded__close {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+}
+
 .image-upload {
   display: flex;
   flex-direction: column;
@@ -1055,9 +1067,7 @@ textarea.form-control {
     width: 44px;
     height: 44px;
   }
-}
 
-@media (max-width: 560px) {
   .main-content {
     padding-bottom: var(--spacing-lg);
   }

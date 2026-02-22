@@ -192,6 +192,12 @@
   border-top: 1px solid var(--color-border);
 }
 
+.join-modal__footer {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
 .mobile-menu-overlay {
   position: fixed;
   inset: 0;
@@ -595,6 +601,17 @@
   .modal__actions .btn {
     flex: 1 1 calc(50% - var(--spacing-xs));
     min-width: 0;
+  }
+
+  .join-modal__footer {
+    justify-content: flex-end;
+  }
+
+  .join-modal__footer .btn {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 96px;
+    margin-left: auto;
   }
 
   .search-form {

@@ -177,6 +177,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   showGroupSettingsModal = signal(false);
   showSeasonSettingsModal = signal(false);
   showInviteUserModal = signal(false);
+  showStatsExpandedModal = signal(false);
 
   // Deck form (create)
   deckName = '';
@@ -274,6 +275,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   statsDeckDropdownOpen = signal(false);
   private statsDeckDropdownCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private statsCollapseInitialized = false;
+  private statsCollapsedBeforeExpand = false;
 
   // Member to remove (for confirmation)
   memberToRemove: { userId: string; user: { inAppName: string } } | null = null;
@@ -1957,6 +1959,19 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       setTimeout(() => this.renderStatsChart(), 0);
     }
+  }
+
+  openStatsExpandedModal(): void {
+    this.statsCollapsedBeforeExpand = this.statsCollapsed();
+    this.statsCollapsed.set(false);
+    this.showStatsExpandedModal.set(true);
+    this.lockBodyScroll();
+  }
+
+  closeStatsExpandedModal(): void {
+    this.showStatsExpandedModal.set(false);
+    this.statsCollapsed.set(this.statsCollapsedBeforeExpand);
+    this.unlockBodyScroll();
   }
 
   onStatsChartReady(ref: ElementRef<HTMLCanvasElement> | null): void {

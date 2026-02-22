@@ -137,8 +137,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--spacing-xs);
   margin-top: var(--spacing-md);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 
   &__btn {
     display: flex;
