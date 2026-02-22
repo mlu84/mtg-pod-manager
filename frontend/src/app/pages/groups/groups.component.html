@@ -236,30 +236,29 @@
       <form (ngSubmit)="joinGroup()">
         <div class="form-group">
           <label for="inviteCode">Invite Code</label>
-          <input
-            type="text"
-            id="inviteCode"
-            class="form-control"
-            [(ngModel)]="inviteCode"
-            name="inviteCode"
-            placeholder="Enter invite code"
-            maxlength="191"
-            [disabled]="joinLoading()"
-          />
-        </div>
-
-        <div class="modal__actions">
-          <button
-            type="submit"
-            class="btn btn--primary"
-            [disabled]="joinLoading()"
-          >
-            @if (joinLoading()) {
-              Joining...
-            } @else {
-              Join Group
-            }
-          </button>
+          <div class="join-code-row">
+            <input
+              type="text"
+              id="inviteCode"
+              class="form-control"
+              [(ngModel)]="inviteCode"
+              name="inviteCode"
+              placeholder="Enter invite code"
+              maxlength="191"
+              [disabled]="joinLoading()"
+            />
+            <button
+              type="submit"
+              class="btn btn--primary join-code-row__submit"
+              [disabled]="joinLoading()"
+            >
+              @if (joinLoading()) {
+                Joining...
+              } @else {
+                Join Group
+              }
+            </button>
+          </div>
         </div>
       </form>
 

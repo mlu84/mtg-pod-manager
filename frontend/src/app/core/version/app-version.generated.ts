@@ -11,6 +11,6 @@ export interface AppVersionInfo {
 export const APP_VERSION: AppVersionInfo = {
   "major": 0,
   "phase": 4,
-  "commit": 3,
-  "formatted": "0.4.3"
+  "commit": 4,
+  "formatted": "0.4.4"
 } as const;

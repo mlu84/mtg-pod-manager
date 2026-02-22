@@ -192,6 +192,22 @@
   border-top: 1px solid var(--color-border);
 }
 
+.join-code-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.join-code-row .form-control {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.join-code-row__submit {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .join-modal__footer {
   margin-top: var(--spacing-md);
   padding-top: var(--spacing-sm);
