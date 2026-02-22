@@ -537,13 +537,22 @@
 }
 
 @media (max-width: 767px) {
+  .header__content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
   .header__burger {
     display: inline-flex;
-    align-self: flex-start;
+    align-self: center;
   }
 
   .header__left {
     gap: var(--spacing-sm);
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .header__content h1 {

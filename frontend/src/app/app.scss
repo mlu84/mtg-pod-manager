@@ -168,6 +168,14 @@
   }
 
   .app-shell--local-mobile-nav .meta-header__nav {
+    display: flex;
+  }
+
+  .app-shell--local-mobile-nav .meta-header__nav .meta-header__link {
     display: none;
+  }
+
+  .app-shell--local-mobile-nav .meta-header__nav .donate-inline {
+    display: inline-flex;
   }
 }
