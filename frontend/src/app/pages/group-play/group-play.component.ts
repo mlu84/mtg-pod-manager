@@ -61,6 +61,13 @@ export class GroupPlayComponent {
   isPortraitViewport = signal(false);
   viewportWidth = signal(0);
   viewportHeight = signal(0);
+  forceLandscapeUi = computed(() => this.isCompactViewport() && this.isPortraitViewport());
+  playViewportWidth = computed(() =>
+    this.forceLandscapeUi() ? this.viewportHeight() : this.viewportWidth(),
+  );
+  playViewportHeight = computed(() =>
+    this.forceLandscapeUi() ? this.viewportWidth() : this.viewportHeight(),
+  );
   mirroredTopHalf = signal(false);
   isCommanderFormat = computed(
     () => (this.group()?.format || '').toLowerCase() === 'commander'

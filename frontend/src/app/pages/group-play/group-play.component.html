@@ -14,24 +14,18 @@
     </div>
   </div>
 } @else {
-  @if (isCompactViewport() && isPortraitViewport()) {
-    <div class="play-screen play-screen--orientation-lock">
-      <div class="orientation-lock card">
-        <h2><i class="fas fa-mobile-alt"></i> Landscape required</h2>
-        <p>Group Play is locked to landscape mode on smartphones and compact tablets.</p>
-        <p>Rotate your device to continue.</p>
-        <button class="btn btn--outline" (click)="goBack()">Back to Group</button>
-      </div>
-    </div>
-  } @else {
-    <div
-      class="play-screen"
-      [class.play-screen--compact]="isCompactViewport()"
-      [style.--viewport-width.px]="viewportWidth()"
-      [style.--viewport-height.px]="viewportHeight()"
-      (contextmenu)="handlePlaySurfaceContextMenu($event)"
-      (touchstart)="handlePlaySurfaceTouchStart()"
-    >
+  <div
+    class="play-screen"
+    [class.play-screen--compact]="isCompactViewport()"
+    [class.play-screen--forced-landscape]="forceLandscapeUi()"
+    [style.--viewport-width.px]="viewportWidth()"
+    [style.--viewport-height.px]="viewportHeight()"
+    [style.--play-width.px]="playViewportWidth()"
+    [style.--play-height.px]="playViewportHeight()"
+    (contextmenu)="handlePlaySurfaceContextMenu($event)"
+    (touchstart)="handlePlaySurfaceTouchStart()"
+  >
+    <div class="play-screen__surface">
       <div class="play-layout" [attr.data-count]="playerCount()">
         <div class="play-column play-column--left" [attr.data-count]="playerCount()">
           @for (entry of leftSlots(); track entry.index; let rowIndex = $index) {
@@ -178,5 +172,5 @@
         (confirmReset)="confirmReset()"
       ></app-group-play-modals>
     </div>
-  }
+  </div>
 }
