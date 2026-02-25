@@ -35,8 +35,13 @@ export interface UserProfile {
   email: string;
   inAppName: string;
   emailVerified: string | null;
+  hasUnreadNews: boolean;
   createdAt: string;
   avatarUrl: string | null;
+}
+
+export interface NewsStatusResponse {
+  hasUnreadNews: boolean;
 }
 
 export interface UpdateProfileRequest {

@@ -14,6 +14,7 @@ import { filter } from 'rxjs/operators';
 import { AppViewportService } from './core/services/app-viewport.service';
 import { AuthService } from './core/services/auth.service';
 import { NavigationHistoryService } from './core/services/navigation-history.service';
+import { NewsStateService } from './core/services/news-state.service';
 import { ProfileComponent } from './pages/profile/profile.component';
 
 @Component({
@@ -31,6 +32,7 @@ export class App implements OnDestroy {
   private titleService = inject(Title);
   private navigationHistoryService = inject(NavigationHistoryService);
   private appViewportService = inject(AppViewportService);
+  private newsStateService = inject(NewsStateService);
   private defaultTitle = 'MTG Pod-Manager';
   private defaultMetaDescription =
     'MTG Pod-Manager helps Magic: The Gathering playgroups organize players, decks, and game results in one place.';
@@ -39,6 +41,7 @@ export class App implements OnDestroy {
   private defaultOgImagePath = '/assets/images/mtg_pod_manager_logo.png';
 
   isAuthenticated = this.authService.isAuthenticated;
+  hasUnreadNews = this.newsStateService.hasUnreadNews;
   showProfileModal = signal(false);
   hideGlobalHeader = signal(false);
   useLocalMobileNav = signal(false);

@@ -44,6 +44,7 @@ model User {
   emailVerificationTokenExpiresAt DateTime?
   passwordResetTokenHash String?    @unique
   passwordResetTokenExpiresAt DateTime?
+  hasUnreadNews          Boolean    @default(false)
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
 
@@ -54,6 +55,7 @@ model User {
   seasonDismissals GroupSeasonDismissal[]
   sentGroupInvites GroupInvite[] @relation("GroupInviteInviter")
   receivedGroupInvites GroupInvite[] @relation("GroupInviteInvitedUser")
+  createdNewsEntries NewsEntry[] @relation("NewsEntryCreator")
 }
 
 model Group {
@@ -239,4 +241,18 @@ model GroupSeasonDismissal {
   dismissedAt DateTime @default(now())
 
   @@unique([seasonId, userId])
+}
+
+model NewsEntry {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdByUserId String?
+  createdBy       User? @relation("NewsEntryCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([createdByUserId])
 }

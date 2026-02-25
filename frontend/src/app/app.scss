@@ -99,6 +99,11 @@
   }
 }
 
+.meta-header__link--news {
+  position: relative;
+  padding-right: 12px;
+}
+
 .meta-header__link--filled {
   background-color: var(--color-secondary);
   color: var(--color-text-dark);

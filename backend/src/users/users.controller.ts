@@ -31,6 +31,16 @@ export class UsersController {
     return this.usersService.getApplications(user.id);
   }
 
+  @Get('me/news-status')
+  getNewsStatus(@CurrentUser() user: CurrentUserType) {
+    return this.usersService.getNewsStatus(user.id);
+  }
+
+  @Post('me/news/read')
+  markNewsAsRead(@CurrentUser() user: CurrentUserType) {
+    return this.usersService.markNewsAsRead(user.id);
+  }
+
   @Patch('me')
   updateProfile(
     @CurrentUser() user: CurrentUserType,

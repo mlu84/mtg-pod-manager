@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
+import { NewsStateService } from '../../core/services/news-state.service';
 import { ProfileComponent } from '../profile/profile.component';
 
 @Component({
@@ -15,6 +16,8 @@ export class LegalComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
   private navigationHistoryService = inject(NavigationHistoryService);
+  private newsStateService = inject(NewsStateService);
+  hasUnreadNews = this.newsStateService.hasUnreadNews;
   showMobileMenu = signal(false);
   showProfileModal = signal(false);
 

@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -15,6 +16,8 @@ import { AdminSearchGroupsQueryDto } from './dto/search-groups-query.dto';
 import { RenameUserDto } from './dto/rename-user.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe';
+import { CurrentUser, CurrentUserType } from '../auth/decorators/current-user.decorator';
+import { CreateNewsEntryDto } from './dto/create-news-entry.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, SysAdminGuard)
@@ -62,5 +65,13 @@ export class AdminController {
   @Delete('users/:id')
   deleteUser(@Param('id', ParseCuidPipe) userId: string) {
     return this.adminService.deleteUserAccount(userId);
+  }
+
+  @Post('news')
+  createNews(
+    @CurrentUser() user: CurrentUserType,
+    @Body() dto: CreateNewsEntryDto,
+  ) {
+    return this.adminService.createNewsEntry(user.id, dto);
   }
 }

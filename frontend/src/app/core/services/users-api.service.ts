@@ -3,7 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { UserGroupApplication } from '../../models/group.model';
-import { UpdateProfileRequest, UserProfile } from '../../models/user.model';
+import {
+  NewsStatusResponse,
+  UpdateProfileRequest,
+  UserProfile,
+} from '../../models/user.model';
 
 const API_URL = environment.apiUrl;
 
@@ -19,6 +23,14 @@ export class UsersApiService {
 
   getProfile(): Observable<UserProfile> {
     return this.http.get<UserProfile>(`${API_URL}/users/me`);
+  }
+
+  getNewsStatus(): Observable<NewsStatusResponse> {
+    return this.http.get<NewsStatusResponse>(`${API_URL}/users/me/news-status`);
+  }
+
+  markNewsAsRead(): Observable<NewsStatusResponse> {
+    return this.http.post<NewsStatusResponse>(`${API_URL}/users/me/news/read`, {});
   }
 
   updateProfile(data: UpdateProfileRequest): Observable<UserProfile> {

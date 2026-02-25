@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
+import { NewsStateService } from '../../core/services/news-state.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { formatLocalDate } from '../../core/utils/date-utils';
 import { ProfileComponent } from '../profile/profile.component';
@@ -95,9 +96,11 @@ export class GroupsComponent implements OnInit {
   private usersApiService = inject(UsersApiService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private newsStateService = inject(NewsStateService);
 
   isEmailVerified = this.authService.isEmailVerified;
   isSysAdmin = this.authService.isSysAdmin;
+  hasUnreadNews = this.newsStateService.hasUnreadNews;
   requestsBadge = computed(
     () =>
       this.myApplications().length +

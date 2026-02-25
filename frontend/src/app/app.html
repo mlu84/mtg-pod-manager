@@ -41,12 +41,15 @@
             Contact
           </a>
           <a
-            class="meta-header__link"
+            class="meta-header__link meta-header__link--news"
             routerLink="/news"
             routerLinkActive="is-active"
             [routerLinkActiveOptions]="{ exact: true }"
           >
             News
+            @if (isAuthenticated() && hasUnreadNews()) {
+              <span class="news-unread-badge news-unread-badge--floating" aria-hidden="true">!</span>
+            }
           </a>
           <div class="donate-inline">
             <span class="donate-prefix">Buy me a booster</span>

@@ -15,6 +15,7 @@ const profileSelect = {
   email: true,
   inAppName: true,
   emailVerified: true,
+  hasUnreadNews: true,
   createdAt: true,
   avatarImage: true,
   avatarImageMime: true,
@@ -133,6 +134,29 @@ export class UsersService {
       group: app.group,
       createdAt: app.createdAt,
     }));
+  }
+
+  async getNewsStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { hasUnreadNews: true },
+    });
+
+    return {
+      hasUnreadNews: user?.hasUnreadNews ?? false,
+    };
+  }
+
+  async markNewsAsRead(userId: string) {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { hasUnreadNews: false },
+      select: { hasUnreadNews: true },
+    });
+
+    return {
+      hasUnreadNews: updated.hasUnreadNews,
+    };
   }
 
   async updateProfile(userId: string, data: { inAppName?: string }) {
@@ -318,6 +342,7 @@ export class UsersService {
     email: string;
     inAppName: string;
     emailVerified: Date | null;
+    hasUnreadNews: boolean;
     createdAt: Date;
     avatarImage: Buffer | null;
     avatarImageMime: string | null;

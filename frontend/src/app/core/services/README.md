@@ -16,3 +16,4 @@ Invariants
 - User profile API includes avatar upload support via multipart requests.
 - User profile API includes authenticated self-deletion via `DELETE /users/me`.
 - `AppViewportService` is the single source for app-level viewport width/height sync and root CSS viewport variables.
+- `NewsStateService` is the single source for unread-news marker state and read-on-visit sync.

@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output, inject, signal } from '@angular
 import { CommonModule } from '@angular/common';
 import { GroupDetail } from '../../models/group.model';
 import { AuthService } from '../../core/services/auth.service';
+import { NewsStateService } from '../../core/services/news-state.service';
 import { Router } from '@angular/router';
 import { ProfileComponent } from '../profile/profile.component';
 
@@ -31,6 +32,8 @@ export class GroupHeaderComponent {
 
   private authService = inject(AuthService);
   private router = inject(Router);
+  private newsStateService = inject(NewsStateService);
+  hasUnreadNews = this.newsStateService.hasUnreadNews;
 
   toggleMobileMenu(): void {
     this.showMobileMenu.update((value) => !value);

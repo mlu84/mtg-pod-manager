@@ -50,6 +50,9 @@
           </button>
           <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/news')">
             <i class="fas fa-bullhorn"></i> News
+            @if (hasUnreadNews()) {
+              <span class="news-unread-badge news-unread-badge--inline" aria-hidden="true">!</span>
+            }
           </button>
           <button type="button" class="btn btn--danger mobile-menu__item" (click)="logoutFromMobileMenu()">
             <i class="fas fa-sign-out-alt"></i> Logout

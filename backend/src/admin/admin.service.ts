@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -7,6 +8,7 @@ import {
 import { SystemRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
+import { CreateNewsEntryDto } from './dto/create-news-entry.dto';
 
 @Injectable()
 export class AdminService {
@@ -289,5 +291,43 @@ export class AdminService {
     );
 
     return { message: 'User deleted' };
+  }
+
+  async createNewsEntry(userId: string, dto: CreateNewsEntryDto) {
+    const title = dto.title.trim();
+    const content = dto.content.trim();
+    if (!title || !content) {
+      throw new BadRequestException('Title and content must not be empty');
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const news = await tx.newsEntry.create({
+        data: {
+          title,
+          content,
+          createdByUserId: userId,
+        },
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          createdAt: true,
+          createdByUserId: true,
+        },
+      });
+
+      await tx.user.updateMany({
+        data: {
+          hasUnreadNews: true,
+        },
+      });
+
+      return news;
+    });
+
+    return {
+      message: 'News entry created and unread marker set for all users',
+      news: result,
+    };
   }
 }

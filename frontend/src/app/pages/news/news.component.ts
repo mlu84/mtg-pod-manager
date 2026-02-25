@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
+import { NewsStateService } from '../../core/services/news-state.service';
 import { ProfileComponent } from '../profile/profile.component';
 
 @Component({
@@ -16,9 +17,14 @@ export class NewsComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
   private navigationHistoryService = inject(NavigationHistoryService);
+  private newsStateService = inject(NewsStateService);
   showMobileMenu = signal(false);
   showProfileModal = signal(false);
   readonly lastUpdated = 'February 2026';
+
+  ngOnInit(): void {
+    this.newsStateService.markAsReadOnVisit();
+  }
 
   toggleMobileMenu(): void {
     this.showMobileMenu.update((value) => !value);
