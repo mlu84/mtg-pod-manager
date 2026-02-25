@@ -29,6 +29,21 @@
     }
 
     <form (ngSubmit)="submit.emit()">
+      <div class="form-group">
+        <label for="playedAtDate">Game date</label>
+        <input
+          id="playedAtDate"
+          type="date"
+          class="form-control"
+          [ngModel]="gamePlayedAt"
+          (ngModelChange)="gamePlayedAtChange.emit($event)"
+          name="playedAtDate"
+          [max]="maxGamePlayedAt"
+          [disabled]="gameLoading"
+          required
+        />
+      </div>
+
       <div class="placements-list">
         @for (placement of gamePlacements; track $index; let i = $index) {
           <div class="placement-row" [class.placement-row--editable]="!prefilledGame">

@@ -14,6 +14,8 @@ type Placement = { deckId: string; rank: number; playerName: string };
 })
 export class GroupRecordGameModalComponent {
   @Input({ required: true }) gamePlacements!: Placement[];
+  @Input({ required: true }) gamePlayedAt!: string;
+  @Input({ required: true }) maxGamePlayedAt!: string;
   @Input({ required: true }) gameLoading!: boolean;
   @Input({ required: true }) gameError!: string | null;
   @Input({ required: true }) prefilledGame!: boolean;
@@ -29,6 +31,7 @@ export class GroupRecordGameModalComponent {
   @Input({ required: true }) getManaSymbols!: (colors: string) => string[];
 
   @Output() close = new EventEmitter<void>();
+  @Output() gamePlayedAtChange = new EventEmitter<string>();
   @Output() submit = new EventEmitter<void>();
   @Output() addPlayer = new EventEmitter<void>();
   @Output() removePlayer = new EventEmitter<number>();

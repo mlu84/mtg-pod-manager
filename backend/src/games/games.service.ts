@@ -110,6 +110,16 @@ export class GamesService {
       );
     }
 
+    const playedAt = createGameDto.playedAt
+      ? new Date(createGameDto.playedAt)
+      : new Date();
+    if (Number.isNaN(playedAt.getTime())) {
+      throw new BadRequestException('Invalid game date');
+    }
+    if (playedAt.getTime() > Date.now()) {
+      throw new BadRequestException('Game date cannot be in the future');
+    }
+
     // Validate rank configuration (tie rules, bounds)
     this.scoringService.validateRankConfiguration(createGameDto.placements);
 
@@ -127,9 +137,7 @@ export class GamesService {
         data: {
           groupId: createGameDto.groupId,
           playerCount,
-          playedAt: createGameDto.playedAt
-            ? new Date(createGameDto.playedAt)
-            : new Date(),
+          playedAt,
           placements: {
             create: placementsWithPoints.map((p) => ({
               deckId: p.deckId,

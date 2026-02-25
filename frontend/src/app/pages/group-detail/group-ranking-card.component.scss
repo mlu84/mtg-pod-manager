@@ -373,12 +373,106 @@
   }
 }
 
+.ranking-item__games-link {
+  border: none;
+  background: transparent;
+  color: rgba(26, 22, 19, 0.72);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-align: right;
+  text-decoration: none;
+  display: inline-block;
+
+  &:hover {
+    color: #1a1613;
+  }
+}
+
+.ranking-item__stats .ranking-item__games-link {
+  display: block;
+  margin-left: auto;
+}
+
+.ranking-footer {
+  margin-top: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.ranking-footer__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  width: 100%;
+}
+
+.ranking-footer__controls .pagination {
+  margin-top: 0;
+}
+
+.ranking-search-toggle {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.ranking-search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.ranking-search__field {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ranking-search__input {
+  padding-right: 2rem;
+}
+
+.ranking-search__clear {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
 .pagination {
   display: flex;
-  justify-content: center;
   align-items: center;
   gap: var(--spacing-xs);
-  margin-top: var(--spacing-md);
 
   &__btn {
     display: flex;
@@ -481,6 +575,13 @@
 
   .pagination {
     flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ranking-search {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--spacing-xs);
   }
 }
 

@@ -11,6 +11,12 @@
   }
 }
 
+.history-deck-filter {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
 .btn--sm {
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: 0.8rem;
@@ -174,5 +180,17 @@
       color: var(--color-text);
       font-weight: 600;
     }
+  }
+}
+
+@media (max-width: 767px) {
+  .history-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-filters__left {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

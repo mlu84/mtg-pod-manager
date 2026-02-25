@@ -48,7 +48,6 @@ export class App implements OnDestroy {
 
   constructor() {
     this.appViewportService.start();
-    this.navigationHistoryService.recordNavigation(this.router.url);
     this.updateLayoutForUrl(this.router.url);
     this.updateSeoTags(this.router.url);
 

@@ -1,7 +1,7 @@
 {
   "major": 0,
   "phase": 4,
-  "commit": 6,
+  "commit": 8,
   "baseRef": "origin/main",
   "padPhase": 1,
   "padCommit": 1,

@@ -5,8 +5,10 @@ import { of } from 'rxjs';
 import { Router } from '@angular/router';
 import { GroupsComponent } from './groups.component';
 import { GroupsApiService } from '../../core/services/groups-api.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { NewsStateService } from '../../core/services/news-state.service';
 
 describe('GroupsComponent', () => {
   let component: GroupsComponent;
@@ -42,7 +44,19 @@ describe('GroupsComponent', () => {
             isSysAdmin: signal(false),
           },
         },
-        { provide: Router, useValue: { navigate: vi.fn() } },
+        {
+          provide: NewsStateService,
+          useValue: {
+            hasUnreadNews: signal(false),
+          },
+        },
+        {
+          provide: NavigationHistoryService,
+          useValue: {
+            getBackTarget: vi.fn().mockReturnValue('/'),
+          },
+        },
+        { provide: Router, useValue: { navigate: vi.fn(), navigateByUrl: vi.fn() } },
       ],
       parentInjector,
     );

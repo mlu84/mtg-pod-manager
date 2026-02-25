@@ -1,10 +1,11 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { NewsStateService } from '../../core/services/news-state.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { formatLocalDate } from '../../core/utils/date-utils';
@@ -29,7 +30,7 @@ import {
 @Component({
   selector: 'app-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ProfileComponent],
+  imports: [CommonModule, FormsModule, ProfileComponent],
   templateUrl: './groups.component.html',
   styleUrl: './groups.component.scss',
 })
@@ -96,6 +97,7 @@ export class GroupsComponent implements OnInit {
   private usersApiService = inject(UsersApiService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private navigationHistoryService = inject(NavigationHistoryService);
   private newsStateService = inject(NewsStateService);
 
   isEmailVerified = this.authService.isEmailVerified;
@@ -457,6 +459,13 @@ export class GroupsComponent implements OnInit {
 
   goToSysadminUsers(): void {
     this.router.navigate(['/sysadmin-users']);
+  }
+
+  goBack(): void {
+    const fallback = this.authService.isAuthenticated() ? '/' : '/login';
+    this.router.navigateByUrl(
+      this.navigationHistoryService.getBackTarget(this.router.url, fallback),
+    );
   }
 
   formatDate(dateString: string): string {

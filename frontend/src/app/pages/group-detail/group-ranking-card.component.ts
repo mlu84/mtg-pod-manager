@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { RankingEntryWithTrend } from '../../models/game.model';
+import { sanitizeSearchInput } from '../../core/utils/input-validation';
 
 @Component({
   selector: 'app-group-ranking-card',
@@ -30,6 +31,9 @@ export class GroupRankingCardComponent implements OnChanges {
   @Input({ required: true }) rankingPage!: number;
   @Input({ required: true }) rankingTotalPages!: number;
   @Input({ required: true }) showTrends!: boolean;
+  @Input({ required: true }) hasRankingData!: boolean;
+  @Input({ required: true }) rankingSearchVisible!: boolean;
+  @Input({ required: true }) rankingSearchTerm!: string;
   @Input({ required: true }) defaultDeckImage!: string;
   @Input({ required: true }) getColorGradient!: (colors: string) => string;
   @Input({ required: true }) getDeckImageUrl!: (deckId: string) => string | null;
@@ -39,6 +43,9 @@ export class GroupRankingCardComponent implements OnChanges {
 
   @Output() rankingModeToggle = new EventEmitter<void>();
   @Output() rankingPageChange = new EventEmitter<number>();
+  @Output() rankingSearchToggle = new EventEmitter<void>();
+  @Output() rankingSearchChange = new EventEmitter<string>();
+  @Output() rankingGamesFilterSelect = new EventEmitter<string>();
 
   private expandedEntryIds = signal<Set<string>>(new Set());
 
@@ -54,6 +61,23 @@ export class GroupRankingCardComponent implements OnChanges {
 
   setRankingPage(page: number): void {
     this.rankingPageChange.emit(page);
+  }
+
+  toggleRankingSearch(): void {
+    this.rankingSearchToggle.emit();
+  }
+
+  handleRankingSearchInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.rankingSearchChange.emit(sanitizeSearchInput(input.value, 100));
+  }
+
+  clearRankingSearch(): void {
+    this.rankingSearchChange.emit('');
+  }
+
+  selectHistoryDeckFromRanking(deckId: string): void {
+    this.rankingGamesFilterSelect.emit(deckId);
   }
 
   toggleEntryExpansion(entryId: string): void {

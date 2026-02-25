@@ -267,6 +267,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // History filter
   historyFilter = signal<'all' | 'games' | 'events'>('all');
+  historyDeckFilter = signal('');
+  historyCollapsed = signal(false);
 
   // Collapsible cards
   decksCollapsed = signal(true);
@@ -309,6 +311,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Game form
   gamePlacements: { deckId: string; rank: number; playerName: string }[] = [];
+  gamePlayedAt = '';
+  maxGamePlayedAt = this.getTodayDateInputValue();
   gameLoading = signal(false);
   gameError = signal<string | null>(null);
   prefilledGame = signal(false);
@@ -532,20 +536,44 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   // Ranking pagination
   readonly rankingPageSize = 10;
   rankingPage = signal(1);
+  rankingSearchVisible = signal(false);
+  rankingSearchTerm = signal('');
+
+  filteredRanking = computed(() => {
+    const term = this.rankingSearchTerm().trim().toLowerCase();
+    if (!term) {
+      return this.ranking();
+    }
+    return this.ranking().filter((entry) => entry.name.toLowerCase().includes(term));
+  });
 
   rankingTotalPages = computed(() =>
-    Math.ceil(this.ranking().length / this.rankingPageSize)
+    Math.ceil(this.filteredRanking().length / this.rankingPageSize)
   );
 
   paginatedRanking = computed(() => {
     const start = (this.rankingPage() - 1) * this.rankingPageSize;
-    return this.ranking().slice(start, start + this.rankingPageSize);
+    return this.filteredRanking().slice(start, start + this.rankingPageSize);
   });
 
   setRankingPage(page: number): void {
     if (page >= 1 && page <= this.rankingTotalPages()) {
       this.rankingPage.set(page);
     }
+  }
+
+  toggleRankingSearch(): void {
+    const nextVisible = !this.rankingSearchVisible();
+    this.rankingSearchVisible.set(nextVisible);
+    if (!nextVisible) {
+      this.rankingSearchTerm.set('');
+      this.rankingPage.set(1);
+    }
+  }
+
+  setRankingSearch(term: string): void {
+    this.rankingSearchTerm.set(sanitizeDeckSearchTerm(term));
+    this.rankingPage.set(1);
   }
 
   // Decks search and pagination
@@ -592,6 +620,12 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return filterStatsDecks(this.sortedDecks(), this.statsDeckSearch());
   });
 
+  historyDeckOptions = computed(() =>
+    [...(this.group()?.decks || [])]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((deck) => ({ id: deck.id, name: deck.name }))
+  );
+
   // History pagination
   readonly historyPageSize = 10;
   historyPage = signal(1);
@@ -635,9 +669,16 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   // Filtered history based on selected filter
   filteredHistory = computed(() => {
     const filter = this.historyFilter();
-    const items = this.history();
-
-    return filterHistoryItems(items, filter);
+    const selectedDeckId = this.historyDeckFilter();
+    const items = filterHistoryItems(this.history(), filter);
+    if (!selectedDeckId) {
+      return items;
+    }
+    return items.filter(
+      (item) =>
+        item.type === 'game' &&
+        item.data.placements.some((placement) => placement.deck?.id === selectedDeckId),
+    );
   });
 
   constructor() {}
@@ -1030,6 +1071,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         .sort((a, b) => a.rank - b.rank);
       this.deckSearchTerms = [];
       this.deckDropdownOpen = [];
+      this.maxGamePlayedAt = this.getTodayDateInputValue();
+      this.gamePlayedAt = this.maxGamePlayedAt;
       this.gameError.set(null);
       this.prefilledGame.set(true);
       this.showGameModal.set(true);
@@ -1063,6 +1106,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     ];
     this.deckSearchTerms = [];
     this.deckDropdownOpen = [];
+    this.maxGamePlayedAt = this.getTodayDateInputValue();
+    this.gamePlayedAt = this.maxGamePlayedAt;
     this.gameError.set(null);
     this.prefilledGame.set(false);
     this.showGameModal.set(true);
@@ -1072,6 +1117,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   closeGameModal(): void {
     this.showGameModal.set(false);
     this.prefilledGame.set(false);
+    this.gamePlayedAt = '';
     this.unlockBodyScroll();
   }
 
@@ -1102,6 +1148,17 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   createGame(): void {
+    const playedAt = this.gamePlayedAt.trim();
+    if (!playedAt) {
+      this.gameError.set('Please select a game date');
+      return;
+    }
+    const today = this.getTodayDateInputValue();
+    if (playedAt > today) {
+      this.gameError.set('Game date cannot be in the future');
+      return;
+    }
+
     const validation = validateGamePlacementsInput(this.gamePlacements);
     if (validation.error || !validation.value) {
       this.gameError.set(validation.error ?? 'Invalid game input');
@@ -1114,6 +1171,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupDetailApiService
       .createGame({
         groupId: this.groupId,
+        playedAt: this.toPlayedAtIso(playedAt),
         placements: validation.value,
       })
       .subscribe({
@@ -1877,9 +1935,37 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return formatLocalDate(dateString);
   }
 
+  private getTodayDateInputValue(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    const day = `${now.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toPlayedAtIso(dateInput: string): string {
+    return `${dateInput}T12:00:00.000Z`;
+  }
+
   setHistoryFilter(filter: 'all' | 'games' | 'events'): void {
     this.historyFilter.set(filter);
+    if (filter !== 'games') {
+      this.historyDeckFilter.set('');
+    }
     this.historyPage.set(1); // Reset to first page when filter changes
+  }
+
+  setHistoryDeckFilter(deckId: string): void {
+    this.historyDeckFilter.set(deckId);
+    if (deckId) {
+      this.historyFilter.set('games');
+    }
+    this.historyPage.set(1);
+  }
+
+  applyHistoryDeckFilterFromRanking(deckId: string): void {
+    this.historyCollapsed.set(false);
+    this.setHistoryDeckFilter(deckId);
   }
 
   // Confirmation Modal helpers
@@ -1928,6 +2014,10 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleDecksCollapsed(): void {
     this.decksCollapsed.set(!this.decksCollapsed());
+  }
+
+  toggleHistoryCollapsed(): void {
+    this.historyCollapsed.set(!this.historyCollapsed());
   }
 
   toggleMembersCollapsed(): void {
