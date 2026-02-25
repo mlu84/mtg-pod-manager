@@ -7,8 +7,44 @@
         </button>
         <h1>Legal</h1>
       </div>
+      <button
+        class="btn btn--outline header__burger"
+        type="button"
+        aria-label="Open mobile menu"
+        title="Menu"
+        (click)="toggleMobileMenu()"
+      >
+        <i class="fas fa-bars"></i>
+      </button>
     </div>
   </header>
+
+  @if (showMobileMenu()) {
+    <div class="mobile-menu-overlay" (click)="closeMobileMenu()">
+      <nav class="mobile-menu card" (click)="$event.stopPropagation()">
+        <div class="mobile-menu__header">
+          <h2>Menu</h2>
+          <button class="mobile-menu__close" type="button" (click)="closeMobileMenu()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="mobile-menu__list">
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="openProfileFromMenu()">
+            <i class="fas fa-user"></i> Profile
+          </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/contact')">
+            <i class="fas fa-envelope"></i> Contact
+          </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/news')">
+            <i class="fas fa-bullhorn"></i> News
+          </button>
+          <button type="button" class="btn btn--danger mobile-menu__item" (click)="logoutFromMobileMenu()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </nav>
+    </div>
+  }
 
   <main class="container legal-content">
     <div class="card legal-card">
@@ -372,4 +408,8 @@
     </div>
   </main>
 </div>
+
+@if (showProfileModal()) {
+  <app-profile (close)="closeProfileModal()" />
+}
 

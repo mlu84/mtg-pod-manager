@@ -54,6 +54,10 @@
   // Transitions
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
+
+  // App viewport state (kept in sync by AppViewportService)
+  --app-viewport-width: 100vw;
+  --app-viewport-height: 100vh;
 }
 
 // Reset & Base
@@ -68,6 +72,7 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  min-height: var(--app-viewport-height, 100vh);
 }
 
 body {
@@ -75,7 +80,7 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   line-height: 1.6;
-  min-height: 100vh;
+  min-height: var(--app-viewport-height, 100vh);
 }
 
 @media (min-width: 768px) {

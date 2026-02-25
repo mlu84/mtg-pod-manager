@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import {
   ActivatedRoute,
   NavigationEnd,
@@ -11,6 +11,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Meta, Title } from '@angular/platform-browser';
 import { filter } from 'rxjs/operators';
+import { AppViewportService } from './core/services/app-viewport.service';
 import { AuthService } from './core/services/auth.service';
 import { NavigationHistoryService } from './core/services/navigation-history.service';
 import { ProfileComponent } from './pages/profile/profile.component';
@@ -21,7 +22,7 @@ import { ProfileComponent } from './pages/profile/profile.component';
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {
+export class App implements OnDestroy {
   private document = inject(DOCUMENT);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -29,6 +30,7 @@ export class App {
   private metaService = inject(Meta);
   private titleService = inject(Title);
   private navigationHistoryService = inject(NavigationHistoryService);
+  private appViewportService = inject(AppViewportService);
   private defaultTitle = 'MTG Pod-Manager';
   private defaultMetaDescription =
     'MTG Pod-Manager helps Magic: The Gathering playgroups organize players, decks, and game results in one place.';
@@ -42,6 +44,7 @@ export class App {
   useLocalMobileNav = signal(false);
 
   constructor() {
+    this.appViewportService.start();
     this.navigationHistoryService.recordNavigation(this.router.url);
     this.updateLayoutForUrl(this.router.url);
     this.updateSeoTags(this.router.url);
@@ -57,6 +60,10 @@ export class App {
         this.updateSeoTags(event.urlAfterRedirects);
         this.showProfileModal.set(false);
       });
+  }
+
+  ngOnDestroy(): void {
+    this.appViewportService.stop();
   }
 
   private updateLayoutForUrl(url: string): void {

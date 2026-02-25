@@ -132,17 +132,31 @@
 }
 
 .modal--compact-controls {
-  max-width: 420px;
+  max-width: min(520px, calc(100vw - 16px));
+  max-height: min(86dvh, 430px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal--compact-controls .modal__header {
+  margin-bottom: var(--spacing-sm);
+}
+
+.modal--compact-controls .compact-controls-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: stretch;
 }
 
 .compact-controls-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .compact-controls-grid__btn {
-  min-height: 72px;
+  min-height: 64px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -164,8 +178,31 @@
     height: 72px;
   }
 
-  .compact-controls-grid {
-    grid-template-columns: 1fr;
+  .modal--compact-controls {
+    max-height: min(86dvh, 390px);
+  }
+
+  .compact-controls-grid__btn {
+    min-height: 58px;
+  }
+
+  .compact-controls-grid__btn strong {
+    font-size: 0.96rem;
+  }
+}
+
+@media (max-height: 520px) {
+  .modal--compact-controls {
+    max-height: min(88dvh, 340px);
+  }
+
+  .compact-controls-grid__btn {
+    min-height: 52px;
+    gap: 2px;
+  }
+
+  .compact-controls-grid__btn strong {
+    font-size: 0.9rem;
   }
 }
 

@@ -4,6 +4,7 @@ Responsibilities
 - API clients for admin, groups, group detail, and users.
 - Auth token management and sysadmin detection.
 - Error reporting and global error handling.
+- Global viewport/orientation synchronization via `AppViewportService`.
 
 Inputs/Outputs
 - Inputs: HTTP requests, tokens, errors.
@@ -14,3 +15,4 @@ Invariants
 - Errors should route through `ErrorReportingService` or `GlobalErrorHandler`.
 - User profile API includes avatar upload support via multipart requests.
 - User profile API includes authenticated self-deletion via `DELETE /users/me`.
+- `AppViewportService` is the single source for app-level viewport width/height sync and root CSS viewport variables.

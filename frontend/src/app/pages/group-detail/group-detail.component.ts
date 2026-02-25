@@ -69,6 +69,7 @@ import Chart from 'chart.js/auto';
 import { ChartConfiguration } from 'chart.js';
 import { formatLocalDate } from '../../core/utils/date-utils';
 import { isSmartphoneWidth } from '../../core/config/viewport-breakpoints';
+import { AppViewportService } from '../../core/services/app-viewport.service';
 import {
   validateDeckFormInput,
   validateDeckOwnerAssignmentInput,
@@ -117,6 +118,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   private viewInitialized = false;
   private colorIconCache = new Map<string, HTMLImageElement>();
   private pendingRecordGameFromDraft = false;
+  private appViewportService = inject(AppViewportService);
   private colorIconPlugin = {
     id: 'colorIconPlugin',
     afterDraw: (chart: Chart) => {
@@ -253,10 +255,15 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   alertModalTitle = '';
   alertModalMessage = '';
   alertModalType: 'error' | 'success' | 'info' = 'error';
-  isSmartphoneViewport = signal(false);
+  isSmartphoneViewport = computed(() =>
+    isSmartphoneWidth(this.appViewportService.viewportWidth()),
+  );
+  isSmartphonePortraitViewport = computed(() => {
+    const width = this.appViewportService.viewportWidth();
+    const height = this.appViewportService.viewportHeight();
+    return isSmartphoneWidth(width) && height > width;
+  });
   showScrollTop = signal(false);
-  viewportWidth = signal(0);
-  viewportHeight = signal(0);
 
   // History filter
   historyFilter = signal<'all' | 'games' | 'events'>('all');
@@ -636,14 +643,10 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor() {}
 
   ngOnInit(): void {
-    this.updateViewportState();
+    this.appViewportService.start();
     this.updateScrollTopVisibility();
     if (typeof window !== 'undefined') {
-      window.addEventListener('resize', this.onViewportChange);
-      window.addEventListener('orientationchange', this.onViewportChange);
       window.addEventListener('scroll', this.onScrollChange);
-      window.visualViewport?.addEventListener('resize', this.onViewportChange);
-      window.visualViewport?.addEventListener('scroll', this.onViewportChange);
     }
     this.groupId = this.route.snapshot.params['id'];
     this.pendingRecordGameFromDraft =
@@ -659,11 +662,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', this.onViewportChange);
-      window.removeEventListener('orientationchange', this.onViewportChange);
       window.removeEventListener('scroll', this.onScrollChange);
-      window.visualViewport?.removeEventListener('resize', this.onViewportChange);
-      window.visualViewport?.removeEventListener('scroll', this.onViewportChange);
     }
     if (this.statsChart) {
       this.statsChart.destroy();
@@ -671,22 +670,9 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private onViewportChange = (): void => {
-    this.updateViewportState();
-  };
-
   private onScrollChange = (): void => {
     this.updateScrollTopVisibility();
   };
-
-  private updateViewportState(): void {
-    if (typeof window === 'undefined') return;
-    const width = window.visualViewport?.width ?? window.innerWidth;
-    const height = window.visualViewport?.height ?? window.innerHeight;
-    this.viewportWidth.set(Math.round(width));
-    this.viewportHeight.set(Math.round(height));
-    this.isSmartphoneViewport.set(isSmartphoneWidth(width));
-  }
 
   private updateScrollTopVisibility(): void {
     if (typeof window === 'undefined') return;
@@ -2159,7 +2145,18 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           const total = deckList.reduce((sum, d) => sum + d.performanceRating, 0);
           return Number((total / deckList.length).toFixed(1));
         });
-        return this.buildColorBarChart(colorLabels, values, 'Avg performance');
+        const groupAverage =
+          decks.reduce((sum, deck) => sum + deck.performanceRating, 0) / decks.length;
+        return this.buildColorBarChart(
+          colorLabels,
+          values,
+          'Avg performance',
+          false,
+          false,
+          undefined,
+          false,
+          groupAverage,
+        );
       }
 
       if (option === 'colors_deck_types') {
@@ -2219,7 +2216,18 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
       const labels = sorted.map((d) => d.label);
       const values = sorted.map((d) => d.value);
-      return this.buildColorBarChart(labels, values, 'Avg performance', false, true, undefined, true);
+      const groupAverage =
+        decks.reduce((sum, deck) => sum + deck.performanceRating, 0) / decks.length;
+      return this.buildColorBarChart(
+        labels,
+        values,
+        'Avg performance',
+        false,
+        true,
+        undefined,
+        true,
+        groupAverage,
+      );
     }
 
   private buildDeckChart(option: string): ChartConfiguration | null {
@@ -2339,12 +2347,17 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    for (const game of this.getSeasonGames()) {
+    const seasonGames = this.getSeasonGames();
+    for (const game of seasonGames) {
+      const ownersInGame = new Set<string>();
       for (const placement of game.placements) {
         const deckId = placement.deck?.id;
         if (!deckId) continue;
         const ownerId = deckOwnerMap.get(deckId);
         if (!ownerId) continue;
+        ownersInGame.add(ownerId);
+      }
+      for (const ownerId of ownersInGame) {
         const owner = ownerMap.get(ownerId);
         if (owner) {
           owner.games += 1;
@@ -2380,16 +2393,14 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       };
 
       const currentUserId = this.currentUserId();
-      const targetMember = group.members.find((m) => m.userId === currentUserId)
-        ?? group.members[0];
-      if (!targetMember) {
-        this.statsMessage.set('No members available for statistics.');
+      if (!currentUserId) {
+        this.statsMessage.set('No user context available for statistics.');
         return null;
       }
 
-      const targetDecks = decks.filter((deck) => deck.owner.id === targetMember.userId);
+      const targetDecks = decks.filter((deck) => deck.owner.id === currentUserId);
       if (targetDecks.length === 0) {
-        this.statsMessage.set('No decks available for this player.');
+        this.statsMessage.set('No owned decks available for this player.');
         return null;
       }
 
@@ -2416,24 +2427,114 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       );
     }
 
+    if (option === 'players_most_played_colors') {
+      const colorOrder = ['W', 'U', 'B', 'R', 'G', 'C'];
+      const colorPalette: Record<string, string> = {
+        W: '#f9faf4',
+        U: '#0e68ab',
+        B: '#150b00',
+        R: '#d3202a',
+        G: '#00733e',
+        C: '#ccc2c0',
+      };
+      const counts = this.getMostPlayedColorCountsForCurrentUser(
+        seasonGames,
+        decks,
+      );
+      if (!counts) {
+        this.statsMessage.set('No user context available for statistics.');
+        return null;
+      }
+      if (counts.every((value) => value === 0)) {
+        this.statsMessage.set('No recorded games found with your owned decks.');
+        return null;
+      }
+
+      const datasetColors = colorOrder.map((color) => colorPalette[color] || '#7f5af0');
+      return this.buildColorBarChart(
+        colorOrder,
+        counts,
+        'Recorded plays',
+        true,
+        false,
+        datasetColors,
+      );
+    }
+
     // default: games played
     const values = [...ownerMap.values()].map((o) => o.games);
     return buildBarChart(labels, values, 'Games played');
   }
 
-    private buildColorBarChart(
-      labels: string[],
-      data: number[],
-      label: string,
-      integerAxis = false,
-      monoPrefixSingles = false,
-      datasetColors?: string[],
-      tooltipIcons = false,
-    ): ChartConfiguration {
-      const options = createBaseChartOptions();
+  private getMostPlayedColorCountsForCurrentUser(
+    seasonGames: Game[],
+    decks: Deck[],
+  ): number[] | null {
+    const currentUserId = this.currentUserId();
+    if (!currentUserId) return null;
+
+    const ownedDeckIds = new Set(
+      decks.filter((deck) => deck.owner.id === currentUserId).map((deck) => deck.id),
+    );
+    const colorOrder = ['W', 'U', 'B', 'R', 'G', 'C'];
+    const counts = new Map<string, number>(colorOrder.map((color) => [color, 0]));
+
+    if (ownedDeckIds.size === 0) {
+      return colorOrder.map((color) => counts.get(color) || 0);
+    }
+
+    const normalizedUserName = this.normalizeNameForMatch(
+      this.group()?.members.find((member) => member.userId === currentUserId)?.user.inAppName,
+    );
+
+    for (const game of seasonGames) {
+      const ownedPlacements = game.placements.filter((placement) => {
+        const deckId = placement.deck?.id;
+        return !!deckId && ownedDeckIds.has(deckId);
+      });
+      if (ownedPlacements.length === 0) continue;
+
+      let countedPlacements = ownedPlacements;
+      if (ownedPlacements.length > 1 && normalizedUserName) {
+        const matchedByPlayerName = ownedPlacements.filter(
+          (placement) =>
+            this.normalizeNameForMatch(placement.playerName) === normalizedUserName,
+        );
+        if (matchedByPlayerName.length > 0) {
+          countedPlacements = matchedByPlayerName;
+        }
+      }
+
+      for (const placement of countedPlacements) {
+        const placementColors = this.getSortedColors(placement.deck?.colors || '');
+        const deckColors = placementColors.length === 0 ? ['C'] : placementColors;
+        for (const color of deckColors) {
+          counts.set(color, (counts.get(color) || 0) + 1);
+        }
+      }
+    }
+
+    return colorOrder.map((color) => counts.get(color) || 0);
+  }
+
+  private normalizeNameForMatch(value: string | null | undefined): string {
+    return (value || '').trim().toLowerCase();
+  }
+
+  private buildColorBarChart(
+    labels: string[],
+    data: number[],
+    label: string,
+    integerAxis = false,
+    monoPrefixSingles = false,
+    datasetColors?: string[],
+    tooltipIcons = false,
+    groupAverage?: number,
+  ): ChartConfiguration {
+    const options = createBaseChartOptions();
     const maxIconCount = Math.max(
-      ...labels.map((l) => (l === 'Colorless' ? 1 : String(l).length)),
-      1
+      ...labels.map((entry) => (entry === 'Colorless' ? 1 : String(entry).length)),
+      1,
     );
     options.layout = { padding: { bottom: Math.max(18, maxIconCount * 16 + 4) } };
     if (options.scales && options.scales['x']) {
@@ -2442,45 +2543,55 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         callback: () => '',
       };
     }
-      if (integerAxis && options.scales && options.scales['y']) {
-        options.scales['y'].ticks = {
-          ...options.scales['y'].ticks,
-          precision: 0,
-        };
-      }
-      if (!options.plugins) options.plugins = {};
-      if (tooltipIcons) {
-        options.plugins.tooltip = {
-          enabled: false,
-          external: (context) => this.renderColorComboTooltip(context, monoPrefixSingles),
-        };
-      } else {
-        options.plugins.tooltip = {
-          callbacks: {
-            title: (items) =>
-              items.length
-                ? getColorComboName(String(items[0].label), monoPrefixSingles)
-                : '',
-          },
-        };
-      }
-
-      return {
-        type: 'bar',
-        data: {
-        labels,
-        datasets: [
-          {
-            label,
-            data,
-            backgroundColor: datasetColors || '#7f5af0',
-          },
-        ],
-        },
-        options,
-        plugins: [this.colorIconPlugin],
+    if (integerAxis && options.scales && options.scales['y']) {
+      options.scales['y'].ticks = {
+        ...options.scales['y'].ticks,
+        precision: 0,
       };
     }
+    if (!options.plugins) options.plugins = {};
+    if (tooltipIcons) {
+      options.plugins.tooltip = {
+        enabled: false,
+        external: (context) => this.renderColorComboTooltip(context, monoPrefixSingles),
+      };
+    } else {
+      options.plugins.tooltip = {
+        callbacks: {
+          title: (items) =>
+            items.length ? getColorComboName(String(items[0].label), monoPrefixSingles) : '',
+        },
+      };
+    }
+
+    const datasets: any[] = [
+      {
+        label,
+        data,
+        backgroundColor: datasetColors || '#7f5af0',
+      },
+    ];
+
+    if (typeof groupAverage === 'number' && Number.isFinite(groupAverage)) {
+      datasets.push({
+        type: 'line',
+        label: 'Group average',
+        data: labels.map(() => Number(groupAverage.toFixed(1))),
+        borderColor: '#00b5a8',
+        backgroundColor: 'rgba(0,181,168,0.2)',
+      });
+    }
+
+    return {
+      type: 'bar',
+      data: {
+        labels,
+        datasets,
+      },
+      options,
+      plugins: [this.colorIconPlugin],
+    };
+  }
 
   private renderColorComboTooltip(
     context: { chart: Chart; tooltip: any },

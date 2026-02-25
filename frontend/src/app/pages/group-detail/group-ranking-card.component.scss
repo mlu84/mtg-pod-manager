@@ -367,6 +367,10 @@
     font-size: 0.8rem;
     color: rgba(26, 22, 19, 0.7);
   }
+
+  &__expand-indicator {
+    display: none;
+  }
 }
 
 .pagination {
@@ -477,5 +481,95 @@
 
   .pagination {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 767px) and (orientation: portrait) {
+  .ranking-item--expandable {
+    align-items: center;
+  }
+
+  .ranking-item__mobile {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .ranking-item__mobile-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-xs);
+    min-width: 0;
+  }
+
+  .ranking-item__mobile-name {
+    display: block;
+    min-width: 0;
+    flex: 1;
+    line-height: 1.05;
+  }
+
+  .ranking-item__mobile-name .ranking-item__name-text {
+    display: inline;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .ranking-item__mobile-name .archidekt-link {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    vertical-align: baseline;
+  }
+
+  .ranking-item__mobile-rating {
+    flex-shrink: 0;
+    font-weight: 700;
+    color: #1A1613;
+    line-height: 1;
+  }
+
+  .ranking-item__mobile-row--secondary .mana-symbols {
+    margin-left: 0;
+  }
+
+  .ranking-item__expand-toggle {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: rgba(26, 22, 19, 0.7);
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .ranking-item__expand-toggle:focus-visible {
+    outline: 2px solid rgba(26, 22, 19, 0.45);
+    outline-offset: 1px;
+  }
+
+  .ranking-item__mobile-owner {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(26, 22, 19, 0.72);
+    font-size: 0.8rem;
+  }
+
+  .ranking-item__mobile-games {
+    flex-shrink: 0;
+    text-align: right;
+    color: rgba(26, 22, 19, 0.72);
+    font-size: 0.8rem;
   }
 }

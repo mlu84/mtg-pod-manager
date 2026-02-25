@@ -1,4 +1,4 @@
-<div class="group-detail-page" [style.--viewport-width.px]="viewportWidth()" [style.--viewport-height.px]="viewportHeight()">
+<div class="group-detail-page">
   @if (loading()) {
     <div class="loading-container">
       <div class="spinner"></div>
@@ -66,6 +66,7 @@
             [rankingPage]="rankingPage()"
             [rankingTotalPages]="rankingTotalPages()"
             [showTrends]="showRankingTrends()"
+            [isSmartphonePortrait]="isSmartphonePortraitViewport()"
             [defaultDeckImage]="defaultDeckImage"
             [getColorGradient]="getColorGradient.bind(this)"
             [getDeckImageUrl]="getDeckImageUrl.bind(this)"

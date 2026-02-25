@@ -17,6 +17,7 @@
   <div
     class="play-screen"
     [class.play-screen--compact]="isCompactViewport()"
+    [class.play-screen--smartphone]="isSmartphoneViewport()"
     [class.play-screen--forced-landscape]="forceLandscapeUi()"
     [style.--viewport-width.px]="viewportWidth()"
     [style.--viewport-height.px]="viewportHeight()"
@@ -80,9 +81,15 @@
             (confirmReset)="confirmReset()"
           ></app-group-play-panel>
         } @else {
-          <button class="play-compact-fab" type="button" (click)="handleCompactFabAction()">
+          <button
+            class="play-compact-fab"
+            type="button"
+            [attr.aria-label]="showCompactEndGameCta() ? 'End Game' : 'Controls'"
+            [attr.title]="showCompactEndGameCta() ? 'End Game' : 'Controls'"
+            (click)="handleCompactFabAction()"
+          >
             <i class="fas" [class.fa-flag-checkered]="showCompactEndGameCta()" [class.fa-sliders-h]="!showCompactEndGameCta()"></i>
-            <span>{{ showCompactEndGameCta() ? 'End Game' : 'Controls' }}</span>
+            <span class="play-compact-fab__label">{{ showCompactEndGameCta() ? 'End Game' : 'Controls' }}</span>
           </button>
         }
 
@@ -163,13 +170,13 @@
         (openCommanderFromFeatureMenu)="openCommanderFromFeatureMenu($event)"
         (closeCompactControls)="closeCompactControls()"
         (cyclePlayerCount)="cyclePlayerCount()"
-        (rollD20)="rollD20()"
-        (toggleTopHalfMirror)="toggleTopHalfMirror()"
+        (rollD20)="handleCompactRollD20()"
+        (toggleTopHalfMirror)="handleCompactToggleTopHalfMirror()"
         (toggleAbortConfirm)="toggleAbortConfirm()"
         (confirmAbort)="confirmAbort()"
-        (startGame)="startGame()"
+        (startGame)="handleCompactStartGame()"
         (toggleResetConfirm)="toggleResetConfirm()"
-        (confirmReset)="confirmReset()"
+        (confirmReset)="handleCompactConfirmReset()"
       ></app-group-play-modals>
     </div>
   </div>

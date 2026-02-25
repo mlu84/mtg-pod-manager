@@ -42,3 +42,42 @@
     }
   }
 }
+
+@media (max-width: 767px) and (orientation: portrait) {
+  .placement-row {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+    grid-template-areas:
+      'rank deck'
+      'player player';
+    align-items: end;
+    row-gap: var(--spacing-sm);
+  }
+
+  .placement-row--editable {
+    grid-template-columns: 70px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'rank deck deck'
+      'player player remove';
+  }
+
+  .placement-row__rank {
+    grid-area: rank;
+  }
+
+  .placement-row__deck {
+    grid-area: deck;
+  }
+
+  .placement-row__player {
+    grid-area: player;
+  }
+
+  .placement-row__remove {
+    grid-area: remove;
+    min-width: 42px;
+    height: 42px;
+    padding: 0;
+    align-self: end;
+  }
+}

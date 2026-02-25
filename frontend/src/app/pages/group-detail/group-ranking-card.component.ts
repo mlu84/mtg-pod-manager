@@ -1,5 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  signal,
+} from '@angular/core';
 import { RankingEntryWithTrend } from '../../models/game.model';
 
 @Component({
@@ -9,7 +17,7 @@ import { RankingEntryWithTrend } from '../../models/game.model';
   templateUrl: './group-ranking-card.component.html',
   styleUrl: './group-ranking-card.component.scss',
 })
-export class GroupRankingCardComponent {
+export class GroupRankingCardComponent implements OnChanges {
   @Input({ required: true }) activeSeasonEndsAt!: string | null | undefined;
   @Input({ required: true }) activeSeasonName!: string | null | undefined;
   @Input({ required: true }) seasonCountdown!: string | null;
@@ -27,9 +35,18 @@ export class GroupRankingCardComponent {
   @Input({ required: true }) getDeckImageUrl!: (deckId: string) => string | null;
   @Input({ required: true }) getManaSymbols!: (colors: string) => string[];
   @Input({ required: true }) getArchidektUrl!: (deckId: string) => string | null;
+  @Input() isSmartphonePortrait = false;
 
   @Output() rankingModeToggle = new EventEmitter<void>();
   @Output() rankingPageChange = new EventEmitter<number>();
+
+  private expandedEntryIds = signal<Set<string>>(new Set());
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isSmartphonePortrait'] && !this.isSmartphonePortrait) {
+      this.expandedEntryIds.set(new Set());
+    }
+  }
 
   toggleRankingMode(): void {
     this.rankingModeToggle.emit();
@@ -37,5 +54,22 @@ export class GroupRankingCardComponent {
 
   setRankingPage(page: number): void {
     this.rankingPageChange.emit(page);
+  }
+
+  toggleEntryExpansion(entryId: string): void {
+    if (!this.isSmartphonePortrait) return;
+    this.expandedEntryIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(entryId)) {
+        next.delete(entryId);
+      } else {
+        next.add(entryId);
+      }
+      return next;
+    });
+  }
+
+  isEntryExpanded(entryId: string): boolean {
+    return this.expandedEntryIds().has(entryId);
   }
 }

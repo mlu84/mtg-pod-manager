@@ -31,8 +31,8 @@
     <form (ngSubmit)="submit.emit()">
       <div class="placements-list">
         @for (placement of gamePlacements; track $index; let i = $index) {
-          <div class="placement-row">
-            <div class="form-group">
+          <div class="placement-row" [class.placement-row--editable]="!prefilledGame">
+            <div class="form-group placement-row__rank">
               <label>Rank</label>
               <select
                 class="form-control"
@@ -45,7 +45,7 @@
                 }
               </select>
             </div>
-            <div class="form-group form-group--grow deck-search-container" (click)="$event.stopPropagation()">
+            <div class="form-group form-group--grow deck-search-container placement-row__deck" (click)="$event.stopPropagation()">
               <label>Deck</label>
               <div class="deck-search">
                 <input
@@ -88,7 +88,7 @@
               <!-- Hidden input for form validation -->
               <input type="hidden" [(ngModel)]="placement.deckId" [name]="'deck' + i" />
             </div>
-            <div class="form-group">
+            <div class="form-group placement-row__player">
               <label>Player (optional)</label>
               <input
                 type="text"
@@ -103,7 +103,7 @@
               />
             </div>
             @if (!prefilledGame) {
-              <button type="button" class="btn btn--danger" (click)="removePlayer.emit(i)" [disabled]="gameLoading">
+              <button type="button" class="btn btn--danger placement-row__remove" (click)="removePlayer.emit(i)" [disabled]="gameLoading">
                 <i class="fas fa-trash"></i>
               </button>
             }

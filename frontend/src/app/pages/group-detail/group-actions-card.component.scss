@@ -47,9 +47,16 @@
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-@media (max-width: 1199px) {
+@media (max-width: 1024px) {
   .actions-card__buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) and (min-width: 768px) and (orientation: landscape) {
+  .btn--square {
+    aspect-ratio: 3.4 / 1;
+    min-height: 62px;
   }
 }
 

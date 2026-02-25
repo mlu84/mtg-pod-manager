@@ -81,30 +81,78 @@
                [class.ranking-item--second]="entry.position === 2"
                [class.ranking-item--third]="entry.position === 3"
                [class.ranking-item--other]="entry.position > 3"
-               [style.--color-gradient]="getColorGradient(entry.colors)">
+               [class.ranking-item--expandable]="isSmartphonePortrait"
+               [class.ranking-item--expanded]="isSmartphonePortrait && isEntryExpanded(entry.id)"
+               [style.--color-gradient]="getColorGradient(entry.colors)"
+          >
             <div class="deck-icon">
               <img [src]="getDeckImageUrl(entry.id) || defaultDeckImage" [alt]="entry.name" class="deck-icon__img" />
             </div>
-            <div class="ranking-item__info">
-              <span class="ranking-item__name" [title]="entry.name">
-                <span class="ranking-item__name-text">{{ entry.name }}</span>
-                <span class="mana-symbols">
-                  @for (symbol of getManaSymbols(entry.colors); track symbol) {
-                    <img [src]="symbol" class="mana-symbol" alt="mana" />
+            @if (isSmartphonePortrait) {
+              <div class="ranking-item__mobile">
+                <div class="ranking-item__mobile-row ranking-item__mobile-row--primary">
+                  <span class="ranking-item__mobile-name" [title]="entry.name">
+                    <span class="ranking-item__name-text">{{ entry.name }}</span>
+                    @if (getArchidektUrl(entry.id)) {
+                      <a
+                        [href]="getArchidektUrl(entry.id)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="archidekt-link"
+                        title="View on Archidekt"
+                        (click)="$event.stopPropagation()"
+                      >
+                        <i class="fas fa-external-link-alt"></i>
+                      </a>
+                    }
+                  </span>
+                  <span class="ranking-item__mobile-rating">{{ entry.performanceRating }}</span>
+                </div>
+                <div class="ranking-item__mobile-row ranking-item__mobile-row--secondary">
+                  <span class="mana-symbols">
+                    @for (symbol of getManaSymbols(entry.colors); track symbol) {
+                      <img [src]="symbol" class="mana-symbol" alt="mana" />
+                    }
+                  </span>
+                  <button
+                    type="button"
+                    class="ranking-item__expand-toggle"
+                    [attr.aria-expanded]="isEntryExpanded(entry.id)"
+                    [attr.aria-label]="isEntryExpanded(entry.id) ? 'Collapse ranking item' : 'Expand ranking item'"
+                    (click)="toggleEntryExpansion(entry.id)"
+                  >
+                    <i class="fas" [class.fa-chevron-down]="!isEntryExpanded(entry.id)" [class.fa-chevron-up]="isEntryExpanded(entry.id)"></i>
+                  </button>
+                </div>
+                @if (isEntryExpanded(entry.id)) {
+                  <div class="ranking-item__mobile-row ranking-item__mobile-row--details">
+                    <span class="ranking-item__mobile-owner">{{ entry.owner.inAppName }}</span>
+                    <span class="ranking-item__mobile-games">{{ entry.gamesPlayed }} games</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="ranking-item__info">
+                <span class="ranking-item__name" [title]="entry.name">
+                  <span class="ranking-item__name-text">{{ entry.name }}</span>
+                  <span class="mana-symbols">
+                    @for (symbol of getManaSymbols(entry.colors); track symbol) {
+                      <img [src]="symbol" class="mana-symbol" alt="mana" />
+                    }
+                  </span>
+                  @if (getArchidektUrl(entry.id)) {
+                    <a [href]="getArchidektUrl(entry.id)" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
+                      <i class="fas fa-external-link-alt"></i>
+                    </a>
                   }
                 </span>
-                @if (getArchidektUrl(entry.id)) {
-                  <a [href]="getArchidektUrl(entry.id)" target="_blank" rel="noopener noreferrer" class="archidekt-link" title="View on Archidekt" (click)="$event.stopPropagation()">
-                    <i class="fas fa-external-link-alt"></i>
-                  </a>
-                }
-              </span>
-              <span class="ranking-item__owner">{{ entry.owner.inAppName }}</span>
-            </div>
-            <div class="ranking-item__stats">
-              <span class="ranking-item__rating">{{ entry.performanceRating }}</span>
-              <span class="ranking-item__games">{{ entry.gamesPlayed }} games</span>
-            </div>
+                <span class="ranking-item__owner">{{ entry.owner.inAppName }}</span>
+              </div>
+              <div class="ranking-item__stats">
+                <span class="ranking-item__rating">{{ entry.performanceRating }}</span>
+                <span class="ranking-item__games">{{ entry.gamesPlayed }} games</span>
+              </div>
+            }
           </div>
         </div>
       }

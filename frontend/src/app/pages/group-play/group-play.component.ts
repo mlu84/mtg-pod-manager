@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
-import { isCompactWidth } from '../../core/config/viewport-breakpoints';
+import { isCompactWidth, isSmartphoneWidth } from '../../core/config/viewport-breakpoints';
 import { sanitizeSearchInput, sanitizeSingleLineInput } from '../../core/utils/input-validation';
 import { Deck, GroupDetail } from '../../models/group.model';
 import { GroupPlayModalsComponent } from './group-play-modals.component';
@@ -58,6 +58,7 @@ export class GroupPlayComponent {
   gameStarted = signal(false);
   confirmEndActive = signal(false);
   isCompactViewport = signal(false);
+  isSmartphoneViewport = signal(false);
   isPortraitViewport = signal(false);
   viewportWidth = signal(0);
   viewportHeight = signal(0);
@@ -96,7 +97,11 @@ export class GroupPlayComponent {
   private lifeHoldInterval: ReturnType<typeof setInterval> | null = null;
   private lifeHoldTriggered = false;
   private chromeMinimizeTimers: ReturnType<typeof setTimeout>[] = [];
+  private viewportResyncTimers: ReturnType<typeof setTimeout>[] = [];
+  private visualViewportRef: VisualViewport | null = null;
   private lastChromeMinimizeAt = 0;
+  private lastFullscreenAttemptAt = 0;
+  private wakeLockRef: { release: () => Promise<void>; released?: boolean } | null = null;
 
   activeDecks = computed(() => (this.group()?.decks || []).filter((d) => d.isActive));
   activeSlots = computed(() => this.slots().slice(0, this.playerCount()));
@@ -146,8 +151,18 @@ export class GroupPlayComponent {
       window.addEventListener('resize', this.onViewportChange);
       window.addEventListener('orientationchange', this.onViewportChange);
       window.addEventListener('scroll', this.onViewportScroll, { passive: true });
+      if (window.visualViewport) {
+        this.visualViewportRef = window.visualViewport;
+        this.visualViewportRef.addEventListener('resize', this.onViewportChange);
+        this.visualViewportRef.addEventListener('scroll', this.onViewportChange);
+      }
     }
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.onVisibilityChange);
+    }
+    this.scheduleViewportResync();
     this.tryLockLandscape();
+    this.requestWakeLock();
     this.minimizeBrowserChrome();
     this.scheduleDeferredChromeMinimize();
     this.groupId = this.route.snapshot.params['id'];
@@ -160,11 +175,21 @@ export class GroupPlayComponent {
       this.slotFeatureHoldTimer = null;
     }
     this.clearChromeMinimizeTimers();
+    this.clearViewportResyncTimers();
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this.onViewportChange);
       window.removeEventListener('orientationchange', this.onViewportChange);
       window.removeEventListener('scroll', this.onViewportScroll);
+      if (this.visualViewportRef) {
+        this.visualViewportRef.removeEventListener('resize', this.onViewportChange);
+        this.visualViewportRef.removeEventListener('scroll', this.onViewportChange);
+        this.visualViewportRef = null;
+      }
     }
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    }
+    this.releaseWakeLock();
     if (this.orientationLocked && typeof screen !== 'undefined' && screen.orientation?.unlock) {
       screen.orientation.unlock();
       this.orientationLocked = false;
@@ -174,9 +199,11 @@ export class GroupPlayComponent {
   private onViewportChange = (): void => {
     const wasCompact = this.isCompactViewport();
     this.updateViewportState();
+    this.scheduleViewportResync();
     if (!wasCompact && this.isCompactViewport()) {
       this.tryLockLandscape();
     }
+    this.requestWakeLock();
     this.minimizeBrowserChrome();
   };
 
@@ -192,10 +219,14 @@ export class GroupPlayComponent {
 
   private updateViewportState(): void {
     if (typeof window === 'undefined') return;
-    this.viewportWidth.set(window.innerWidth);
-    this.viewportHeight.set(window.innerHeight);
-    this.isCompactViewport.set(isCompactWidth(window.innerWidth));
-    this.isPortraitViewport.set(window.innerHeight > window.innerWidth);
+    const width = Math.round(window.visualViewport?.width ?? window.innerWidth);
+    const height = Math.round(window.visualViewport?.height ?? window.innerHeight);
+    if (width <= 0 || height <= 0) return;
+    this.viewportWidth.set(width);
+    this.viewportHeight.set(height);
+    this.isCompactViewport.set(isCompactWidth(width));
+    this.isSmartphoneViewport.set(isSmartphoneWidth(width));
+    this.isPortraitViewport.set(height > width);
   }
 
   private async tryLockLandscape(): Promise<void> {
@@ -228,7 +259,100 @@ export class GroupPlayComponent {
     }
     const now = Date.now();
     if (now - this.lastChromeMinimizeAt < 300) return;
+    this.requestFullscreenBestEffort();
+    this.requestWakeLock();
     this.minimizeBrowserChrome(false);
+  }
+
+  private onVisibilityChange = (): void => {
+    if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+    this.updateViewportState();
+    this.scheduleViewportResync();
+    this.requestWakeLock();
+    this.minimizeBrowserChrome(false);
+  };
+
+  private clearViewportResyncTimers(): void {
+    for (const timer of this.viewportResyncTimers) {
+      clearTimeout(timer);
+    }
+    this.viewportResyncTimers = [];
+  }
+
+  private scheduleViewportResync(): void {
+    if (typeof window === 'undefined') return;
+    this.clearViewportResyncTimers();
+    window.requestAnimationFrame(() => this.updateViewportState());
+    for (const delay of [120, 260]) {
+      const timer = setTimeout(() => this.updateViewportState(), delay);
+      this.viewportResyncTimers.push(timer);
+    }
+  }
+
+  private requestFullscreenBestEffort(): void {
+    if (typeof document === 'undefined') return;
+    if (document.fullscreenElement) return;
+    const now = Date.now();
+    if (now - this.lastFullscreenAttemptAt < 1500) return;
+    this.lastFullscreenAttemptAt = now;
+
+    const root = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+      msRequestFullscreen?: () => Promise<void> | void;
+    };
+
+    if (root.requestFullscreen) {
+      void root
+        .requestFullscreen({ navigationUI: 'hide' } as FullscreenOptions)
+        .catch(() => undefined);
+      return;
+    }
+
+    const legacyRequest =
+      root.webkitRequestFullscreen?.bind(root) ?? root.msRequestFullscreen?.bind(root);
+    if (!legacyRequest) return;
+    try {
+      const maybePromise = legacyRequest();
+      if (maybePromise && typeof (maybePromise as Promise<void>).catch === 'function') {
+        void (maybePromise as Promise<void>).catch(() => undefined);
+      }
+    } catch {
+      // Ignore fullscreen failures (browser/user settings).
+    }
+  }
+
+  private requestWakeLock(): void {
+    if (typeof navigator === 'undefined') return;
+    const wakeLockApi = (
+      navigator as Navigator & {
+        wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> };
+      }
+    ).wakeLock;
+    if (!wakeLockApi) return;
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    if (this.wakeLockRef && !this.wakeLockRef.released) return;
+
+    void wakeLockApi
+      .request('screen')
+      .then((lock) => {
+        this.wakeLockRef = lock;
+        const lockWithEvents = lock as {
+          addEventListener?: (name: string, listener: () => void) => void;
+        };
+        lockWithEvents.addEventListener?.('release', () => {
+          this.wakeLockRef = null;
+          if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+            this.requestWakeLock();
+          }
+        });
+      })
+      .catch(() => undefined);
+  }
+
+  private releaseWakeLock(): void {
+    if (!this.wakeLockRef) return;
+    void this.wakeLockRef.release().catch(() => undefined);
+    this.wakeLockRef = null;
   }
 
   private clearChromeMinimizeTimers(): void {
@@ -318,6 +442,7 @@ export class GroupPlayComponent {
   }
 
   toggleCompactControls(): void {
+    this.requestFullscreenBestEffort();
     this.showCompactControls.update((value) => !value);
   }
 
@@ -326,6 +451,7 @@ export class GroupPlayComponent {
   }
 
   handleCompactFabAction(): void {
+    this.requestFullscreenBestEffort();
     if (this.showCompactEndGameCta()) {
       if (!this.confirmAbortActive()) {
         this.toggleAbortConfirm();
@@ -334,6 +460,30 @@ export class GroupPlayComponent {
       return;
     }
     this.toggleCompactControls();
+  }
+
+  handleCompactRollD20(): void {
+    this.rollD20();
+    this.closeCompactControls();
+  }
+
+  handleCompactToggleTopHalfMirror(): void {
+    this.toggleTopHalfMirror();
+    this.closeCompactControls();
+  }
+
+  handleCompactStartGame(): void {
+    const canStart =
+      !this.startingRoll() && !this.gameStarted() && this.allDecksSelected();
+    this.startGame();
+    if (canStart) {
+      this.closeCompactControls();
+    }
+  }
+
+  handleCompactConfirmReset(): void {
+    this.confirmReset();
+    this.closeCompactControls();
   }
 
   incrementLife(index: number): void {
@@ -369,6 +519,8 @@ export class GroupPlayComponent {
   }
 
   startLifeHold(index: number, delta: number): void {
+    const holdStartDelayMs = 650;
+    const repeatStepMs = 560;
     if (this.lifeHoldTimer) clearTimeout(this.lifeHoldTimer);
     if (this.lifeHoldInterval) clearInterval(this.lifeHoldInterval);
     this.lifeHoldTriggered = false;
@@ -377,8 +529,8 @@ export class GroupPlayComponent {
       this.adjustLife(index, delta * 10);
       this.lifeHoldInterval = setInterval(() => {
         this.adjustLife(index, delta * 10);
-      }, 700);
-    }, 700);
+      }, repeatStepMs);
+    }, holdStartDelayMs);
   }
 
   cancelLifeHold(): void {
