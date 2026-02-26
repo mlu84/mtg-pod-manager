@@ -246,7 +246,7 @@ model GroupSeasonDismissal {
 model NewsEntry {
   id        String   @id @default(cuid())
   title     String
-  content   String
+  content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
