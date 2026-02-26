@@ -1,4 +1,14 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, signal, computed, inject, ElementRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  AfterViewInit,
+  OnDestroy,
+  signal,
+  computed,
+  inject,
+  ElementRef,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -114,6 +124,8 @@ import {
 })
 export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   private statsChartRef?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('historyCardHost', { read: ElementRef })
+  private historyCardRef?: ElementRef<HTMLElement>;
   private statsChart: Chart | null = null;
   private viewInitialized = false;
   private colorIconCache = new Map<string, HTMLImageElement>();
@@ -1966,6 +1978,18 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   applyHistoryDeckFilterFromRanking(deckId: string): void {
     this.historyCollapsed.set(false);
     this.setHistoryDeckFilter(deckId);
+    this.focusHistoryCard();
+  }
+
+  private focusHistoryCard(): void {
+    if (typeof window === 'undefined') return;
+    setTimeout(() => {
+      const historyCard = this.historyCardRef?.nativeElement;
+      if (!historyCard) return;
+      historyCard.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      historyCard.setAttribute('tabindex', '-1');
+      historyCard.focus({ preventScroll: true });
+    }, 0);
   }
 
   // Confirmation Modal helpers
