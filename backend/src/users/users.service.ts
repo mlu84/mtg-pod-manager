@@ -3,12 +3,19 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  Logger,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { User, Prisma, SystemRole } from '@prisma/client';
 import { toImageDataUrl } from './users-image.util';
 import { validateImageUploadFile } from '../common/upload/image-upload.util';
 import { deleteGroupWithRelations } from '../common/prisma/group-delete.util';
+import { MailService } from '../mail/mail.service';
+import { CreateFeedbackDto } from './dto/create-feedback.dto';
+import { UserStatisticsQueryDto } from './dto/user-statistics-query.dto';
 
 const profileSelect = {
   id: true,
@@ -23,7 +30,12 @@ const profileSelect = {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   async findOne(
     userWhereUniqueInput: Prisma.UserWhereUniqueInput,
@@ -335,6 +347,405 @@ export class UsersService {
     });
 
     return { message: 'Account deleted successfully' };
+  }
+
+  async submitFeedback(userId: string, dto: CreateFeedbackDto) {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const feedbackCount = await this.prisma.feedbackEntry.count({
+      where: {
+        userId,
+        createdAt: { gte: oneHourAgo },
+      },
+    });
+
+    if (feedbackCount >= 5) {
+      throw new HttpException(
+        'Feedback rate limit reached (5 submissions per hour). Please try again later.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const text = dto.text.trim();
+    const contactEmail = dto.contactEmail?.trim().toLowerCase() || null;
+
+    const [feedback, user] = await this.prisma.$transaction([
+      this.prisma.feedbackEntry.create({
+        data: {
+          userId,
+          text,
+          rating: dto.rating ?? null,
+          contactEmail,
+        },
+        select: {
+          id: true,
+          createdAt: true,
+          rating: true,
+          contactEmail: true,
+        },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { inAppName: true },
+      }),
+    ]);
+
+    if (contactEmail) {
+      try {
+        await this.mailService.sendFeedbackConfirmationEmail({
+          to: contactEmail,
+          inAppName: user?.inAppName ?? 'there',
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Feedback confirmation email failed for ${contactEmail}: ${(error as Error).message}`,
+        );
+      }
+    }
+
+    return {
+      message: 'Feedback submitted successfully',
+      feedback,
+    };
+  }
+
+  async getUserStatistics(userId: string, queryDto: UserStatisticsQueryDto) {
+    const range = this.resolveStatisticsDateRange(queryDto.from, queryDto.to);
+    const labels = this.buildStatisticsLabels(range);
+
+    const [
+      userDeckRows,
+      allDeckRows,
+      userPlacementRows,
+      allPlacementRows,
+      ownDecksAllTime,
+      allDecksAllTime,
+      totalUsers,
+    ] = await Promise.all([
+      this.prisma.deck.findMany({
+        where: {
+          ownerId: userId,
+          createdAt: {
+            gte: range.fromDate,
+            lte: range.toDate,
+          },
+        },
+        select: { createdAt: true },
+      }),
+      this.prisma.deck.findMany({
+        where: {
+          createdAt: {
+            gte: range.fromDate,
+            lte: range.toDate,
+          },
+        },
+        select: { createdAt: true },
+      }),
+      this.prisma.gamePlacement.findMany({
+        where: {
+          userId,
+          game: {
+            createdAt: {
+              gte: range.fromDate,
+              lte: range.toDate,
+            },
+          },
+        },
+        select: {
+          game: {
+            select: { createdAt: true },
+          },
+        },
+      }),
+      this.prisma.gamePlacement.findMany({
+        where: {
+          userId: { not: null },
+          game: {
+            createdAt: {
+              gte: range.fromDate,
+              lte: range.toDate,
+            },
+          },
+        },
+        select: {
+          game: {
+            select: { createdAt: true },
+          },
+        },
+      }),
+      this.prisma.deck.findMany({
+        where: { ownerId: userId },
+        select: {
+          colors: true,
+          performanceRating: true,
+        },
+      }),
+      this.prisma.deck.findMany({
+        select: { performanceRating: true },
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    const userDeckSeries = this.countByStatisticsRange(
+      userDeckRows.map((entry) => entry.createdAt),
+      range,
+    );
+    const allDeckSeriesTotal = this.countByStatisticsRange(
+      allDeckRows.map((entry) => entry.createdAt),
+      range,
+    );
+    const userGamesSeries = this.countByStatisticsRange(
+      userPlacementRows.map((entry) => entry.game.createdAt),
+      range,
+    );
+    const allGamesSeriesTotal = this.countByStatisticsRange(
+      allPlacementRows.map((entry) => entry.game.createdAt),
+      range,
+    );
+
+    const divisor = totalUsers > 0 ? totalUsers : 1;
+    const averageDeckSeries = allDeckSeriesTotal.map((value) =>
+      Number((value / divisor).toFixed(2)),
+    );
+    const averageGamesSeries = allGamesSeriesTotal.map((value) =>
+      Number((value / divisor).toFixed(2)),
+    );
+
+    const colorUsageCounts: Record<'W' | 'U' | 'B' | 'R' | 'G' | 'Colorless', number> = {
+      W: 0,
+      U: 0,
+      B: 0,
+      R: 0,
+      G: 0,
+      Colorless: 0,
+    };
+
+    const comboValues: string[] = [];
+    for (const deck of ownDecksAllTime) {
+      const colors = (deck.colors || '').trim();
+      if (!colors) {
+        continue;
+      }
+      comboValues.push(colors);
+
+      if (colors === 'C' || colors.toLowerCase() === 'colorless') {
+        colorUsageCounts.Colorless += 1;
+        continue;
+      }
+
+      const uniqueColors = new Set(colors.split(''));
+      for (const color of ['W', 'U', 'B', 'R', 'G'] as const) {
+        if (uniqueColors.has(color)) {
+          colorUsageCounts[color] += 1;
+        }
+      }
+    }
+
+    const ownPerformanceValues = ownDecksAllTime.map((deck) => deck.performanceRating);
+    const globalPerformanceValues = allDecksAllTime.map((deck) => deck.performanceRating);
+
+    const ownPerformanceAverage = ownPerformanceValues.length
+      ? Number(
+          (
+            ownPerformanceValues.reduce((sum, value) => sum + value, 0) /
+            ownPerformanceValues.length
+          ).toFixed(2),
+        )
+      : 0;
+    const globalPerformanceAverage = globalPerformanceValues.length
+      ? Number(
+          (
+            globalPerformanceValues.reduce((sum, value) => sum + value, 0) /
+            globalPerformanceValues.length
+          ).toFixed(2),
+        )
+      : 0;
+
+    return {
+      range: {
+        from: range.fromDate.toISOString(),
+        to: range.toDate.toISOString(),
+        bucket: range.bucket,
+        labels,
+      },
+      decks: {
+        userTotal: userDeckRows.length,
+        averageTotal: Number((allDeckRows.length / divisor).toFixed(2)),
+        series: {
+          user: userDeckSeries,
+          average: averageDeckSeries,
+        },
+      },
+      games: {
+        userTotal: userPlacementRows.length,
+        averageTotal: Number((allPlacementRows.length / divisor).toFixed(2)),
+        series: {
+          user: userGamesSeries,
+          average: averageGamesSeries,
+        },
+      },
+      colors: {
+        labels: ['W', 'U', 'B', 'R', 'G', 'Colorless'],
+        values: [
+          colorUsageCounts.W,
+          colorUsageCounts.U,
+          colorUsageCounts.B,
+          colorUsageCounts.R,
+          colorUsageCounts.G,
+          colorUsageCounts.Colorless,
+        ],
+      },
+      favoriteColorCombinations: this.toTopCountList(comboValues, 10),
+      performance: {
+        userAverage: ownPerformanceAverage,
+        globalAverage: globalPerformanceAverage,
+      },
+    };
+  }
+
+  private countByStatisticsRange(
+    timestamps: Date[],
+    range: { fromDate: Date; toDate: Date; bucket: 'hour' | 'day' },
+  ) {
+    const labels = this.buildStatisticsLabels(range);
+    const values = labels.map(() => 0);
+
+    for (const timestamp of timestamps) {
+      const index = this.resolveStatisticsBucketIndex(timestamp, range);
+      if (index >= 0 && index < values.length) {
+        values[index] += 1;
+      }
+    }
+
+    return values;
+  }
+
+  private resolveStatisticsBucketIndex(
+    timestamp: Date,
+    range: { fromDate: Date; toDate: Date; bucket: 'hour' | 'day' },
+  ) {
+    if (timestamp < range.fromDate || timestamp > range.toDate) {
+      return -1;
+    }
+
+    if (range.bucket === 'hour') {
+      return timestamp.getUTCHours();
+    }
+
+    const fromDay = Date.UTC(
+      range.fromDate.getUTCFullYear(),
+      range.fromDate.getUTCMonth(),
+      range.fromDate.getUTCDate(),
+    );
+    const eventDay = Date.UTC(
+      timestamp.getUTCFullYear(),
+      timestamp.getUTCMonth(),
+      timestamp.getUTCDate(),
+    );
+    return Math.floor((eventDay - fromDay) / (24 * 60 * 60 * 1000));
+  }
+
+  private buildStatisticsLabels(range: {
+    fromDate: Date;
+    toDate: Date;
+    bucket: 'hour' | 'day';
+  }) {
+    if (range.bucket === 'hour') {
+      return Array.from({ length: 24 }).map((_, hour) => `${hour.toString().padStart(2, '0')}:00`);
+    }
+
+    const labels: string[] = [];
+    const cursor = new Date(range.fromDate);
+    cursor.setUTCHours(0, 0, 0, 0);
+    const end = new Date(range.toDate);
+    end.setUTCHours(23, 59, 59, 999);
+
+    while (cursor <= end) {
+      labels.push(
+        `${cursor.getUTCFullYear()}-${(cursor.getUTCMonth() + 1)
+          .toString()
+          .padStart(2, '0')}-${cursor.getUTCDate().toString().padStart(2, '0')}`,
+      );
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return labels;
+  }
+
+  private toTopCountList(values: string[], limit: number) {
+    const counts = new Map<string, number>();
+    for (const value of values) {
+      const key = value.trim() || 'Unknown';
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+      .slice(0, limit);
+  }
+
+  private resolveStatisticsDateRange(from?: string, to?: string) {
+    const parseStartOfDay = (value: string) => {
+      const date = new Date(`${value}T00:00:00.000Z`);
+      if (Number.isNaN(date.getTime())) {
+        throw new BadRequestException('Invalid statistics date range');
+      }
+      return date;
+    };
+
+    const parseEndOfDay = (value: string) => {
+      const date = new Date(`${value}T23:59:59.999Z`);
+      if (Number.isNaN(date.getTime())) {
+        throw new BadRequestException('Invalid statistics date range');
+      }
+      return date;
+    };
+
+    const now = new Date();
+    let fromDate = from ? parseStartOfDay(from) : null;
+    let toDate = to ? parseEndOfDay(to) : null;
+
+    if (!fromDate && !toDate) {
+      toDate = now;
+      fromDate = new Date(now);
+      fromDate.setUTCDate(fromDate.getUTCDate() - 6);
+      fromDate.setUTCHours(0, 0, 0, 0);
+    } else if (!fromDate && toDate) {
+      fromDate = new Date(toDate);
+      fromDate.setUTCDate(fromDate.getUTCDate() - 6);
+      fromDate.setUTCHours(0, 0, 0, 0);
+    } else if (fromDate && !toDate) {
+      toDate = new Date(fromDate);
+      toDate.setUTCDate(toDate.getUTCDate() + 6);
+      toDate.setUTCHours(23, 59, 59, 999);
+    }
+
+    if (!fromDate || !toDate) {
+      throw new BadRequestException('Invalid statistics date range');
+    }
+
+    if (fromDate > toDate) {
+      const swappedFrom = new Date(toDate);
+      swappedFrom.setUTCHours(0, 0, 0, 0);
+      const swappedTo = new Date(fromDate);
+      swappedTo.setUTCHours(23, 59, 59, 999);
+      fromDate = swappedFrom;
+      toDate = swappedTo;
+    }
+
+    if (toDate > now) {
+      toDate = now;
+    }
+
+    const sameDay =
+      fromDate.getUTCFullYear() === toDate.getUTCFullYear() &&
+      fromDate.getUTCMonth() === toDate.getUTCMonth() &&
+      fromDate.getUTCDate() === toDate.getUTCDate();
+
+    return {
+      fromDate,
+      toDate,
+      bucket: sameDay ? ('hour' as const) : ('day' as const),
+    };
   }
 
   private toProfileResponse(user: {

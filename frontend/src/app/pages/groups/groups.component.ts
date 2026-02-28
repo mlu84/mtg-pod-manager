@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { AdminApiService } from '../../core/services/admin-api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
@@ -10,14 +11,8 @@ import { NewsStateService } from '../../core/services/news-state.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { formatLocalDate } from '../../core/utils/date-utils';
 import { ProfileComponent } from '../profile/profile.component';
-import {
-  normalizeText,
-  validateInviteCode,
-} from '../../core/utils/input-validation';
-import {
-  validateCreateGroupFormInput,
-  validateGroupSearchInput,
-} from './groups-form-validation';
+import { normalizeText, validateInviteCode } from '../../core/utils/input-validation';
+import { validateCreateGroupFormInput, validateGroupSearchInput } from './groups-form-validation';
 import {
   Group,
   IncomingGroupApplication,
@@ -38,7 +33,65 @@ export class GroupsComponent implements OnInit {
   groups = signal<Group[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+
+  groupsSearchFilter = signal('');
+  groupsFormatFilter = signal('all');
+  groupsActivityFilter = signal<'all' | 'active' | 'inactive'>('all');
+  groupsPage = signal(1);
+  readonly groupsPageSize = 9;
+  feedbackUnread = signal(0);
+  selectedInactiveGroupIds = signal<Set<string>>(new Set());
+  showDeleteInactiveModal = signal(false);
+  deleteInactiveLoading = signal(false);
+
   memberGroupIds = computed(() => new Set(this.groups().map((g) => g.id)));
+  availableFormats = computed(() => {
+    const unique = new Set(this.groups().map((group) => group.format));
+    return [...unique].sort((a, b) => a.localeCompare(b));
+  });
+  visibleGroups = computed(() => {
+    const term = normalizeText(this.groupsSearchFilter()).toLowerCase();
+    const formatFilter = this.groupsFormatFilter();
+    const activityFilter = this.groupsActivityFilter();
+    const sysadmin = this.isSysAdmin();
+
+    return this.groups().filter((group) => {
+      const matchesTerm =
+        !term ||
+        group.name.toLowerCase().includes(term) ||
+        (group.format || '').toLowerCase().includes(term) ||
+        (group.description || '').toLowerCase().includes(term);
+      if (!matchesTerm) return false;
+
+      if (formatFilter !== 'all' && group.format !== formatFilter) {
+        return false;
+      }
+
+      if (sysadmin && activityFilter !== 'all') {
+        if (activityFilter === 'inactive' && !group.isInactive) return false;
+        if (activityFilter === 'active' && group.isInactive) return false;
+      }
+
+      return true;
+    });
+  });
+  groupsTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.visibleGroups().length / this.groupsPageSize)),
+  );
+  currentGroupsPage = computed(() =>
+    Math.min(this.groupsPage(), this.groupsTotalPages()),
+  );
+  paginatedVisibleGroups = computed(() => {
+    const page = this.currentGroupsPage();
+    const start = (page - 1) * this.groupsPageSize;
+    return this.visibleGroups().slice(start, start + this.groupsPageSize);
+  });
+  selectedInactiveGroups = computed(() =>
+    this.groups().filter((group) => this.selectedInactiveGroupIds().has(group.id)),
+  );
+  selectedActiveGroups = computed(() =>
+    this.selectedInactiveGroups().filter((group) => !group.isInactive),
+  );
 
   // Modal states
   showCreateModal = signal(false);
@@ -67,6 +120,7 @@ export class GroupsComponent implements OnInit {
   searchTotal = signal(0);
   searchPage = signal(1);
   readonly searchPageSize = 10;
+  hasSearchedGroups = signal(false);
 
   // Applications
   myApplications = signal<UserGroupApplication[]>([]);
@@ -95,6 +149,7 @@ export class GroupsComponent implements OnInit {
 
   private groupsApiService = inject(GroupsApiService);
   private usersApiService = inject(UsersApiService);
+  private adminApiService = inject(AdminApiService);
   private authService = inject(AuthService);
   private router = inject(Router);
   private navigationHistoryService = inject(NavigationHistoryService);
@@ -111,11 +166,12 @@ export class GroupsComponent implements OnInit {
       this.sentInvites().length,
   );
 
-  constructor() {}
-
   ngOnInit(): void {
     this.loadGroups();
     this.loadRequestCenterData(false);
+    if (this.isSysAdmin()) {
+      this.loadFeedbackUnreadCount();
+    }
   }
 
   loadGroups(): void {
@@ -125,6 +181,7 @@ export class GroupsComponent implements OnInit {
     this.groupsApiService.getGroups().subscribe({
       next: (groups) => {
         this.groups.set(groups);
+        this.selectedInactiveGroupIds.set(new Set());
         this.loading.set(false);
       },
       error: (err) => {
@@ -219,6 +276,7 @@ export class GroupsComponent implements OnInit {
     this.searchError.set(null);
     this.searchTotal.set(0);
     this.searchPage.set(1);
+    this.hasSearchedGroups.set(false);
     this.showJoinModal.set(true);
   }
 
@@ -289,6 +347,7 @@ export class GroupsComponent implements OnInit {
   }
 
   searchGroups(page = 1): void {
+    this.hasSearchedGroups.set(true);
     const validation = validateGroupSearchInput(this.searchQuery);
     if (validation.error || !validation.value) {
       this.searchError.set(validation.error ?? 'Invalid search input');
@@ -461,6 +520,64 @@ export class GroupsComponent implements OnInit {
     this.router.navigate(['/sysadmin-users']);
   }
 
+  goToSysadminAnalytics(): void {
+    this.router.navigate(['/sysadmin-analytics']);
+  }
+
+  goToFeedbackManagement(): void {
+    this.router.navigate(['/sysadmin-feedback']);
+  }
+
+  goToFeedback(): void {
+    this.router.navigate(['/feedback']);
+  }
+
+  toggleInactiveSelection(groupId: string, event?: Event): void {
+    event?.stopPropagation();
+    const next = new Set(this.selectedInactiveGroupIds());
+    if (next.has(groupId)) {
+      next.delete(groupId);
+    } else {
+      next.add(groupId);
+    }
+    this.selectedInactiveGroupIds.set(next);
+  }
+
+  isInactiveSelected(groupId: string): boolean {
+    return this.selectedInactiveGroupIds().has(groupId);
+  }
+
+  openDeleteInactiveModal(): void {
+    if (this.selectedInactiveGroupIds().size === 0) return;
+    this.showDeleteInactiveModal.set(true);
+  }
+
+  closeDeleteInactiveModal(): void {
+    if (this.deleteInactiveLoading()) return;
+    this.showDeleteInactiveModal.set(false);
+  }
+
+  deleteSelectedInactiveGroups(): void {
+    const selectedGroups = this.selectedInactiveGroups();
+    if (selectedGroups.length === 0 || this.deleteInactiveLoading()) return;
+
+    this.deleteInactiveLoading.set(true);
+    this.error.set(null);
+
+    forkJoin(selectedGroups.map((group) => this.adminApiService.adminDeleteGroup(group.id))).subscribe({
+      next: () => {
+        this.deleteInactiveLoading.set(false);
+        this.showDeleteInactiveModal.set(false);
+        this.selectedInactiveGroupIds.set(new Set());
+        this.loadGroups();
+      },
+      error: (err) => {
+        this.deleteInactiveLoading.set(false);
+        this.error.set(err.error?.message || 'Failed to delete selected groups');
+      },
+    });
+  }
+
   goBack(): void {
     const fallback = this.authService.isAuthenticated() ? '/' : '/login';
     this.router.navigateByUrl(
@@ -470,5 +587,32 @@ export class GroupsComponent implements OnInit {
 
   formatDate(dateString: string): string {
     return formatLocalDate(dateString);
+  }
+
+  onGroupsSearchFilterChange(value: string): void {
+    this.groupsSearchFilter.set(value);
+    this.groupsPage.set(1);
+  }
+
+  onGroupsFormatFilterChange(value: string): void {
+    this.groupsFormatFilter.set(value);
+    this.groupsPage.set(1);
+  }
+
+  onGroupsActivityFilterChange(value: 'all' | 'active' | 'inactive'): void {
+    this.groupsActivityFilter.set(value);
+    this.groupsPage.set(1);
+  }
+
+  setGroupsPage(page: number): void {
+    if (page < 1 || page > this.groupsTotalPages()) return;
+    this.groupsPage.set(page);
+  }
+
+  private loadFeedbackUnreadCount(): void {
+    this.adminApiService.getFeedbackUnreadCount().subscribe({
+      next: (result) => this.feedbackUnread.set(result.unreadCount),
+      error: () => this.feedbackUnread.set(0),
+    });
   }
 }

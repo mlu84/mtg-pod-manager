@@ -71,6 +71,7 @@
               (focus)="openStatsDeckDropdown.emit()"
               (blur)="closeStatsDeckDropdownDelayed.emit()"
               [placeholder]="statsDeckId ? '' : 'Search deck...'"
+              [readonly]="searchInputsReadonly"
               autocomplete="off"
               maxlength="100"
             />

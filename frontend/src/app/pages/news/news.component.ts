@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
@@ -20,7 +20,8 @@ export class NewsComponent {
   private newsStateService = inject(NewsStateService);
   showMobileMenu = signal(false);
   showProfileModal = signal(false);
-  readonly lastUpdated = 'February 2026';
+  readonly phase5Updated = 'February 2026';
+  readonly phase4Updated = 'February 2026';
 
   ngOnInit(): void {
     this.newsStateService.markAsReadOnVisit();

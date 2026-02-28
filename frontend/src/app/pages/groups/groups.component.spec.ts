@@ -4,6 +4,7 @@ import { createEnvironmentInjector, EnvironmentInjector, runInInjectionContext, 
 import { of } from 'rxjs';
 import { Router } from '@angular/router';
 import { GroupsComponent } from './groups.component';
+import { AdminApiService } from '../../core/services/admin-api.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { UsersApiService } from '../../core/services/users-api.service';
@@ -37,6 +38,13 @@ describe('GroupsComponent', () => {
       [
         { provide: GroupsApiService, useValue: groupsApi },
         { provide: UsersApiService, useValue: usersApi },
+        {
+          provide: AdminApiService,
+          useValue: {
+            getFeedbackUnreadCount: vi.fn().mockReturnValue(of({ unreadCount: 0 })),
+            adminDeleteGroup: vi.fn(),
+          },
+        },
         {
           provide: AuthService,
           useValue: {
@@ -106,5 +114,54 @@ describe('GroupsComponent', () => {
     expect(component.searchResults().length).toBe(1);
     expect(component.searchTotal()).toBe(1);
     expect(component.searchPage()).toBe(1);
+  });
+
+  it('filters visible groups by text input', () => {
+    component.groups.set([
+      { id: 'g1', name: 'Alpha Pod', format: 'Commander', description: 'test' } as any,
+      { id: 'g2', name: 'Beta Squad', format: 'Modern', description: 'test' } as any,
+    ]);
+
+    component.groupsSearchFilter.set('alpha');
+
+    expect(component.visibleGroups().map((group) => group.name)).toEqual(['Alpha Pod']);
+
+    component.groupsSearchFilter.set('modern');
+
+    expect(component.visibleGroups().map((group) => group.name)).toEqual(['Beta Squad']);
+  });
+
+  it('paginates visible groups with max 9 entries per page', () => {
+    const groups = Array.from({ length: 10 }, (_, index) => ({
+      id: `g-${index + 1}`,
+      name: `Group ${index + 1}`,
+      format: 'Commander',
+      description: '',
+    })) as any;
+
+    component.groups.set(groups);
+
+    expect(component.groupsTotalPages()).toBe(2);
+    expect(component.paginatedVisibleGroups().length).toBe(9);
+    expect(component.currentGroupsPage()).toBe(1);
+
+    component.setGroupsPage(2);
+
+    expect(component.currentGroupsPage()).toBe(2);
+    expect(component.paginatedVisibleGroups().length).toBe(1);
+    expect(component.paginatedVisibleGroups()[0].name).toBe('Group 10');
+  });
+
+  it('allows selecting active groups for delete confirmation', () => {
+    component.groups.set([
+      { id: 'active-1', name: 'Active 1', format: 'Commander', description: '', isInactive: false } as any,
+    ]);
+
+    component.toggleInactiveSelection('active-1');
+    component.openDeleteInactiveModal();
+
+    expect(component.selectedInactiveGroups().length).toBe(1);
+    expect(component.selectedActiveGroups().length).toBe(1);
+    expect(component.showDeleteInactiveModal()).toBe(true);
   });
 });

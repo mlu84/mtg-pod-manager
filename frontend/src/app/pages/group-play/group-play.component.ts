@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { GroupDetailApiService } from '../../core/services/group-detail-api.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
-import { isCompactWidth, isSmartphoneWidth } from '../../core/config/viewport-breakpoints';
+import { isAppCompactWidth, isCompactWidth, isSmartphoneWidth } from '../../core/config/viewport-breakpoints';
 import { sanitizeSearchInput, sanitizeSingleLineInput } from '../../core/utils/input-validation';
 import { Deck, GroupDetail } from '../../models/group.model';
 import { GroupPlayModalsComponent } from './group-play-modals.component';
@@ -63,6 +63,9 @@ export class GroupPlayComponent {
   viewportWidth = signal(0);
   viewportHeight = signal(0);
   forceLandscapeUi = computed(() => this.isCompactViewport() && this.isPortraitViewport());
+  landscapeDropdownLock = computed(
+    () => this.viewportWidth() > 0 && isAppCompactWidth(this.viewportWidth()) && !this.isPortraitViewport(),
+  );
   playViewportWidth = computed(() =>
     this.forceLandscapeUi() ? this.viewportHeight() : this.viewportWidth(),
   );

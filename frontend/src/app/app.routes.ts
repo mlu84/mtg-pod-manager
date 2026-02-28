@@ -95,7 +95,7 @@ export const routes: Routes = [
       canonicalPath: '/legal',
       metaDescription:
         'Read MTG Pod-Manager legal information including privacy and terms details.',
-      metaRobots: 'index,follow',
+      metaRobots: 'noindex,nofollow',
     },
   },
   {
@@ -109,7 +109,7 @@ export const routes: Routes = [
       canonicalPath: '/contact',
       metaDescription:
         'Contact MTG Pod-Manager for legal, service, and data protection inquiries.',
-      metaRobots: 'index,follow',
+      metaRobots: 'noindex,nofollow',
     },
   },
   {
@@ -121,7 +121,7 @@ export const routes: Routes = [
       canonicalPath: '/news',
       metaDescription:
         'Stay updated with MTG Pod-Manager announcements, release notes, and service updates.',
-      metaRobots: 'index,follow',
+      metaRobots: 'noindex,nofollow',
     },
   },
   {
@@ -142,6 +142,26 @@ export const routes: Routes = [
     path: 'groups',
     loadComponent: () =>
       import('./pages/groups/groups.component').then((m) => m.GroupsComponent),
+    canActivate: [authGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
+  },
+  {
+    path: 'feedback',
+    loadComponent: () =>
+      import('./pages/feedback/feedback.component').then((m) => m.FeedbackComponent),
+    canActivate: [authGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
+  },
+  {
+    path: 'user-statistics',
+    loadComponent: () =>
+      import('./pages/user-statistics/user-statistics.component').then(
+        (m) => m.UserStatisticsComponent
+      ),
     canActivate: [authGuard],
     data: {
       metaRobots: 'noindex,nofollow',
@@ -185,6 +205,28 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/sysadmin-users/sysadmin-users.component').then(
         (m) => m.SysadminUsersComponent
+      ),
+    canActivate: [sysadminGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
+  },
+  {
+    path: 'sysadmin-feedback',
+    loadComponent: () =>
+      import('./pages/feedback-management/feedback-management.component').then(
+        (m) => m.FeedbackManagementComponent
+      ),
+    canActivate: [sysadminGuard],
+    data: {
+      metaRobots: 'noindex,nofollow',
+    },
+  },
+  {
+    path: 'sysadmin-analytics',
+    loadComponent: () =>
+      import('./pages/sysadmin-analytics/sysadmin-analytics.component').then(
+        (m) => m.SysadminAnalyticsComponent
       ),
     canActivate: [sysadminGuard],
     data: {

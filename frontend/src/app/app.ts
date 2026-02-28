@@ -39,6 +39,7 @@ export class App implements OnDestroy {
   private defaultMetaRobots = 'noindex,nofollow';
   private siteName = 'MTG Pod-Manager';
   private defaultOgImagePath = '/assets/images/mtg_pod_manager_logo.png';
+  private canonicalHost = 'https://www.mtgpodmanager.com';
 
   isAuthenticated = this.authService.isAuthenticated;
   hasUnreadNews = this.newsStateService.hasUnreadNews;
@@ -189,8 +190,8 @@ export class App implements OnDestroy {
     if (pathOrUrl.startsWith('http')) {
       return pathOrUrl;
     }
-
-    return `${this.document.location?.origin || ''}${pathOrUrl}`;
+    const normalizedPath = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
+    return `${this.canonicalHost}${normalizedPath}`;
   }
 
   private buildCanonicalPath(url: string): string {

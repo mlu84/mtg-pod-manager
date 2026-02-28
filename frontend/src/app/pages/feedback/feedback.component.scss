@@ -1,0 +1,53 @@
+.feedback-page {
+  display: grid;
+  gap: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  padding-bottom: var(--spacing-xl);
+}
+
+.feedback-page__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.feedback-card {
+  max-width: 760px;
+}
+
+.feedback-card__intro {
+  margin-top: 0;
+  color: var(--color-text-muted);
+}
+
+.feedback-form {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.feedback-form textarea.form-control {
+  resize: vertical;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 6px;
+}
+
+.rating-stars__btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-light);
+  color: #8d95a8;
+}
+
+.rating-stars__btn.is-active {
+  color: #ffb400;
+}
+
+.feedback-form__actions {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -33,17 +33,45 @@
           Events
         </button>
         @if (historyDeckOptions.length > 0) {
-          <select
-            class="form-control history-filters__deck-select"
-            [value]="historyDeckFilter"
-            (change)="setDeckFilter($any($event.target).value)"
-            aria-label="Filter history by deck"
-          >
-            <option value="">All decks</option>
-            @for (deck of historyDeckOptions; track deck.id) {
-              <option [value]="deck.id">{{ deck.name }}</option>
-            }
-          </select>
+          @if (searchInputsReadonly) {
+            <select
+              class="form-control history-filters__deck-select"
+              [value]="historyDeckFilter"
+              aria-label="Filter history by deck"
+              (change)="historyDeckFilterChange.emit($any($event.target).value)"
+            >
+              <option value="">All decks</option>
+              @for (deck of historyDeckOptions; track deck.id) {
+                <option [value]="deck.id">{{ deck.name }}</option>
+              }
+            </select>
+          } @else {
+            <div class="history-filters__deck-autocomplete">
+              <i class="fas fa-search" aria-hidden="true"></i>
+              <input
+                class="form-control"
+                type="text"
+                [value]="deckFilterInput"
+                list="historyDeckFilterList"
+                placeholder="Filter by deck..."
+                maxlength="100"
+                autocomplete="off"
+                aria-label="Filter history by deck"
+                (input)="onDeckFilterInput($event)"
+                (blur)="onDeckFilterBlur()"
+              />
+              @if (deckFilterInput) {
+                <button type="button" class="history-filters__deck-clear" (click)="clearDeckFilter()">
+                  <i class="fas fa-times"></i>
+                </button>
+              }
+              <datalist id="historyDeckFilterList">
+                @for (deck of historyDeckOptions; track deck.id) {
+                  <option [value]="deck.name"></option>
+                }
+              </datalist>
+            </div>
+          }
         }
       </div>
       @if (isAdmin && isEmailVerified && gamesLength > 0) {
@@ -69,8 +97,8 @@
                   <div class="placement">
                     <span class="placement__rank">#{{ placement.rank }}</span>
                     <span class="placement__deck">
-                      {{ placement.deck?.name || 'Deleted Deck' }}
-                      @if (placement.deck?.colors) {
+                      {{ placement.deck.name || 'Deleted Deck' }}
+                      @if (placement.deck.colors) {
                         <span class="mana-symbols mana-symbols--inline">
                           @for (symbol of getManaSymbols(placement.deck.colors); track symbol) {
                             <img [src]="symbol" class="mana-symbol mana-symbol--sm" alt="mana" />

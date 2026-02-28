@@ -116,7 +116,9 @@ export class GamesService {
     if (Number.isNaN(playedAt.getTime())) {
       throw new BadRequestException('Invalid game date');
     }
-    if (playedAt.getTime() > Date.now()) {
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    if (playedAt.getTime() > endOfToday.getTime()) {
       throw new BadRequestException('Game date cannot be in the future');
     }
 
@@ -203,7 +205,7 @@ export class GamesService {
   }
 
   async findAllInGroup(groupId: string, userId: string, limit = 20) {
-    await this.membershipService.getMembershipOrThrow(userId, groupId);
+    await this.membershipService.ensureCanReadGroup(userId, groupId);
     const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
 
     const games = await this.prisma.game.findMany({
@@ -274,7 +276,7 @@ export class GamesService {
       throw new NotFoundException('Game not found');
     }
 
-    await this.membershipService.getMembershipOrThrow(userId, game.groupId);
+    await this.membershipService.ensureCanReadGroup(userId, game.groupId);
 
     return this.formatGameResponse(game);
   }
@@ -348,7 +350,7 @@ export class GamesService {
 
   async getRanking(groupId: string, userId: string, snapshot = false) {
     await this.groupsService.ensureSeasonUpToDate(groupId);
-    await this.membershipService.getMembershipOrThrow(userId, groupId);
+    await this.membershipService.ensureCanReadGroup(userId, groupId);
 
     if (snapshot) {
       return this.groupsService.getLastSeasonRanking(groupId);

@@ -1,0 +1,50 @@
+<div class="statistics-page container">
+  <header class="statistics-page__header">
+    <button type="button" class="btn btn--outline btn--back-vertical" (click)="goBack()" aria-label="Go back">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h1><i class="fas fa-chart-pie"></i> User Statistics</h1>
+  </header>
+
+  <section class="card filter-card">
+    <div class="filter-row">
+      <label>From <input type="date" class="form-control" [(ngModel)]="from" name="from" [max]="maxDateInput" /></label>
+      <label>To <input type="date" class="form-control" [(ngModel)]="to" name="to" [max]="maxDateInput" /></label>
+      <button type="button" class="btn btn--primary" (click)="applyFilters()">Apply</button>
+    </div>
+    @if (filterError()) {
+      <div class="alert alert--danger mt-1">{{ filterError() }}</div>
+    }
+  </section>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading statistics...</p>
+    </div>
+  } @else if (error()) {
+    <div class="alert alert--danger">{{ error() }}</div>
+  } @else if (stats()) {
+    <section class="cards-grid">
+      <article class="card metric-card">
+        <h3>Decks created (you / all)</h3>
+        <strong>{{ stats()!.decks.userTotal }} / {{ stats()!.decks.averageTotal }}</strong>
+      </article>
+      <article class="card metric-card">
+        <h3>Games played (you / all)</h3>
+        <strong>{{ stats()!.games.userTotal }} / {{ stats()!.games.averageTotal }}</strong>
+      </article>
+      <article class="card metric-card">
+        <h3>Avg. Performance (you / all)</h3>
+        <strong>{{ stats()!.performance.userAverage }} / {{ stats()!.performance.globalAverage }}</strong>
+      </article>
+    </section>
+
+    <section class="charts-grid">
+      <article class="card chart-card"><h3>Decks created</h3><div class="chart-wrap"><canvas #statsChart data-chart="decks"></canvas></div></article>
+      <article class="card chart-card"><h3>Games played</h3><div class="chart-wrap"><canvas #statsChart data-chart="games"></canvas></div></article>
+      <article class="card chart-card"><h3>Color usage</h3><div class="chart-wrap"><canvas #statsChart data-chart="colors"></canvas></div></article>
+      <article class="card chart-card"><h3>Favorite color combinations</h3><div class="chart-wrap"><canvas #statsChart data-chart="favoriteCombos"></canvas></div></article>
+    </section>
+  }
+</div>

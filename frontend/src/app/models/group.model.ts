@@ -17,6 +17,11 @@ export interface Group {
   seasonPauseDays?: number;
   seasonPauseUntil?: string | null;
   role: 'ADMIN' | 'MEMBER';
+  isSysadminReadonly?: boolean;
+  memberCount?: number;
+  lastActivityAt?: string | null;
+  isInactive?: boolean;
+  hasActiveOrPlannedSeason?: boolean;
 }
 
 export type SeasonInterval =
@@ -32,6 +37,7 @@ export interface GroupDetail extends Group {
   members: GroupMember[];
   decks: Deck[];
   userRole: 'ADMIN' | 'MEMBER';
+  isSysadminReadonly?: boolean;
   lastSeasonId?: string | null;
   snapshotVisibleUntil?: string | null;
   snapshotVisibilityDays?: number;

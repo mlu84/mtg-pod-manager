@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { HistoryItem } from './history-utils';
 
 @Component({
@@ -9,7 +9,7 @@ import { HistoryItem } from './history-utils';
   templateUrl: './group-history-card.component.html',
   styleUrl: './group-history-card.component.scss',
 })
-export class GroupHistoryCardComponent {
+export class GroupHistoryCardComponent implements OnChanges {
   @Input({ required: true }) historyCollapsed!: boolean;
   @Input({ required: true }) historyFilter!: 'all' | 'games' | 'events';
   @Input({ required: true }) historyDeckFilter!: string;
@@ -18,6 +18,7 @@ export class GroupHistoryCardComponent {
   @Input({ required: true }) paginatedHistory!: HistoryItem[];
   @Input({ required: true }) historyTotalPages!: number;
   @Input({ required: true }) historyPage!: number;
+  @Input() searchInputsReadonly = false;
   @Input({ required: true }) isAdmin!: boolean;
   @Input({ required: true }) isEmailVerified!: boolean;
   @Input({ required: true }) gamesLength!: number;
@@ -30,6 +31,14 @@ export class GroupHistoryCardComponent {
   @Output() historyPageChange = new EventEmitter<number>();
   @Output() undoLast = new EventEmitter<void>();
 
+  deckFilterInput = '';
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['historyDeckFilter'] || changes['historyDeckOptions']) {
+      this.deckFilterInput = this.getDeckNameById(this.historyDeckFilter);
+    }
+  }
+
   toggleCard(): void {
     this.toggleCollapsed.emit();
   }
@@ -38,8 +47,47 @@ export class GroupHistoryCardComponent {
     this.historyFilterChange.emit(filter);
   }
 
-  setDeckFilter(deckId: string): void {
-    this.historyDeckFilterChange.emit(deckId);
+  onDeckFilterInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value.trim();
+    this.deckFilterInput = input.value;
+
+    if (!value) {
+      this.historyDeckFilterChange.emit('');
+      return;
+    }
+
+    const exactMatch = this.historyDeckOptions.find(
+      (deck) => deck.name.toLowerCase() === value.toLowerCase(),
+    );
+    if (exactMatch) {
+      this.historyDeckFilterChange.emit(exactMatch.id);
+    }
+  }
+
+  onDeckFilterBlur(): void {
+    const value = this.deckFilterInput.trim();
+    if (!value) {
+      this.historyDeckFilterChange.emit('');
+      this.deckFilterInput = '';
+      return;
+    }
+
+    const exactMatch = this.historyDeckOptions.find(
+      (deck) => deck.name.toLowerCase() === value.toLowerCase(),
+    );
+    if (exactMatch) {
+      this.deckFilterInput = exactMatch.name;
+      this.historyDeckFilterChange.emit(exactMatch.id);
+      return;
+    }
+
+    this.deckFilterInput = this.getDeckNameById(this.historyDeckFilter);
+  }
+
+  clearDeckFilter(): void {
+    this.deckFilterInput = '';
+    this.historyDeckFilterChange.emit('');
   }
 
   setPage(page: number): void {
@@ -48,5 +96,10 @@ export class GroupHistoryCardComponent {
 
   undoLastGame(): void {
     this.undoLast.emit();
+  }
+
+  private getDeckNameById(deckId: string): string {
+    if (!deckId) return '';
+    return this.historyDeckOptions.find((deck) => deck.id === deckId)?.name || '';
   }
 }

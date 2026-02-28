@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Body,
+  Query,
   UseGuards,
   UploadedFile,
   UseInterceptors,
@@ -15,6 +16,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserType } from '../auth/decorators/current-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { createImageUploadInterceptorOptions } from '../common/upload/image-upload.util';
+import { CreateFeedbackDto } from './dto/create-feedback.dto';
+import { UserStatisticsQueryDto } from './dto/user-statistics-query.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -34,6 +37,14 @@ export class UsersController {
   @Get('me/news-status')
   getNewsStatus(@CurrentUser() user: CurrentUserType) {
     return this.usersService.getNewsStatus(user.id);
+  }
+
+  @Get('me/statistics')
+  getUserStatistics(
+    @CurrentUser() user: CurrentUserType,
+    @Query() queryDto: UserStatisticsQueryDto,
+  ) {
+    return this.usersService.getUserStatistics(user.id, queryDto);
   }
 
   @Post('me/news/read')
@@ -61,5 +72,13 @@ export class UsersController {
   @Delete('me')
   deleteOwnAccount(@CurrentUser() user: CurrentUserType) {
     return this.usersService.deleteOwnAccount(user.id);
+  }
+
+  @Post('me/feedback')
+  submitFeedback(
+    @CurrentUser() user: CurrentUserType,
+    @Body() createFeedbackDto: CreateFeedbackDto,
+  ) {
+    return this.usersService.submitFeedback(user.id, createFeedbackDto);
   }
 }

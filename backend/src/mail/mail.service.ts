@@ -15,6 +15,11 @@ type GroupInviteEmailPayload = {
   inviteCode: string;
 };
 
+type FeedbackConfirmationEmailPayload = {
+  to: string;
+  inAppName: string;
+};
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -156,6 +161,28 @@ export class MailService {
     });
   }
 
+  async sendFeedbackConfirmationEmail(payload: FeedbackConfirmationEmailPayload): Promise<void> {
+    await this.sendEmailOrThrow('feedback-confirmation', {
+      from: this.fromEmail,
+      to: payload.to,
+      subject: 'Thanks for your feedback on MTG Pod-Manager',
+      tags: [{ name: 'email_type', value: 'feedback_confirmation' }],
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #333;">Thank you for your feedback!</h1>
+          <p>Hello ${payload.inAppName},</p>
+          <p>We received your feedback for MTG Pod-Manager.</p>
+          <p>Thanks for helping us improve the app.</p>
+          <p>If we need clarification, a developer may contact you using this email address.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #999; font-size: 12px;">
+            This is an automated confirmation message.
+          </p>
+        </div>
+      `,
+    });
+  }
+
   async handleResendWebhook(input: {
     payload: string;
     resendId: string;
@@ -191,7 +218,11 @@ export class MailService {
   }
 
   private async sendEmailOrThrow(
-    emailType: 'verification' | 'password-reset' | 'group-invite',
+    emailType:
+      | 'verification'
+      | 'password-reset'
+      | 'group-invite'
+      | 'feedback-confirmation',
     payload: Parameters<Resend['emails']['send']>[0],
   ): Promise<void> {
     const response = await this.resend.emails.send(payload);

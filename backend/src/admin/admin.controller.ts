@@ -18,6 +18,9 @@ import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe';
 import { CurrentUser, CurrentUserType } from '../auth/decorators/current-user.decorator';
 import { CreateNewsEntryDto } from './dto/create-news-entry.dto';
+import { AdminListFeedbackQueryDto } from './dto/list-feedback-query.dto';
+import { AdminBulkFeedbackActionDto } from './dto/bulk-feedback-action.dto';
+import { AdminAnalyticsQueryDto } from './dto/admin-analytics-query.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, SysAdminGuard)
@@ -73,5 +76,30 @@ export class AdminController {
     @Body() dto: CreateNewsEntryDto,
   ) {
     return this.adminService.createNewsEntry(user.id, dto);
+  }
+
+  @Get('feedback')
+  listFeedback(@Query() queryDto: AdminListFeedbackQueryDto) {
+    return this.adminService.listFeedback(queryDto);
+  }
+
+  @Get('feedback/unread-count')
+  getFeedbackUnreadCount() {
+    return this.adminService.getFeedbackUnreadCount();
+  }
+
+  @Get('analytics')
+  getAnalytics(@Query() queryDto: AdminAnalyticsQueryDto) {
+    return this.adminService.getAnalytics(queryDto);
+  }
+
+  @Patch('feedback/mark-read')
+  markFeedbackAsRead(@Body() dto: AdminBulkFeedbackActionDto) {
+    return this.adminService.markFeedbackAsRead(dto.ids);
+  }
+
+  @Delete('feedback')
+  deleteFeedback(@Body() dto: AdminBulkFeedbackActionDto) {
+    return this.adminService.deleteFeedback(dto.ids);
   }
 }

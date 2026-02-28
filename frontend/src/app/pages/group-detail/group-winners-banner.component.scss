@@ -29,53 +29,88 @@
   &__item {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm);
     background-color: var(--color-bg-light);
     border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
   }
 
   &__trophy {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     flex-shrink: 0;
     color: #c0c0c0;
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     line-height: 1;
   }
 
   &__trophy--gold {
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
     color: #ffd700;
-    font-size: 1.7rem;
+    font-size: 1.45rem;
   }
 
   &__trophy--silver {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     color: #c0c0c0;
-    font-size: 1.4rem;
+    font-size: 1.25rem;
   }
 
   &__trophy--bronze {
     width: 20px;
     height: 20px;
     color: #cd7f32;
-    font-size: 1.05rem;
+    font-size: 1rem;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    width: 100%;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  &__line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    min-width: 0;
+    width: 100%;
+  }
+
+  &__line--secondary {
+    gap: 6px;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    flex-wrap: wrap;
   }
 
   &__deck {
     font-weight: 600;
+    min-width: 0;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__deck-icon {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
     border-radius: var(--radius-sm);
     overflow: hidden;
     border: 1px solid var(--color-border);
@@ -92,23 +127,46 @@
 
   &__owner {
     color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .mana-symbols {
+    margin-left: 0;
+  }
+
+  .mana-symbol--sm {
+    width: 13px;
+    height: 13px;
   }
 }
 
 @media (min-width: 768px) {
+  .winners-banner__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
   .winners-banner__item {
+    min-height: 96px;
+    box-shadow: inset 0 -8px 0 rgba(15, 23, 42, 0.2);
     order: 4;
   }
 
   .winners-banner__item--first {
     order: 2;
+    min-height: 114px;
+    box-shadow: inset 0 -12px 0 rgba(234, 179, 8, 0.28);
   }
 
   .winners-banner__item--second {
     order: 1;
+    min-height: 104px;
+    box-shadow: inset 0 -10px 0 rgba(148, 163, 184, 0.24);
   }
 
   .winners-banner__item--third {
     order: 3;
+    min-height: 98px;
+    box-shadow: inset 0 -9px 0 rgba(180, 83, 9, 0.24);
   }
 }

@@ -78,7 +78,7 @@ import {
 import Chart from 'chart.js/auto';
 import { ChartConfiguration } from 'chart.js';
 import { formatLocalDate } from '../../core/utils/date-utils';
-import { isSmartphoneWidth } from '../../core/config/viewport-breakpoints';
+import { isAppCompactWidth, isSmartphoneWidth } from '../../core/config/viewport-breakpoints';
 import { AppViewportService } from '../../core/services/app-viewport.service';
 import {
   validateDeckFormInput,
@@ -275,6 +275,11 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     const height = this.appViewportService.viewportHeight();
     return isSmartphoneWidth(width) && height > width;
   });
+  landscapeDropdownLock = computed(() => {
+    const width = this.appViewportService.viewportWidth();
+    const height = this.appViewportService.viewportHeight();
+    return width > 0 && isAppCompactWidth(width) && width > height;
+  });
   showScrollTop = signal(false);
 
   // History filter
@@ -459,6 +464,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   private navigationHistoryService = inject(NavigationHistoryService);
 
   isAdmin = computed(() => this.group()?.userRole === 'ADMIN');
+  isSysadminReadonly = computed(() => !!this.group()?.isSysadminReadonly);
   currentUserId = this.authService.currentUserId;
   isEmailVerified = this.authService.isEmailVerified;
   activeDecks = computed(() =>
@@ -890,6 +896,18 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
+  private ensureNotReadonlyMode(actionLabel = 'This action'): boolean {
+    if (!this.isSysadminReadonly()) {
+      return true;
+    }
+    this.showAlert(
+      'Read-only mode',
+      `${actionLabel} is disabled in sysadmin read-only inspection mode.`,
+      'info',
+    );
+    return false;
+  }
+
   copyInviteCode(): void {
     const code = this.group()?.inviteCode;
     if (code) {
@@ -908,6 +926,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Deck Modal
   openDeckModal(): void {
+    if (!this.ensureNotReadonlyMode('Deck creation')) return;
+
     this.deckName = '';
     this.deckColors = '';
     this.deckType = '';
@@ -964,6 +984,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   createDeck(): void {
+    if (!this.ensureNotReadonlyMode('Deck creation')) return;
+
     const validation = validateDeckFormInput({
       name: this.deckName,
       colors: this.deckColors,
@@ -1227,6 +1249,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Edit Deck Modal
   openEditDeckModal(deck: Deck): void {
+    if (!this.canEditDeck(deck) || !this.ensureNotReadonlyMode('Deck editing')) return;
+
     this.editingDeck = deck;
     this.editDeckName = deck.name;
     this.editDeckColors = deck.colors;
@@ -1250,10 +1274,13 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   canEditDeck(deck: Deck): boolean {
+    if (this.isSysadminReadonly()) return false;
     return this.isAdmin() || deck.owner.id === this.currentUserId();
   }
 
   updateDeck(): void {
+    if (!this.ensureNotReadonlyMode('Deck editing')) return;
+
     if (!this.editingDeck) {
       this.editDeckError.set('Deck not found');
       return;
@@ -1298,6 +1325,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   refreshArchidekt(): void {
+    if (!this.ensureNotReadonlyMode('Deck sync')) return;
     if (!this.editingDeck?.archidektId) return;
 
     this.editDeckLoading.set(true);
@@ -1317,6 +1345,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   requestDeleteDeck(): void {
+    if (!this.ensureNotReadonlyMode('Deck deletion')) return;
     if (!this.editingDeck) return;
     this.showConfirmation(
       'Delete deck',
@@ -1326,6 +1355,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private executeDeleteDeck(): void {
+    if (!this.ensureNotReadonlyMode('Deck deletion')) return;
     if (!this.editingDeck) return;
     this.confirmModalLoading.set(true);
     this.editDeckError.set(null);

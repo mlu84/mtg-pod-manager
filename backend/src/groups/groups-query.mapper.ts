@@ -81,17 +81,22 @@ export function mapGroupMemberWithAvatar(member: GroupMemberProjection) {
 
 export function buildGroupDetailPayload(args: {
   group: GroupDetailProjection;
-  membershipRole: string;
+  membershipRole: 'ADMIN' | 'MEMBER';
+  isSysadminReadonly: boolean;
   winnersBanner: unknown;
 }) {
-  const { group, membershipRole, winnersBanner } = args;
+  const { group, membershipRole, isSysadminReadonly, winnersBanner } = args;
   const { groupImage, groupImageMime, members, ...groupData } = group;
 
   return {
     ...groupData,
     members: members.map(mapGroupMemberWithAvatar),
     userRole: membershipRole,
-    inviteCode: membershipRole === 'ADMIN' ? group.inviteCode : undefined,
+    isSysadminReadonly,
+    inviteCode:
+      membershipRole === 'ADMIN'
+        ? group.inviteCode
+        : undefined,
     imageUrl: toImageDataUrl(groupImage, groupImageMime),
     winnersBanner,
   };

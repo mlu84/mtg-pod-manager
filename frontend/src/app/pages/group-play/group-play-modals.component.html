@@ -29,6 +29,7 @@
           [value]="deckSearchTerm"
           (input)="searchTermChange.emit($any($event.target).value)"
           placeholder="Search by deck name"
+          [readonly]="searchInputsReadonly"
           maxlength="100"
           autocomplete="off"
         />

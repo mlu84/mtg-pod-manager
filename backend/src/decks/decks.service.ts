@@ -101,7 +101,7 @@ export class DecksService {
   }
 
   async findAllInGroup(groupId: string, userId: string) {
-    await this.membershipService.getMembershipOrThrow(userId, groupId);
+    await this.membershipService.ensureCanReadGroup(userId, groupId);
 
     const decks = await this.prisma.deck.findMany({
       where: { groupId },
@@ -145,7 +145,7 @@ export class DecksService {
       throw new NotFoundException('Deck not found');
     }
 
-    await this.membershipService.getMembershipOrThrow(userId, deck.groupId);
+    await this.membershipService.ensureCanReadGroup(userId, deck.groupId);
 
     return deck;
   }

@@ -46,6 +46,9 @@ describe('UsersService', () => {
     };
     $transaction: ReturnType<typeof vi.fn>;
   };
+  let mailService: {
+    sendFeedbackConfirmationEmail: ReturnType<typeof vi.fn>;
+  };
   let service: UsersService;
 
   beforeEach(() => {
@@ -94,7 +97,10 @@ describe('UsersService', () => {
       },
       $transaction: vi.fn(async (cb: (txClient: typeof tx) => Promise<unknown>) => cb(tx)),
     };
-    service = new UsersService(prisma as any);
+    mailService = {
+      sendFeedbackConfirmationEmail: vi.fn(),
+    };
+    service = new UsersService(prisma as any, mailService as any);
   });
 
   it('maps avatar image data to avatarUrl in profile responses', async () => {

@@ -18,6 +18,7 @@
     <app-group-header
       [group]="group()!"
       [isAdmin]="isAdmin()"
+      [isSysadminReadonly]="isSysadminReadonly()"
       [defaultGroupImage]="defaultGroupImage"
       (back)="goBack()"
       (editGroup)="openEditGroupModal()"
@@ -27,6 +28,15 @@
       (openSeasonSettings)="openSeasonSettingsModal()"
       (openGroupSettings)="openGroupSettingsModal()"
     />
+
+    @if (isSysadminReadonly()) {
+      <div class="container">
+        <div class="alert alert--warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          Read-only sysadmin inspection mode: all mutating actions are disabled.
+        </div>
+      </div>
+    }
 
     @if (group()!.winnersBanner) {
       <div class="container">
@@ -97,6 +107,7 @@
             [isAdmin]="isAdmin()"
             [isEmailVerified]="isEmailVerified()"
             [gamesLength]="games().length"
+            [searchInputsReadonly]="landscapeDropdownLock()"
             [formatDate]="formatDate.bind(this)"
             [getManaSymbols]="getManaSymbols.bind(this)"
             (toggleCollapsed)="toggleHistoryCollapsed()"
@@ -140,6 +151,7 @@
               [statsDeckSearch]="statsDeckSearch()"
               [statsDeckDropdownOpen]="statsDeckDropdownOpen()"
               [filteredStatsDecks]="filteredStatsDecks()"
+              [searchInputsReadonly]="landscapeDropdownLock()"
               [getDeckNameById]="getDeckNameById.bind(this)"
               [getManaSymbols]="getManaSymbols.bind(this)"
               [showExpandAction]="true"
@@ -161,6 +173,7 @@
             class="decks-card"
             [decksCollapsed]="decksCollapsed()"
             [isEmailVerified]="isEmailVerified()"
+            [isReadonlyMode]="isSysadminReadonly()"
             [decksLength]="group()!.decks.length"
             [decksSearchTerm]="decksSearchTerm()"
             [deckSortMode]="deckSortMode()"
@@ -237,6 +250,7 @@
     [prefilledGame]="prefilledGame()"
       [isSeasonPaused]="isSeasonPaused()"
       [seasonPauseUntil]="group()!.seasonPauseUntil"
+      [searchInputsReadonly]="landscapeDropdownLock()"
       [formatDate]="formatDate.bind(this)"
       [deckDropdownOpen]="deckDropdownOpen"
     [memberNames]="memberNames()"
@@ -571,6 +585,7 @@
         [statsDeckSearch]="statsDeckSearch()"
         [statsDeckDropdownOpen]="statsDeckDropdownOpen()"
         [filteredStatsDecks]="filteredStatsDecks()"
+        [searchInputsReadonly]="landscapeDropdownLock()"
         [getDeckNameById]="getDeckNameById.bind(this)"
         [getManaSymbols]="getManaSymbols.bind(this)"
         [showCollapseToggle]="false"

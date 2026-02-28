@@ -154,6 +154,11 @@
 
       <div class="modal__actions modal__actions--split">
         <div class="account-actions">
+          @if (!isSysAdmin()) {
+            <button type="button" class="btn btn--outline" (click)="openUserStatistics()" [disabled]="deleteLoading()">
+              <i class="fas fa-chart-pie"></i> User Statistics
+            </button>
+          }
           <button type="button" class="btn btn--outline" (click)="logout()" [disabled]="deleteLoading()">
             <i class="fas fa-sign-out-alt"></i> Logout
           </button>

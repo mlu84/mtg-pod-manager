@@ -71,6 +71,7 @@
                   (focus)="openDeckDropdown.emit(i)"
                   (blur)="closeDeckDropdownDelayed.emit(i)"
                   [placeholder]="placement.deckId ? '' : 'Search deck...'"
+                  [readonly]="searchInputsReadonly"
                   [disabled]="gameLoading || prefilledGame"
                   [name]="'deckSearch' + i"
                   maxlength="100"
