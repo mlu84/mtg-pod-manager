@@ -216,29 +216,6 @@ export class SysadminUsersComponent implements OnInit {
     });
   }
 
-  deleteGroup(group: AdminGroup): void {
-    this.showConfirmation(
-      'Delete group',
-      `Delete group "${group.name}"? This cannot be undone.`,
-      () => this.executeDeleteGroup(group.id)
-    );
-  }
-
-  private executeDeleteGroup(groupId: string): void {
-    this.confirmLoading.set(true);
-    this.adminApiService.adminDeleteGroup(groupId).subscribe({
-      next: () => {
-        this.confirmLoading.set(false);
-        this.closeConfirmModal();
-        this.loadGroups(this.page());
-      },
-      error: (err) => {
-        this.confirmLoading.set(false);
-        this.showConfirmError(err);
-      },
-    });
-  }
-
   private showConfirmation(title: string, message: string, action: () => void): void {
     this.confirmTitle = title;
     this.confirmMessage = message;

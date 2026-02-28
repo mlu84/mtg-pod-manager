@@ -51,6 +51,16 @@
               <span class="news-unread-badge news-unread-badge--floating" aria-hidden="true">!</span>
             }
           </a>
+          @if (isAuthenticated()) {
+            <a
+              class="meta-header__link"
+              routerLink="/feedback"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: true }"
+            >
+              Feedback
+            </a>
+          }
           <div class="donate-inline">
             <span class="donate-prefix">Buy me a booster</span>
             <a

@@ -14,6 +14,7 @@ export class GroupDecksCardComponent {
   @Input({ required: true }) deckSortMode!: 'name' | 'type' | 'colors' | 'players';
   @Input({ required: true }) decksCollapsed!: boolean;
   @Input({ required: true }) isEmailVerified!: boolean;
+  @Input() isReadonlyMode = false;
   @Input({ required: true }) decksLength!: number;
   @Input({ required: true }) decksSearchTerm!: string;
   @Input({ required: true }) filteredDecks!: Deck[];

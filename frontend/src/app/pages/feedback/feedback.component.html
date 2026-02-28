@@ -1,0 +1,75 @@
+<div class="feedback-page container">
+  <header class="feedback-page__header">
+    <button type="button" class="btn btn--outline btn--back-vertical" (click)="goBack()" aria-label="Go back">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h1><i class="fas fa-comment-dots"></i> Feedback</h1>
+  </header>
+
+  <section class="card feedback-card">
+    <p class="feedback-card__intro">
+      Share ideas, bugs, or quick impressions. Rating and contact email are optional.
+    </p>
+
+    @if (error()) {
+      <div class="alert alert--danger">{{ error() }}</div>
+    }
+    @if (success()) {
+      <div class="alert alert--success">{{ success() }}</div>
+    }
+
+    <form (ngSubmit)="submitFeedback()" class="feedback-form">
+      <div class="form-group">
+        <label for="feedbackText">Your feedback *</label>
+        <textarea
+          id="feedbackText"
+          class="form-control"
+          [(ngModel)]="text"
+          name="text"
+          maxlength="4000"
+          rows="6"
+          placeholder="What should we improve?"
+          [disabled]="loading()"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="feedbackEmail">Email (optional)</label>
+        <input
+          id="feedbackEmail"
+          type="email"
+          class="form-control"
+          [(ngModel)]="contactEmail"
+          name="contactEmail"
+          maxlength="254"
+          placeholder="you@example.com"
+          [disabled]="loading()"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Do you like the app? (optional)</label>
+        <div class="rating-stars" role="radiogroup" aria-label="Feedback rating">
+          @for (value of [1, 2, 3, 4, 5]; track value) {
+            <button
+              type="button"
+              class="rating-stars__btn"
+              [class.is-active]="rating() !== null && value <= rating()!"
+              [disabled]="loading()"
+              (click)="selectRating(value)"
+              [attr.aria-label]="'Rate ' + value + ' stars'"
+            >
+              <i class="fas fa-star"></i>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="feedback-form__actions">
+        <button type="submit" class="btn btn--primary" [disabled]="loading()">
+          @if (loading()) { Sending... } @else { Send feedback }
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

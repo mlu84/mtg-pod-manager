@@ -1,0 +1,55 @@
+<div class="analytics-page container">
+  <header class="analytics-page__header">
+    <button type="button" class="btn btn--outline btn--back-vertical" (click)="goBack()" aria-label="Go back">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h1><i class="fas fa-chart-line"></i> User Analytics</h1>
+  </header>
+
+  <section class="card filter-card">
+    <div class="filter-row">
+      <label>From <input type="date" class="form-control" [(ngModel)]="from" name="from" [max]="maxDateInput" /></label>
+      <label>To <input type="date" class="form-control" [(ngModel)]="to" name="to" [max]="maxDateInput" /></label>
+      <button type="button" class="btn btn--primary" (click)="applyFilters()">Apply</button>
+    </div>
+    @if (filterError()) {
+      <div class="alert alert--danger mt-1">{{ filterError() }}</div>
+    }
+  </section>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading analytics...</p>
+    </div>
+  } @else if (error()) {
+    <div class="alert alert--danger">{{ error() }}</div>
+  } @else if (cards()) {
+    <section class="cards-grid">
+      <article class="card metric-card">
+        <h3>Live users now</h3>
+        <strong>{{ cards()!.liveUsersNow }}</strong>
+      </article>
+      <article class="card metric-card">
+        <h3>Avg groups per user</h3>
+        <strong>{{ cards()!.averageGroupsPerUser }}</strong>
+      </article>
+      <article class="card metric-card">
+        <h3>Active seasons</h3>
+        <strong>{{ cards()!.activeSeasons }}</strong>
+      </article>
+    </section>
+
+    <section class="charts-grid">
+      <article class="card chart-card"><h3>User history</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="usersHistory"></canvas></div></article>
+      <article class="card chart-card"><h3>Groups created</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="groupsCreated"></canvas></div></article>
+      <article class="card chart-card"><h3>Decks created</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="decksCreated"></canvas></div></article>
+      <article class="card chart-card"><h3>Recorded games</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="recordedGames"></canvas></div></article>
+      <article class="card chart-card"><h3>Concurrent active users</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="concurrentUsers"></canvas></div></article>
+      <article class="card chart-card"><h3>Invites</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="invites"></canvas></div></article>
+      <article class="card chart-card"><h3>Popular color combinations</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="popularColorCombos"></canvas></div></article>
+      <article class="card chart-card"><h3>Most played color combinations</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="playedColorCombos"></canvas></div></article>
+      <article class="card chart-card"><h3>Most played deck types</h3><div class="chart-wrap"><canvas #chartCanvas data-chart="playedDeckTypes"></canvas></div></article>
+    </section>
+  }
+</div>

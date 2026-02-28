@@ -84,15 +84,36 @@ describe('groups-query.mapper', () => {
         ],
       },
       membershipRole: 'ADMIN',
+      isSysadminReadonly: false,
       winnersBanner: { seasonId: 's-1' },
     });
 
     expect(detail).toMatchObject({
       id: 'g-1',
       userRole: 'ADMIN',
+      isSysadminReadonly: false,
       inviteCode: 'code-1',
       winnersBanner: { seasonId: 's-1' },
     });
+  });
+
+  it('hides invite code for sysadmin read-only payloads', () => {
+    const detail = buildGroupDetailPayload({
+      group: {
+        id: 'g-2',
+        name: 'Readonly Group',
+        inviteCode: 'secret-code',
+        groupImage: null,
+        groupImageMime: null,
+        members: [],
+      },
+      membershipRole: 'MEMBER',
+      isSysadminReadonly: true,
+      winnersBanner: null,
+    });
+
+    expect(detail.isSysadminReadonly).toBe(true);
+    expect(detail.inviteCode).toBeUndefined();
   });
 });
 

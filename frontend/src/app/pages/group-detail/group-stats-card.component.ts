@@ -21,6 +21,7 @@ export class GroupStatsCardComponent implements OnDestroy {
   @Input({ required: true }) statsDeckSearch!: string;
   @Input({ required: true }) statsDeckDropdownOpen!: boolean;
   @Input({ required: true }) filteredStatsDecks!: Deck[];
+  @Input() searchInputsReadonly = false;
   @Input({ required: true }) getDeckNameById!: (id: string) => string;
   @Input({ required: true }) getManaSymbols!: (colors: string) => string[];
   @Input() showCollapseToggle = true;

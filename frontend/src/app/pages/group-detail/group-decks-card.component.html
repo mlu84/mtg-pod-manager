@@ -2,7 +2,7 @@
   <div class="card__header">
     <h2 class="card__title"><i class="fas fa-layer-group"></i> Decks</h2>
     <div class="card__header-actions">
-      @if (isEmailVerified) {
+      @if (isEmailVerified && !isReadonlyMode) {
           <button class="btn btn--secondary btn--sm card__icon-button" (click)="addDeck.emit()" title="Add deck">
             Add New
           </button>
@@ -16,6 +16,12 @@
     @if (decksLength === 0) {
       <p class="text-muted">No decks added yet.</p>
     } @else {
+      @if (isReadonlyMode) {
+        <p class="decks-readonly-hint">
+          <i class="fas fa-lock"></i>
+          Read-only sysadmin inspection mode: deck changes are disabled.
+        </p>
+      }
       <div class="decks-toolbar">
         <div class="decks-search">
           <i class="fas fa-search"></i>
@@ -79,7 +85,7 @@
             </div>
             <div class="deck-item__actions">
               <span class="deck-item__owner">{{ deck.owner.inAppName }}</span>
-              @if (canEditDeck(deck) && isEmailVerified) {
+              @if (canEditDeck(deck) && isEmailVerified && !isReadonlyMode) {
                 <button class="btn-icon" (click)="editDeck.emit(deck)" title="Edit deck">
                   <i class="fas fa-edit"></i>
                 </button>

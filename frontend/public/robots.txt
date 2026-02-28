@@ -5,8 +5,15 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /verify-email
+Disallow: /legal
+Disallow: /contact
+Disallow: /news
 Disallow: /groups
+Disallow: /feedback
+Disallow: /user-statistics
 Disallow: /archidekt-test
 Disallow: /sysadmin-users
+Disallow: /sysadmin-feedback
+Disallow: /sysadmin-analytics
 
-Sitemap: https://mtgpodmanager.com/sitemap.xml
+Sitemap: https://www.mtgpodmanager.com/sitemap.xml

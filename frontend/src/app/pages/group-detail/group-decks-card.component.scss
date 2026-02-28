@@ -6,6 +6,15 @@
   margin-bottom: var(--spacing-md);
 }
 
+.decks-readonly-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--spacing-sm) 0;
+  color: #facc15;
+  font-size: 0.85rem;
+}
+
 .decks-search {
   position: relative;
   display: flex;

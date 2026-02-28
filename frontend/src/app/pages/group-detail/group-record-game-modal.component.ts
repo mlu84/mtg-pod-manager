@@ -20,6 +20,7 @@ export class GroupRecordGameModalComponent {
   @Input({ required: true }) gameError!: string | null;
   @Input({ required: true }) prefilledGame!: boolean;
   @Input({ required: true }) isSeasonPaused!: boolean;
+  @Input() searchInputsReadonly = false;
   @Input() seasonPauseUntil: string | null | undefined;
   @Input({ required: true }) formatDate!: (date: string) => string;
   @Input({ required: true }) deckDropdownOpen!: boolean[];

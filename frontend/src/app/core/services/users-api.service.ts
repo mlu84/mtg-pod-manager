@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { UserGroupApplication } from '../../models/group.model';
@@ -8,6 +8,8 @@ import {
   UpdateProfileRequest,
   UserProfile,
 } from '../../models/user.model';
+import { SubmitFeedbackRequest, SubmitFeedbackResponse } from '../../models/feedback.model';
+import { UserStatisticsResponse } from '../../models/analytics.model';
 
 const API_URL = environment.apiUrl;
 
@@ -45,5 +47,26 @@ export class UsersApiService {
 
   deleteOwnAccount(): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${API_URL}/users/me`);
+  }
+
+  submitFeedback(data: SubmitFeedbackRequest): Observable<SubmitFeedbackResponse> {
+    return this.http.post<SubmitFeedbackResponse>(`${API_URL}/users/me/feedback`, data);
+  }
+
+  getUserStatistics(from?: string, to?: string): Observable<UserStatisticsResponse> {
+    let params = new HttpParams();
+    const normalizedFrom = from?.trim();
+    const normalizedTo = to?.trim();
+
+    if (normalizedFrom) {
+      params = params.set('from', normalizedFrom);
+    }
+    if (normalizedTo) {
+      params = params.set('to', normalizedTo);
+    }
+
+    return this.http.get<UserStatisticsResponse>(`${API_URL}/users/me/statistics`, {
+      params,
+    });
   }
 }

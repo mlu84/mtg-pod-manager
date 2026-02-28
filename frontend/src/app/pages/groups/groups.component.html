@@ -9,6 +9,15 @@
       </div>
       @if (isSysAdmin()) {
         <div class="header__actions">
+          <button class="btn btn--outline btn--sysadmin" (click)="goToSysadminAnalytics()" title="User Analytics">
+            <i class="fas fa-chart-line"></i>
+          </button>
+          <button class="btn btn--outline btn--sysadmin btn--search" (click)="goToFeedbackManagement()" title="Feedback Management">
+            <i class="fas fa-inbox"></i>
+            @if (feedbackUnread() > 0) {
+              <span class="btn-badge">{{ feedbackUnread() }}</span>
+            }
+          </button>
           <button class="btn btn--outline btn--sysadmin" (click)="goToArchidektTest()" title="Archidekt API Test">
             <i class="fas fa-flask"></i>
           </button>
@@ -42,6 +51,23 @@
           <button type="button" class="btn btn--outline mobile-menu__item" (click)="openProfileModal()">
             <i class="fas fa-user"></i> Profile
           </button>
+          <button type="button" class="btn btn--outline mobile-menu__item" (click)="goToFeedback()">
+            <i class="fas fa-comment-dots"></i> Feedback
+          </button>
+          @if (isSysAdmin()) {
+            <button type="button" class="btn btn--outline mobile-menu__item" (click)="goToSysadminAnalytics()">
+              <i class="fas fa-chart-line"></i> User Analytics
+            </button>
+            <button type="button" class="btn btn--outline mobile-menu__item" (click)="goToFeedbackManagement()">
+              <i class="fas fa-inbox"></i> Feedback Management
+              @if (feedbackUnread() > 0) {
+                <span class="btn-badge">{{ feedbackUnread() }}</span>
+              }
+            </button>
+            <button type="button" class="btn btn--outline mobile-menu__item" (click)="goToSysadminUsers()">
+              <i class="fas fa-users-cog"></i> Sysadmin Users
+            </button>
+          }
           <button type="button" class="btn btn--outline mobile-menu__item" (click)="navigateFromMobileMenu('/legal')">
             <i class="fas fa-scale-balanced"></i> Legal
           </button>
@@ -99,18 +125,59 @@
         <button class="btn btn--secondary" (click)="openJoinModal()">
           <i class="fas fa-door-open"></i> Join Group
         </button>
+        @if (isSysAdmin() && selectedInactiveGroupIds().size > 0) {
+          <button class="btn btn--danger" (click)="openDeleteInactiveModal()">
+            <i class="fas fa-trash"></i> Delete selected ({{ selectedInactiveGroupIds().size }})
+          </button>
+        }
       </div>
 
-      @if (groups().length === 0) {
+      <section class="card groups-filter-card">
+        <div class="groups-filter-row">
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="groupsSearchFilter()"
+            (ngModelChange)="onGroupsSearchFilterChange($event)"
+            name="groupsSearchFilter"
+            placeholder="Filter groups..."
+            maxlength="100"
+          />
+          <select class="form-control" [ngModel]="groupsFormatFilter()" (ngModelChange)="onGroupsFormatFilterChange($event)">
+            <option value="all">All formats</option>
+            @for (format of availableFormats(); track format) {
+              <option [value]="format">{{ format }}</option>
+            }
+          </select>
+          @if (isSysAdmin()) {
+            <select class="form-control" [ngModel]="groupsActivityFilter()" (ngModelChange)="onGroupsActivityFilterChange($event)">
+              <option value="all">All activity</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive (6+ months)</option>
+            </select>
+          }
+        </div>
+      </section>
+
+      @if (visibleGroups().length === 0) {
         <div class="empty-state card">
           <i class="fas fa-users-slash"></i>
-          <h2>No groups yet</h2>
-          <p>Create a new group or join an existing one to get started!</p>
+          <h2>No groups found</h2>
+          <p>Create a new group or adjust your filters.</p>
         </div>
       } @else {
         <div class="groups-grid">
-          @for (group of groups(); track group.id) {
+          @for (group of paginatedVisibleGroups(); track group.id) {
             <div class="group-card card" (click)="openGroup(group)">
+              @if (isSysAdmin()) {
+                <label class="group-card__selector" (click)="$event.stopPropagation()">
+                  <input
+                    type="checkbox"
+                    [checked]="isInactiveSelected(group.id)"
+                    (change)="toggleInactiveSelection(group.id, $event)"
+                  />
+                </label>
+              }
               <div class="group-card__icon">
                 @if (group.imageUrl) {
                   <img [src]="group.imageUrl" [alt]="group.name" />
@@ -123,17 +190,90 @@
                 <span class="group-card__format">{{ group.format }}</span>
                 @if (group.role === 'ADMIN') {
                   <span class="group-card__badge">Admin</span>
+                } @else if (group.isSysadminReadonly) {
+                  <span class="group-card__badge">Read-only</span>
                 } @else {
                   <span class="group-card__badge">Member</span>
+                }
+                @if (isSysAdmin() && group.isInactive) {
+                  <span class="group-card__badge group-card__badge--inactive">Inactive</span>
+                }
+                @if (isSysAdmin() && group.memberCount !== undefined) {
+                  <span class="group-card__meta">{{ group.memberCount }} members</span>
                 }
               </div>
             </div>
           }
         </div>
+        @if (groupsTotalPages() > 1) {
+          <div class="pagination">
+            <button class="btn btn--outline" (click)="setGroupsPage(currentGroupsPage() - 1)" [disabled]="currentGroupsPage() === 1">
+              Prev
+            </button>
+            <span class="pagination__info">Page {{ currentGroupsPage() }} of {{ groupsTotalPages() }}</span>
+            <button class="btn btn--outline" (click)="setGroupsPage(currentGroupsPage() + 1)" [disabled]="currentGroupsPage() === groupsTotalPages()">
+              Next
+            </button>
+          </div>
+        }
       }
     }
   </main>
 </div>
+
+@if (showDeleteInactiveModal()) {
+  <div class="modal-overlay" (click)="closeDeleteInactiveModal()">
+    <div class="modal modal--wide card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Delete selected groups</h2>
+        <button class="modal__close" (click)="closeDeleteInactiveModal()" [disabled]="deleteInactiveLoading()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <p class="text-muted">The following groups will be deleted permanently:</p>
+      @if (selectedActiveGroups().length > 0) {
+        <div class="delete-active-warning">
+          <i class="fas fa-triangle-exclamation delete-active-warning__icon" aria-hidden="true"></i>
+          <span>
+            Warning: {{ selectedActiveGroups().length }} active group{{ selectedActiveGroups().length === 1 ? '' : 's' }}
+            selected for deletion.
+          </span>
+        </div>
+      }
+
+      <div class="inactive-groups-list">
+        @for (group of selectedInactiveGroups(); track group.id) {
+          <div class="inactive-groups-list__item">
+            <div>
+              <strong>{{ group.name }}</strong>
+              <span class="inactive-groups-list__meta">{{ group.format }}</span>
+            </div>
+            <div class="inactive-groups-list__meta">
+              Last activity: {{ group.lastActivityAt ? formatDate(group.lastActivityAt) : 'unknown' }}
+            </div>
+            @if (!group.isInactive) {
+              <div class="inactive-groups-list__warning inactive-groups-list__warning--active">
+                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                active group selected for deletion
+              </div>
+            }
+            @if (group.hasActiveOrPlannedSeason) {
+              <div class="inactive-groups-list__warning">group with active or planned season</div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button class="btn btn--outline" (click)="closeDeleteInactiveModal()" [disabled]="deleteInactiveLoading()">Cancel</button>
+        <button class="btn btn--danger" (click)="deleteSelectedInactiveGroups()" [disabled]="deleteInactiveLoading()">
+          @if (deleteInactiveLoading()) { Deleting... } @else { Confirm delete }
+        </button>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- Create Group Modal -->
 @if (showCreateModal()) {
@@ -286,61 +426,63 @@
           </button>
         </form>
 
-        <div class="search-results">
-          <h3>Results</h3>
-          @if (searchLoading()) {
-            <div class="loading-inline">
-              <div class="spinner"></div>
-              <span>Searching...</span>
-            </div>
-          } @else if (searchResults().length === 0 && searchQuery) {
-            <p class="text-muted">No groups found.</p>
-          } @else {
-            <div class="result-list">
-              @for (result of searchResults(); track result.id) {
-                <div class="result-item">
-                  <div class="result-item__image">
-                    <img [src]="result.imageUrl || defaultGroupImage" [alt]="result.name" />
-                  </div>
-                  <div class="result-item__info">
-                    <div class="result-item__title">
-                      <span class="result-item__name">{{ result.name }}</span>
-                      <span class="result-item__format">{{ result.format }}</span>
+        @if (hasSearchedGroups()) {
+          <div class="search-results">
+            <h3>Results</h3>
+            @if (searchLoading()) {
+              <div class="loading-inline">
+                <div class="spinner"></div>
+                <span>Searching...</span>
+              </div>
+            } @else if (searchResults().length === 0 && searchQuery) {
+              <p class="text-muted">No groups found.</p>
+            } @else {
+              <div class="result-list">
+                @for (result of searchResults(); track result.id) {
+                  <div class="result-item">
+                    <div class="result-item__image">
+                      <img [src]="result.imageUrl || defaultGroupImage" [alt]="result.name" />
                     </div>
-                    @if (result.description) {
-                      <p class="result-item__description">{{ result.description }}</p>
-                    }
-                    <span class="result-item__meta">{{ result.memberCount }} members</span>
+                    <div class="result-item__info">
+                      <div class="result-item__title">
+                        <span class="result-item__name">{{ result.name }}</span>
+                        <span class="result-item__format">{{ result.format }}</span>
+                      </div>
+                      @if (result.description) {
+                        <p class="result-item__description">{{ result.description }}</p>
+                      }
+                      <span class="result-item__meta">{{ result.memberCount }} members</span>
+                    </div>
+                    <div class="result-item__actions">
+                      @if (memberRole(result.id) === 'ADMIN') {
+                        <button class="btn btn--outline" disabled>Admin</button>
+                      } @else if (memberRole(result.id) === 'MEMBER') {
+                        <button class="btn btn--outline" disabled>Member</button>
+                      } @else if (hasApplied(result.id)) {
+                        <button class="btn btn--outline" disabled>Applied</button>
+                      } @else {
+                        <button class="btn btn--secondary" (click)="applyToGroup(result.id)"
+                                [disabled]="searchLoading() || !isEmailVerified()">
+                          Apply
+                        </button>
+                      }
+                    </div>
                   </div>
-                  <div class="result-item__actions">
-                    @if (memberRole(result.id) === 'ADMIN') {
-                      <button class="btn btn--outline" disabled>Admin</button>
-                    } @else if (memberRole(result.id) === 'MEMBER') {
-                      <button class="btn btn--outline" disabled>Member</button>
-                    } @else if (hasApplied(result.id)) {
-                      <button class="btn btn--outline" disabled>Applied</button>
-                    } @else {
-                      <button class="btn btn--secondary" (click)="applyToGroup(result.id)"
-                              [disabled]="searchLoading() || !isEmailVerified()">
-                        Apply
-                      </button>
-                    }
-                  </div>
+                }
+              </div>
+
+              @if (searchTotalPages() > 1) {
+                <div class="pagination">
+                  <button class="btn btn--outline" (click)="setSearchPage(searchPage() - 1)"
+                          [disabled]="searchPage() === 1">Prev</button>
+                  <span class="pagination__info">Page {{ searchPage() }} of {{ searchTotalPages() }}</span>
+                  <button class="btn btn--outline" (click)="setSearchPage(searchPage() + 1)"
+                          [disabled]="searchPage() === searchTotalPages()">Next</button>
                 </div>
               }
-            </div>
-
-            @if (searchTotalPages() > 1) {
-              <div class="pagination">
-                <button class="btn btn--outline" (click)="setSearchPage(searchPage() - 1)"
-                        [disabled]="searchPage() === 1">Prev</button>
-                <span class="pagination__info">Page {{ searchPage() }} of {{ searchTotalPages() }}</span>
-                <button class="btn btn--outline" (click)="setSearchPage(searchPage() + 1)"
-                        [disabled]="searchPage() === searchTotalPages()">Next</button>
-              </div>
             }
-          }
-        </div>
+          </div>
+        }
       </div>
 
       <div class="modal__actions join-modal__footer">
@@ -483,4 +625,3 @@
 @if (showProfileModal()) {
   <app-profile (close)="closeProfileModal()" />
 }
-

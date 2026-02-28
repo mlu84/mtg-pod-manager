@@ -72,6 +72,15 @@
   word-break: break-word;
 }
 
+.header__readonly-warning {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #facc15;
+  font-size: 1rem;
+  animation: readonly-warn-blink 1.2s ease-in-out infinite;
+}
+
 .header__format-row {
   margin-top: var(--spacing-xs);
 }
@@ -133,6 +142,16 @@
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
   font-family: monospace;
+}
+
+@keyframes readonly-warn-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .btn--back-vertical {

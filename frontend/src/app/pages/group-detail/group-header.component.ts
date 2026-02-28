@@ -16,6 +16,7 @@ import { ProfileComponent } from '../profile/profile.component';
 export class GroupHeaderComponent {
   @Input({ required: true }) group!: GroupDetail;
   @Input({ required: true }) isAdmin!: boolean;
+  @Input() isSysadminReadonly = false;
   @Input({ required: true }) defaultGroupImage!: string;
 
   @Output() back = new EventEmitter<void>();

@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnDestroy, OnInit, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { UserProfile } from '../../models/user.model';
@@ -47,6 +48,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   private usersApiService = inject(UsersApiService);
   private authService = inject(AuthService);
+  private router = inject(Router);
+  isSysAdmin = this.authService.isSysAdmin;
 
   ngOnInit(): void {
     this.loadProfile();
@@ -183,6 +186,14 @@ export class ProfileComponent implements OnInit, OnDestroy {
   logout(): void {
     this.authService.logout();
     this.closeModal();
+  }
+
+  openUserStatistics(): void {
+    if (this.isSysAdmin()) {
+      return;
+    }
+    this.closeModal();
+    this.router.navigateByUrl('/user-statistics');
   }
 
   openDeleteConfirm(): void {

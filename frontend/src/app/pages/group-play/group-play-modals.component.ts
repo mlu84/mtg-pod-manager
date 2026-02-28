@@ -17,6 +17,7 @@ export class GroupPlayModalsComponent {
   @Input({ required: true }) slots: PlaySlot[] = [];
   @Input({ required: true }) deckSearchTerm = '';
   @Input({ required: true }) filteredDecks: Deck[] = [];
+  @Input() searchInputsReadonly = false;
   @Input({ required: true }) showRollModal = false;
   @Input({ required: true }) rolling = false;
   @Input({ required: true }) rollResult: number | null = null;

@@ -45,6 +45,7 @@ model User {
   passwordResetTokenHash String?    @unique
   passwordResetTokenExpiresAt DateTime?
   hasUnreadNews          Boolean    @default(false)
+  lastSeenAt             DateTime?
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
 
@@ -56,6 +57,8 @@ model User {
   sentGroupInvites GroupInvite[] @relation("GroupInviteInviter")
   receivedGroupInvites GroupInvite[] @relation("GroupInviteInvitedUser")
   createdNewsEntries NewsEntry[] @relation("NewsEntryCreator")
+  feedbackEntries FeedbackEntry[]
+  activityPulses  UserActivityPulse[]
 }
 
 model Group {
@@ -255,4 +258,33 @@ model NewsEntry {
 
   @@index([createdAt])
   @@index([createdByUserId])
+}
+
+model FeedbackEntry {
+  id           String   @id @default(cuid())
+  text         String   @db.Text
+  rating       Int?
+  contactEmail String?
+  isRead       Boolean  @default(false)
+  readAt       DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId, createdAt])
+  @@index([isRead, createdAt])
+  @@index([contactEmail])
+}
+
+model UserActivityPulse {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
 }

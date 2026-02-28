@@ -1,0 +1,159 @@
+<div class="feedback-management container">
+  <header class="feedback-management__header">
+    <button type="button" class="btn btn--outline btn--back-vertical" (click)="goBack()" aria-label="Go back">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h1><i class="fas fa-inbox"></i> Feedback Management</h1>
+    <span class="feedback-management__badge">Unread: {{ unreadCount() }}</span>
+  </header>
+
+  <section class="card filter-card">
+    <div class="filter-grid">
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="query"
+        name="query"
+        placeholder="Search feedback, email, or user"
+        maxlength="200"
+      />
+      <input type="date" class="form-control" [(ngModel)]="from" name="from" />
+      <input type="date" class="form-control" [(ngModel)]="to" name="to" />
+      <button class="btn btn--primary" type="button" (click)="applyFilters()">Apply</button>
+    </div>
+
+    <div class="status-filters">
+      <button
+        type="button"
+        class="btn btn--sm"
+        [class.btn--primary]="status() === 'all'"
+        [class.btn--outline]="status() !== 'all'"
+        (click)="setStatus('all')"
+      >
+        All
+      </button>
+      <button
+        type="button"
+        class="btn btn--sm"
+        [class.btn--primary]="status() === 'unread'"
+        [class.btn--outline]="status() !== 'unread'"
+        (click)="setStatus('unread')"
+      >
+        Unread
+      </button>
+      <button
+        type="button"
+        class="btn btn--sm"
+        [class.btn--primary]="status() === 'read'"
+        [class.btn--outline]="status() !== 'read'"
+        (click)="setStatus('read')"
+      >
+        Read
+      </button>
+    </div>
+
+    <div class="bulk-actions">
+      <button type="button" class="btn btn--outline" (click)="markSelectedRead()" [disabled]="selectedCount() === 0 || actionLoading()">
+        Mark read ({{ selectedCount() }})
+      </button>
+      <button type="button" class="btn btn--danger" (click)="deleteSelected()" [disabled]="selectedCount() === 0 || actionLoading()">
+        Delete selected
+      </button>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading feedback...</p>
+    </div>
+  } @else if (error()) {
+    <div class="alert alert--danger">{{ error() }}</div>
+  } @else if (entries().length === 0) {
+    <div class="card empty-state">
+      <p>No feedback entries found.</p>
+    </div>
+  } @else {
+    <section class="card list-card">
+      <div class="list-head">
+        <label>
+          <input type="checkbox" [checked]="allOnPageSelected()" (change)="toggleSelectionPage()" />
+          Select page
+        </label>
+      </div>
+
+      <div class="entries">
+        @for (entry of entries(); track entry.id) {
+          <article class="entry" [class.entry--unread]="!entry.isRead">
+            <div class="entry__head">
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="selection().has(entry.id)"
+                  (change)="toggleSelection(entry.id)"
+                />
+              </label>
+              <span class="entry__user">{{ entry.user.inAppName }}</span>
+              @if (!entry.isRead) {
+                <span class="entry__pill">Unread</span>
+              }
+              <span class="entry__date">{{ entry.createdAt | date: 'medium' }}</span>
+            </div>
+            <p class="entry__text">{{ entry.text }}</p>
+            <div class="entry__meta">
+              <span>Email: {{ entry.contactEmail || 'none' }}</span>
+              <span>Rating: {{ entry.rating ?? '-' }}</span>
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button class="btn btn--outline" (click)="setPage(page() - 1)" [disabled]="page() === 1">Prev</button>
+          <span>Page {{ page() }} / {{ totalPages() }}</span>
+          <button class="btn btn--outline" (click)="setPage(page() + 1)" [disabled]="page() === totalPages()">Next</button>
+        </div>
+      }
+    </section>
+  }
+</div>
+
+@if (showDeleteConfirmModal()) {
+  <div class="modal-overlay" (click)="closeDeleteConfirmModal()">
+    <div class="modal modal--large card" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Delete selected feedback</h2>
+        <button class="modal__close" type="button" (click)="closeDeleteConfirmModal()" [disabled]="actionLoading()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <p class="text-muted">
+        You are about to permanently delete {{ selectedCount() }}
+        feedback entr{{ selectedCount() === 1 ? 'y' : 'ies' }}.
+      </p>
+
+      <div class="feedback-delete-list">
+        @for (entry of selectedEntries(); track entry.id) {
+          <article class="feedback-delete-list__item">
+            <div class="feedback-delete-list__head">
+              <strong>{{ entry.user.inAppName }}</strong>
+              <span>{{ entry.createdAt | date: 'medium' }}</span>
+            </div>
+            <p>{{ entry.text.length > 180 ? (entry.text | slice:0:180) + '...' : entry.text }}</p>
+          </article>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button class="btn btn--outline" type="button" (click)="closeDeleteConfirmModal()" [disabled]="actionLoading()">
+          Cancel
+        </button>
+        <button class="btn btn--danger btn--confirm-action" type="button" (click)="confirmDeleteSelected()" [disabled]="actionLoading()">
+          @if (actionLoading()) { Deleting... } @else { Confirm delete }
+        </button>
+      </div>
+    </div>
+  </div>
+}

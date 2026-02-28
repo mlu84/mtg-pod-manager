@@ -132,6 +132,7 @@
         [slots]="slots()"
         [deckSearchTerm]="deckSearchTerm()"
         [filteredDecks]="activeSlotIndex() === null ? [] : getFilteredAvailableDecksForSlot(activeSlotIndex()!)"
+        [searchInputsReadonly]="landscapeDropdownLock()"
         [showRollModal]="rollVisible()"
         [rolling]="rolling()"
         [rollResult]="rollResult()"
