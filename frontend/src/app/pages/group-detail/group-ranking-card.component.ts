@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  ElementRef,
   EventEmitter,
   Input,
   OnChanges,
   Output,
   SimpleChanges,
+  ViewChild,
   signal,
 } from '@angular/core';
 import { RankingEntryWithTrend } from '../../models/game.model';
@@ -19,6 +21,9 @@ import { sanitizeSearchInput } from '../../core/utils/input-validation';
   styleUrl: './group-ranking-card.component.scss',
 })
 export class GroupRankingCardComponent implements OnChanges {
+  @ViewChild('rankingSearchInput')
+  private rankingSearchInputRef?: ElementRef<HTMLInputElement>;
+
   @Input({ required: true }) activeSeasonEndsAt!: string | null | undefined;
   @Input({ required: true }) activeSeasonName!: string | null | undefined;
   @Input({ required: true }) seasonCountdown!: string | null;
@@ -74,6 +79,7 @@ export class GroupRankingCardComponent implements OnChanges {
 
   clearRankingSearch(): void {
     this.rankingSearchChange.emit('');
+    queueMicrotask(() => this.rankingSearchInputRef?.nativeElement.focus());
   }
 
   selectHistoryDeckFromRanking(deckId: string): void {

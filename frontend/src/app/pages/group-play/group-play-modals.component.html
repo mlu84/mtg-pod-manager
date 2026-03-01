@@ -230,10 +230,12 @@
           <strong>Roll</strong>
         </button>
 
-        <button class="btn btn--outline compact-controls-grid__btn" (click)="toggleTopHalfMirror.emit()">
-          <span>Top Side</span>
-          <strong>{{ mirroredTopHalf ? 'Normal' : 'Mirror' }}</strong>
-        </button>
+        @if (showMirrorToggle) {
+          <button class="btn btn--outline compact-controls-grid__btn" (click)="toggleTopHalfMirror.emit()">
+            <span>Top Side</span>
+            <strong>{{ mirroredTopHalf ? 'Normal' : 'Mirror' }}</strong>
+          </button>
+        }
 
         @if (!confirmAbortActive) {
           <button class="btn btn--danger compact-controls-grid__btn" (click)="toggleAbortConfirm.emit()">

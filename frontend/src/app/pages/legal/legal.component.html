@@ -97,6 +97,8 @@
       <ul>
         <li>Account registration and authentication</li>
         <li>Group and gameplay functionality</li>
+        <li>Analytics/statistics features (user and sysadmin views)</li>
+        <li>Feedback submission and moderation workflows</li>
         <li>Security and system integrity</li>
         <li>Communication with users</li>
       </ul>
@@ -115,6 +117,7 @@
         <li>Deck names and metadata</li>
         <li>Gameplay results and rankings</li>
         <li>Group membership information</li>
+        <li>Feedback content (text, optional rating, optional contact email)</li>
       </ul>
       <h4>3.3 Technical and Security Data</h4>
       <ul>
@@ -132,6 +135,12 @@
       <p>
         If a group administrator invites a person by email, that email address may be processed
         before an account is created in order to deliver the invitation.
+      </p>
+      <h4>3.6 Aggregated and Operational Analytics Data</h4>
+      <p>
+        For product operation and admin tooling, the service processes and displays aggregated
+        statistics derived from existing service data (for example usage counts, deck/game activity
+        metrics, and season/group activity indicators). These analytics views are role-scoped.
       </p>
 
       <h3>4. Purpose and Legal Basis for Processing</h3>
@@ -179,6 +188,10 @@
         <li>
           Gameplay/group records: while group context exists; personal references are removed or
           anonymized where implemented on account deletion flows
+        </li>
+        <li>
+          Feedback entries: retained for moderation/processing until deleted in management flows;
+          administrative deletion removes entries from active storage (hard delete)
         </li>
         <li>
           Security/rate-limit logs: short-term retention (typically up to 30 days), unless longer
@@ -289,7 +302,8 @@
       <p>
         MTG Pod-Manager is a web application for organizing Magic: The Gathering play groups,
         including group management, deck management, game recording, seasonal rankings/statistics,
-        and invitations.
+        invitations, feedback workflows, analytics/statistics views, and sysadmin governance tools
+        (including read-only inspection contexts).
       </p>
       <p>
         The service includes publicly accessible pages (for example home, legal, and contact
@@ -314,19 +328,23 @@
       <h3>4. User Profiles and Content</h3>
       <p>
         Users may provide profile information and deck/group-related content. Uploaded content must
-        not infringe third-party rights and must not be unlawful or abusive.
+        not infringe third-party rights and must not be unlawful or abusive. This also applies to
+        feedback submissions.
       </p>
 
       <h3>5. Groups and Roles</h3>
       <p>
         Group administrators may manage members, assign roles, send invitations, and define group
-        rules.
+        rules. In addition, system administrators can access dedicated governance features (for
+        example cross-group visibility, read-only inspection contexts, and inactive-group
+        maintenance flows) according to platform role policies.
       </p>
 
       <h3>6. Deck, Game, and Ranking Data</h3>
       <p>
         The service records deck data, match results, rankings, and statistics in group context.
-        The operator does not guarantee completeness or correctness of user-entered data.
+        User and admin analytics views use aggregated service data. The operator does not guarantee
+        completeness or correctness of user-entered data.
       </p>
 
       <h3>7. Invitations and Group Membership</h3>
@@ -343,6 +361,8 @@
         <li>Bypassing security mechanisms</li>
         <li>Automated attacks or manipulation</li>
         <li>Intentionally submitting false game/ranking data</li>
+        <li>Abusing feedback channels (for example spam or unlawful submissions)</li>
+        <li>Attempting to circumvent role and permission restrictions</li>
       </ul>
 
       <h3>9. Account Deletion and Termination</h3>

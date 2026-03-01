@@ -1,3 +1,4 @@
+import '@angular/compiler';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { UsersApiService } from './users-api.service';
 import { environment } from '../../../environments/environment';

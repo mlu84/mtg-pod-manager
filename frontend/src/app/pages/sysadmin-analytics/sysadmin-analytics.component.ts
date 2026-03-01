@@ -8,6 +8,11 @@ import { AdminApiService } from '../../core/services/admin-api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { AdminAnalyticsResponse } from '../../models/analytics.model';
+import {
+  APP_CHART_THEME_COLORS,
+  createAppChartOptions,
+  withChartAlpha,
+} from '../../core/charts/app-chart-theme';
 
 @Component({
   selector: 'app-sysadmin-analytics',
@@ -83,8 +88,8 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'New users',
         data: data.series.usersHistory,
-        borderColor: '#4bc0c0',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.primary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.2),
       },
     ]);
 
@@ -92,7 +97,7 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'Groups created',
         data: data.series.groupsCreated,
-        backgroundColor: 'rgba(255, 159, 64, 0.65)',
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.65),
       },
     ]);
 
@@ -100,7 +105,7 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'Decks created',
         data: data.series.decksCreated,
-        backgroundColor: 'rgba(153, 102, 255, 0.65)',
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.65),
       },
     ]);
 
@@ -108,7 +113,7 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'Recorded games',
         data: data.series.recordedGames,
-        backgroundColor: 'rgba(54, 162, 235, 0.65)',
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.65),
       },
     ]);
 
@@ -116,8 +121,8 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'Concurrent active users',
         data: data.series.concurrentActiveUsers,
-        borderColor: '#facc15',
-        backgroundColor: 'rgba(250, 204, 21, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.primary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.2),
       },
     ]);
 
@@ -125,20 +130,20 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'Invites total',
         data: data.series.invites.total,
-        borderColor: '#22c55e',
-        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.primary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.2),
       },
       {
         label: 'Invites email',
         data: data.series.invites.email,
-        borderColor: '#f97316',
-        backgroundColor: 'rgba(249, 115, 22, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.secondary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.secondary, 0.2),
       },
       {
         label: 'Invites internal',
         data: data.series.invites.internal,
-        borderColor: '#60a5fa',
-        backgroundColor: 'rgba(96, 165, 250, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.accent,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.accent, 0.2),
       },
     ]);
 
@@ -146,7 +151,7 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'Deck count',
         data: data.rankings.popularColorCombinations.map((entry) => entry.count),
-        backgroundColor: 'rgba(217, 119, 6, 0.65)',
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.65),
       },
     ]);
 
@@ -154,7 +159,7 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'Played count',
         data: data.rankings.mostPlayedColorCombinations.map((entry) => entry.count),
-        backgroundColor: 'rgba(59, 130, 246, 0.65)',
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.65),
       },
     ]);
 
@@ -162,7 +167,7 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
       {
         label: 'Played count',
         data: data.rankings.mostPlayedDeckTypes.map((entry) => entry.count),
-        backgroundColor: 'rgba(16, 185, 129, 0.65)',
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.65),
       },
     ]);
   }
@@ -181,6 +186,7 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
     const canvas = this.chartCanvases?.find((entry) => entry.nativeElement.dataset['chart'] === id)?.nativeElement;
     if (!canvas) return;
 
+    const chartOptions = createAppChartOptions();
     const chart = new Chart(canvas, {
       type,
       data: {
@@ -192,22 +198,12 @@ export class SysadminAnalyticsComponent implements AfterViewInit, OnDestroy {
         })),
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: '#cbd5e1' },
-          },
-        },
+        ...chartOptions,
         scales: {
-          x: {
-            ticks: { color: '#94a3b8' },
-            grid: { color: 'rgba(148, 163, 184, 0.15)' },
-          },
+          ...(chartOptions.scales ?? {}),
           y: {
+            ...(chartOptions.scales?.['y'] ?? {}),
             beginAtZero: true,
-            ticks: { color: '#94a3b8' },
-            grid: { color: 'rgba(148, 163, 184, 0.15)' },
           },
         },
       },

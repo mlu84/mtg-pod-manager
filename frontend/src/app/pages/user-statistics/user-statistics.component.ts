@@ -3,12 +3,18 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, QueryList, ViewChildre
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import Chart from 'chart.js/auto';
+import { Plugin } from 'chart.js';
 
 import { AuthService } from '../../core/services/auth.service';
 import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { UsersApiService } from '../../core/services/users-api.service';
 import { UserStatisticsResponse } from '../../models/analytics.model';
-import { getColorComboName } from '../group-detail/color-utils';
+import { getColorComboName, getManaIconPath, getSortedColors } from '../group-detail/color-utils';
+import {
+  APP_CHART_THEME_COLORS,
+  createAppChartOptions,
+  withChartAlpha,
+} from '../../core/charts/app-chart-theme';
 
 @Component({
   selector: 'app-user-statistics',
@@ -30,6 +36,7 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
   stats = signal<UserStatisticsResponse | null>(null);
 
   private charts = new Map<string, Chart>();
+  private manaIconCache = new Map<string, HTMLImageElement>();
 
   private usersApiService = inject(UsersApiService);
   private router = inject(Router);
@@ -38,7 +45,47 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
 
   performance = computed(() => this.stats()?.performance || null);
 
+  private readonly axisIconPlugin: Plugin = {
+    id: 'user-stats-axis-icons',
+    afterDraw: (chart) => {
+      const pluginOptions = (
+        chart.options.plugins as Record<string, unknown> | undefined
+      )?.['userStatsAxisIcons'] as { enabled?: boolean; stackCombos?: boolean } | undefined;
+      if (!pluginOptions?.enabled) return;
+      const xScale = chart.scales?.['x'];
+      if (!xScale) return;
+
+      const labels = (chart.data.labels as string[] | undefined) || [];
+      const ctx = chart.ctx;
+      const iconSize = 14;
+      const iconGap = 2;
+      const baseY = xScale.bottom + 4;
+      const stackCombos = Boolean(pluginOptions.stackCombos);
+
+      labels.forEach((rawLabel, index) => {
+        const colors = this.resolveManaColorsForLabel(rawLabel);
+        const isCombo = stackCombos && colors.length > 1;
+        const verticalStep = iconSize * 0.5;
+        const totalWidth = isCombo
+          ? iconSize
+          : colors.length * iconSize + Math.max(0, colors.length - 1) * iconGap;
+        const startX = xScale.getPixelForTick(index) - totalWidth / 2;
+        colors.forEach((color, colorIndex) => {
+          const icon = this.getManaIcon(color);
+          if (!icon.complete) {
+            icon.onload = () => chart.draw();
+          }
+          if (!icon.complete) return;
+          const x = isCombo ? startX : startX + colorIndex * (iconSize + iconGap);
+          const y = isCombo ? baseY + colorIndex * verticalStep : baseY;
+          ctx.drawImage(icon, x, y, iconSize, iconSize);
+        });
+      });
+    },
+  };
+
   ngAfterViewInit(): void {
+    this.setDefaultDateRange();
     this.load();
   }
 
@@ -53,6 +100,12 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
       this.filterError.set(filterError);
       return;
     }
+    this.filterError.set(null);
+    this.load();
+  }
+
+  resetFilters(): void {
+    this.setDefaultDateRange();
     this.filterError.set(null);
     this.load();
   }
@@ -79,51 +132,61 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
     if (!stats) return;
 
     this.destroyCharts();
+    const localizedRangeLabels = this.localizeRangeLabels(stats.range);
 
-    this.renderChart('decks', 'line', stats.range.labels, [
+    this.renderChart('decks', 'line', localizedRangeLabels, [
       {
         label: 'Your decks',
         data: stats.decks.series.user,
-        borderColor: '#38bdf8',
-        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.primary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.2),
       },
       {
         label: 'Average all users',
         data: stats.decks.series.average,
-        borderColor: '#f59e0b',
-        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.secondary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.secondary, 0.2),
       },
     ]);
 
-    this.renderChart('games', 'line', stats.range.labels, [
+    this.renderChart('games', 'line', localizedRangeLabels, [
       {
         label: 'Your games',
         data: stats.games.series.user,
-        borderColor: '#22c55e',
-        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.primary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.2),
       },
       {
         label: 'Average all users',
         data: stats.games.series.average,
-        borderColor: '#a855f7',
-        backgroundColor: 'rgba(168, 85, 247, 0.2)',
+        borderColor: APP_CHART_THEME_COLORS.secondary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.secondary, 0.2),
       },
     ]);
 
-    this.renderChart('colors', 'bar', stats.colors.labels.map((label) => getColorComboName(label, false)), [
+    this.renderChart(
+      'colors',
+      'bar',
+      stats.colors.labels,
+      [
+        {
+          label: 'Used in your decks',
+          data: stats.colors.values,
+          backgroundColor: [
+            withChartAlpha(APP_CHART_THEME_COLORS.mana.W, 0.75),
+            withChartAlpha(APP_CHART_THEME_COLORS.mana.U, 0.75),
+            withChartAlpha(APP_CHART_THEME_COLORS.mana.B, 0.75),
+            withChartAlpha(APP_CHART_THEME_COLORS.mana.R, 0.75),
+            withChartAlpha(APP_CHART_THEME_COLORS.mana.G, 0.75),
+            withChartAlpha(APP_CHART_THEME_COLORS.mana.C, 0.75),
+          ],
+        },
+      ],
       {
-        label: 'Used in your decks',
-        data: stats.colors.values,
-        backgroundColor: [
-          'rgba(245, 245, 220, 0.75)',
-          'rgba(59, 130, 246, 0.75)',
-          'rgba(107, 114, 128, 0.75)',
-          'rgba(239, 68, 68, 0.75)',
-          'rgba(34, 197, 94, 0.75)',
-          'rgba(161, 161, 170, 0.75)',
-        ],
+        enableColorAxisIcons: true,
+        tooltipTitleFormatter: (label) => getColorComboName(label, false),
       },
-    ]);
+    );
 
     this.renderChart(
       'favoriteCombos',
@@ -133,9 +196,14 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
         {
           label: 'Deck count',
           data: stats.favoriteColorCombinations.map((entry) => entry.count),
-          backgroundColor: 'rgba(249, 115, 22, 0.7)',
+          backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.7),
         },
       ],
+      {
+        enableColorAxisIcons: true,
+        stackColorCombosOnAxis: true,
+        tooltipTitleFormatter: (label) => getColorComboName(label, false),
+      },
     );
   }
 
@@ -144,9 +212,104 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
     type: 'line' | 'bar',
     labels: string[],
     datasets: Array<{ label: string; data: number[]; borderColor?: string; backgroundColor?: string | string[] }>,
+    options?: {
+      enableColorAxisIcons?: boolean;
+      stackColorCombosOnAxis?: boolean;
+      tooltipTitleFormatter?: (label: string) => string;
+    },
   ): void {
     const canvas = this.chartsRef?.find((entry) => entry.nativeElement.dataset['chart'] === id)?.nativeElement;
     if (!canvas) return;
+
+    const decimals = this.resolveAxisDecimals(datasets);
+    const numberFormatter = new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    const formatNumericValue = (value: number) =>
+      numberFormatter.format(Number(value.toFixed(decimals)));
+
+    const chartOptions = createAppChartOptions();
+    const xTickBase = chartOptions.scales?.['x']?.ticks ?? {};
+    const yTickBase = chartOptions.scales?.['y']?.ticks ?? {};
+    const tooltipBase =
+      (chartOptions.plugins as { tooltip?: Record<string, unknown> } | undefined)?.tooltip ?? {};
+
+    const yTickCallback = (tickValue: string | number): string => {
+      const numericValue = Number(tickValue);
+      if (!Number.isFinite(numericValue)) return String(tickValue ?? '');
+      return formatNumericValue(numericValue);
+    };
+
+    const tooltipLabel = (context: {
+      dataset: { label?: string };
+      parsed?: { y?: number };
+      raw?: unknown;
+    }): string => {
+      const rawValue =
+        typeof context.parsed?.y === 'number'
+          ? context.parsed.y
+          : typeof context.raw === 'number'
+          ? context.raw
+          : Number(context.raw);
+      const valueLabel = Number.isFinite(rawValue) ? formatNumericValue(rawValue) : String(context.raw ?? '');
+      return context.dataset?.label ? `${context.dataset.label}: ${valueLabel}` : valueLabel;
+    };
+
+    const useColorAxisIcons = Boolean(options?.enableColorAxisIcons);
+    const maxIconsPerLabel = useColorAxisIcons
+      ? Math.max(...labels.map((label) => this.resolveManaColorsForLabel(label).length), 1)
+      : 1;
+    const axisBottomPadding = useColorAxisIcons ? Math.max(22, maxIconsPerLabel * 14 + 8) : 0;
+
+    const runtimeOptions: any = {
+      ...chartOptions,
+      layout: {
+        ...(chartOptions.layout ?? {}),
+        padding: {
+          ...(typeof chartOptions.layout?.padding === 'object' ? chartOptions.layout.padding : {}),
+          bottom: axisBottomPadding,
+        },
+      },
+      plugins: {
+        ...(chartOptions.plugins ?? {}),
+        tooltip: {
+          ...tooltipBase,
+          callbacks: {
+            label: tooltipLabel,
+            ...(options?.tooltipTitleFormatter
+              ? {
+                  title: (items: Array<{ label?: string }>) =>
+                    items.length ? options.tooltipTitleFormatter!(String(items[0].label ?? '')) : '',
+                }
+              : {}),
+          },
+        },
+        userStatsAxisIcons: {
+          enabled: useColorAxisIcons,
+          stackCombos: Boolean(options?.stackColorCombosOnAxis),
+        },
+      },
+      scales: {
+        ...(chartOptions.scales ?? {}),
+        x: {
+          ...(chartOptions.scales?.['x'] ?? {}),
+          ticks: {
+            ...xTickBase,
+            ...(useColorAxisIcons ? { callback: () => '' } : {}),
+          },
+        },
+        y: {
+          ...(chartOptions.scales?.['y'] ?? {}),
+          beginAtZero: true,
+          ticks: {
+            ...yTickBase,
+            callback: yTickCallback,
+            ...(decimals === 0 ? { precision: 0 } : {}),
+          },
+        },
+      },
+    };
 
     const chart = new Chart(canvas, {
       type,
@@ -158,29 +321,84 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
           tension: 0.25,
         })),
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: '#cbd5e1' },
-          },
-        },
-        scales: {
-          x: {
-            ticks: { color: '#94a3b8' },
-            grid: { color: 'rgba(148, 163, 184, 0.12)' },
-          },
-          y: {
-            beginAtZero: true,
-            ticks: { color: '#94a3b8' },
-            grid: { color: 'rgba(148, 163, 184, 0.12)' },
-          },
-        },
-      },
+      options: runtimeOptions,
+      plugins: useColorAxisIcons ? [this.axisIconPlugin] : [],
     });
 
     this.charts.set(id, chart);
+  }
+
+  private resolveAxisDecimals(
+    datasets: Array<{ data: number[] }>,
+  ): 0 | 1 {
+    for (const dataset of datasets) {
+      for (const value of dataset.data) {
+        if (Number.isFinite(value) && !Number.isInteger(value)) {
+          return 1;
+        }
+      }
+    }
+    return 0;
+  }
+
+  private resolveManaColorsForLabel(label: string): string[] {
+    const normalized = label.trim();
+    if (!normalized) return ['C'];
+    const sorted = getSortedColors(normalized);
+    return sorted.length > 0 ? sorted : ['C'];
+  }
+
+  private getManaIcon(color: string): HTMLImageElement {
+    const normalized = color.trim().toUpperCase();
+    const cacheKey = normalized || 'C';
+    let icon = this.manaIconCache.get(cacheKey);
+    if (icon) return icon;
+
+    icon = new Image();
+    icon.src = getManaIconPath(cacheKey);
+    this.manaIconCache.set(cacheKey, icon);
+    return icon;
+  }
+
+  private localizeRangeLabels(range: UserStatisticsResponse['range']): string[] {
+    if (range.bucket === 'hour') {
+      const hourFormatter = new Intl.DateTimeFormat(undefined, {
+        hour: '2-digit',
+        hour12: false,
+      });
+      return range.labels.map((entry) => {
+        const hour = Number.parseInt((entry || '0').split(':')[0] || '0', 10);
+        if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
+          return entry;
+        }
+        const date = new Date();
+        date.setHours(hour, 0, 0, 0);
+        return `${hourFormatter.format(date)} Uhr`;
+      });
+    }
+
+    const parsedDays = range.labels
+      .map((entry) => this.parseUtcDateLabel(entry))
+      .filter((value): value is Date => value !== null);
+    if (parsedDays.length !== range.labels.length) {
+      return range.labels;
+    }
+
+    const years = new Set(parsedDays.map((date) => date.getUTCFullYear()));
+    const currentYear = new Date().getFullYear();
+    const onlyYear = years.size === 1 ? parsedDays[0].getUTCFullYear() : null;
+    const showYear = years.size > 1 || (onlyYear !== null && onlyYear !== currentYear);
+    const dayFormatter = new Intl.DateTimeFormat(undefined, {
+      day: '2-digit',
+      month: '2-digit',
+      ...(showYear ? { year: 'numeric' as const } : {}),
+    });
+    return parsedDays.map((date) => dayFormatter.format(date));
+  }
+
+  private parseUtcDateLabel(value: string): Date | null {
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private destroyCharts(): void {
@@ -193,6 +411,14 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
   goBack(): void {
     const fallback = this.authService.isAuthenticated() ? '/groups' : '/login';
     this.router.navigateByUrl(this.navigationHistoryService.getBackTarget(this.router.url, fallback));
+  }
+
+  private setDefaultDateRange(): void {
+    const today = new Date();
+    const fromDate = new Date(today);
+    fromDate.setDate(fromDate.getDate() - 6);
+    this.from = this.toDateInputValue(fromDate);
+    this.to = this.toDateInputValue(today);
   }
 
   private normalizeDateFilters(): void {
@@ -220,10 +446,13 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
   }
 
   private getTodayDateInputValue(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
+    return this.toDateInputValue(new Date());
+  }
+
+  private toDateInputValue(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 }

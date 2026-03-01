@@ -58,11 +58,16 @@ export class GroupPlayComponent {
   gameStarted = signal(false);
   confirmEndActive = signal(false);
   isCompactViewport = signal(false);
+  isNonDesktopViewport = signal(false);
   isSmartphoneViewport = signal(false);
   isPortraitViewport = signal(false);
   viewportWidth = signal(0);
   viewportHeight = signal(0);
   forceLandscapeUi = computed(() => this.isCompactViewport() && this.isPortraitViewport());
+  isTwoPlayerNonDesktop = computed(
+    () => this.isNonDesktopViewport() && this.playerCount() === 2,
+  );
+  showMirrorToggle = computed(() => this.playerCount() > 2);
   landscapeDropdownLock = computed(
     () => this.viewportWidth() > 0 && isAppCompactWidth(this.viewportWidth()) && !this.isPortraitViewport(),
   );
@@ -228,6 +233,7 @@ export class GroupPlayComponent {
     this.viewportWidth.set(width);
     this.viewportHeight.set(height);
     this.isCompactViewport.set(isCompactWidth(width));
+    this.isNonDesktopViewport.set(isAppCompactWidth(width));
     this.isSmartphoneViewport.set(isSmartphoneWidth(width));
     this.isPortraitViewport.set(height > width);
   }
@@ -435,6 +441,7 @@ export class GroupPlayComponent {
   }
 
   toggleTopHalfMirror(): void {
+    if (!this.showMirrorToggle()) return;
     this.mirroredTopHalf.update((value) => !value);
   }
 
@@ -442,6 +449,13 @@ export class GroupPlayComponent {
     if (!this.mirroredTopHalf()) return false;
     const columnSize = column === 'left' ? this.leftSlots().length : this.rightSlots().length;
     return rowIndex < Math.ceil(columnSize / 2);
+  }
+
+  getSlotRotation(column: 'left' | 'right', rowIndex: number): number {
+    if (this.isTwoPlayerNonDesktop()) {
+      return column === 'left' ? 90 : -90;
+    }
+    return this.isSlotMirrored(column, rowIndex) ? 180 : 0;
   }
 
   toggleCompactControls(): void {
@@ -945,6 +959,12 @@ export class GroupPlayComponent {
     }
 
     const placements = this.buildPlacementDraft();
+    if (!this.allDecksSelected() || placements.length === 0) {
+      sessionStorage.removeItem('playGameRecordDraft');
+      this.router.navigate(['/groups', this.groupId]);
+      return;
+    }
+
     const payload = {
       groupId: this.groupId,
       placements,

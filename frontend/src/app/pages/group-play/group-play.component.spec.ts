@@ -10,17 +10,19 @@ import { of } from 'rxjs';
 
 describe('GroupPlayComponent', () => {
   let component: GroupPlayComponent;
+  let navigateSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     const parentInjector = null as unknown as EnvironmentInjector;
 
+    navigateSpy = vi.fn();
     const injector = createEnvironmentInjector(
       [
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { params: { id: 'group-1' } } },
         },
-        { provide: Router, useValue: { navigate: vi.fn() } },
+        { provide: Router, useValue: { navigate: navigateSpy } },
         {
           provide: GroupDetailApiService,
           useValue: { getGroup: vi.fn().mockReturnValue(of({ format: 'Commander', decks: [] })) },
@@ -114,5 +116,53 @@ describe('GroupPlayComponent', () => {
 
     expect(component.isSlotMirrored('left', 0)).toBe(true);
     expect(component.isSlotMirrored('left', 1)).toBe(false);
+  });
+
+  it('applies opposite slot rotations for two-player non-desktop viewports', () => {
+    component.playerCount.set(2);
+    component.isNonDesktopViewport.set(true);
+
+    expect(component.getSlotRotation('left', 0)).toBe(90);
+    expect(component.getSlotRotation('right', 0)).toBe(-90);
+    expect(component.showMirrorToggle()).toBe(false);
+  });
+
+  it('closes group play without record modal when no decks are selected', () => {
+    const sessionStorageMock = {
+      setItem: vi.fn(),
+      getItem: vi.fn(),
+      removeItem: vi.fn(),
+    };
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      value: sessionStorageMock,
+      configurable: true,
+    });
+
+    component.group.set({ userRole: 'ADMIN' } as any);
+    component.groupId = 'group-1';
+    component.playerCount.set(2);
+    component.slots.set([
+      {
+        deckId: null,
+        deckName: '',
+        playerName: '',
+        life: 20,
+        poison: 0,
+        commanderDamage: Array.from({ length: 6 }).map(() => 0),
+      },
+      {
+        deckId: null,
+        deckName: '',
+        playerName: '',
+        life: 20,
+        poison: 0,
+        commanderDamage: Array.from({ length: 6 }).map(() => 0),
+      },
+    ] as any);
+
+    (component as any).endGame();
+
+    expect(sessionStorageMock.removeItem).toHaveBeenCalledWith('playGameRecordDraft');
+    expect(navigateSpy).toHaveBeenCalledWith(['/groups', 'group-1']);
   });
 });

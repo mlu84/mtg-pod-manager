@@ -35,6 +35,7 @@ export class GroupPlayModalsComponent {
   @Input({ required: true }) showCompactControls = false;
   @Input({ required: true }) playerCount = 4;
   @Input({ required: true }) mirroredTopHalf = false;
+  @Input({ required: true }) showMirrorToggle = true;
   @Input({ required: true }) confirmAbortActive = false;
   @Input({ required: true }) confirmResetActive = false;
   @Input({ required: true }) gameStarted = false;

@@ -81,6 +81,10 @@ import { formatLocalDate } from '../../core/utils/date-utils';
 import { isAppCompactWidth, isSmartphoneWidth } from '../../core/config/viewport-breakpoints';
 import { AppViewportService } from '../../core/services/app-viewport.service';
 import {
+  APP_CHART_THEME_COLORS,
+  withChartAlpha,
+} from '../../core/charts/app-chart-theme';
+import {
   validateDeckFormInput,
   validateDeckOwnerAssignmentInput,
   validateGamePlacementsInput,
@@ -2400,10 +2404,10 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const counts = deckStats.map((d) => d.count);
       const selectedId = this.statsDeckId() || deckStats[0]?.id;
       const barColors = deckStats.map((d) =>
-        d.id === selectedId ? '#ff6b35' : '#7f5af0'
+        d.id === selectedId ? APP_CHART_THEME_COLORS.accent : APP_CHART_THEME_COLORS.primary
       );
       const labelColors = deckStats.map((d) =>
-        d.id === selectedId ? '#ff6b35' : '#b6b6c9'
+        d.id === selectedId ? APP_CHART_THEME_COLORS.accent : APP_CHART_THEME_COLORS.axisText
       );
 
       return buildBarChart(labels, counts, 'Games played', {
@@ -2432,8 +2436,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         {
           label: 'Rank',
           data,
-          borderColor: '#ff6b35',
-          backgroundColor: 'rgba(255,107,53,0.2)',
+          borderColor: APP_CHART_THEME_COLORS.accent,
+          backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.accent, 0.2),
         },
       ], {
         scales: {
@@ -2455,14 +2459,14 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       {
         label: 'Deck points',
         data: points,
-        borderColor: '#7f5af0',
-        backgroundColor: 'rgba(127,90,240,0.2)',
+        borderColor: APP_CHART_THEME_COLORS.primary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.2),
       },
       {
         label: 'Group average',
         data: groupAvg,
-        borderColor: '#00b5a8',
-        backgroundColor: 'rgba(0,181,168,0.2)',
+        borderColor: APP_CHART_THEME_COLORS.secondary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.secondary, 0.2),
       },
     ]);
   }
@@ -2528,12 +2532,12 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (option === 'players_colors') {
       const colorOrder = ['W', 'U', 'B', 'R', 'G', 'C'];
       const colorPalette: Record<string, string> = {
-        W: '#f9faf4',
-        U: '#0e68ab',
-        B: '#150b00',
-        R: '#d3202a',
-        G: '#00733e',
-        C: '#ccc2c0',
+        W: APP_CHART_THEME_COLORS.mana.W,
+        U: APP_CHART_THEME_COLORS.mana.U,
+        B: APP_CHART_THEME_COLORS.mana.B,
+        R: APP_CHART_THEME_COLORS.mana.R,
+        G: APP_CHART_THEME_COLORS.mana.G,
+        C: APP_CHART_THEME_COLORS.mana.C,
       };
 
       const currentUserId = this.currentUserId();
@@ -2560,7 +2564,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         return total;
       });
 
-      const datasetColors = colorOrder.map((color) => colorPalette[color] || '#7f5af0');
+      const datasetColors = colorOrder.map((color) => colorPalette[color] || APP_CHART_THEME_COLORS.primary);
       return this.buildColorBarChart(
         colorOrder,
         counts,
@@ -2574,12 +2578,12 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (option === 'players_most_played_colors') {
       const colorOrder = ['W', 'U', 'B', 'R', 'G', 'C'];
       const colorPalette: Record<string, string> = {
-        W: '#f9faf4',
-        U: '#0e68ab',
-        B: '#150b00',
-        R: '#d3202a',
-        G: '#00733e',
-        C: '#ccc2c0',
+        W: APP_CHART_THEME_COLORS.mana.W,
+        U: APP_CHART_THEME_COLORS.mana.U,
+        B: APP_CHART_THEME_COLORS.mana.B,
+        R: APP_CHART_THEME_COLORS.mana.R,
+        G: APP_CHART_THEME_COLORS.mana.G,
+        C: APP_CHART_THEME_COLORS.mana.C,
       };
       const counts = this.getMostPlayedColorCountsForCurrentUser(
         seasonGames,
@@ -2594,7 +2598,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         return null;
       }
 
-      const datasetColors = colorOrder.map((color) => colorPalette[color] || '#7f5af0');
+      const datasetColors = colorOrder.map((color) => colorPalette[color] || APP_CHART_THEME_COLORS.primary);
       return this.buildColorBarChart(
         colorOrder,
         counts,
@@ -2712,7 +2716,7 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       {
         label,
         data,
-        backgroundColor: datasetColors || '#7f5af0',
+        backgroundColor: datasetColors || APP_CHART_THEME_COLORS.primary,
       },
     ];
 
@@ -2721,8 +2725,8 @@ export class GroupDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         type: 'line',
         label: 'Group average',
         data: labels.map(() => Number(groupAverage.toFixed(1))),
-        borderColor: '#00b5a8',
-        backgroundColor: 'rgba(0,181,168,0.2)',
+        borderColor: APP_CHART_THEME_COLORS.secondary,
+        backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.secondary, 0.2),
       });
     }
 

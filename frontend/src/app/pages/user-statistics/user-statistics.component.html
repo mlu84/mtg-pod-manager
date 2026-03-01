@@ -11,6 +11,7 @@
       <label>From <input type="date" class="form-control" [(ngModel)]="from" name="from" [max]="maxDateInput" /></label>
       <label>To <input type="date" class="form-control" [(ngModel)]="to" name="to" [max]="maxDateInput" /></label>
       <button type="button" class="btn btn--primary" (click)="applyFilters()">Apply</button>
+      <button type="button" class="btn btn--outline" (click)="resetFilters()">Reset</button>
     </div>
     @if (filterError()) {
       <div class="alert alert--danger mt-1">{{ filterError() }}</div>
@@ -41,10 +42,10 @@
     </section>
 
     <section class="charts-grid">
-      <article class="card chart-card"><h3>Decks created</h3><div class="chart-wrap"><canvas #statsChart data-chart="decks"></canvas></div></article>
-      <article class="card chart-card"><h3>Games played</h3><div class="chart-wrap"><canvas #statsChart data-chart="games"></canvas></div></article>
-      <article class="card chart-card"><h3>Color usage</h3><div class="chart-wrap"><canvas #statsChart data-chart="colors"></canvas></div></article>
-      <article class="card chart-card"><h3>Favorite color combinations</h3><div class="chart-wrap"><canvas #statsChart data-chart="favoriteCombos"></canvas></div></article>
+      <article class="card chart-card"><h3><i class="fas fa-layer-group"></i> Decks created</h3><div class="chart-wrap"><canvas #statsChart data-chart="decks"></canvas></div></article>
+      <article class="card chart-card"><h3><i class="fas fa-gamepad"></i> Games played</h3><div class="chart-wrap"><canvas #statsChart data-chart="games"></canvas></div></article>
+      <article class="card chart-card"><h3><i class="fas fa-palette"></i> Color usage</h3><div class="chart-wrap"><canvas #statsChart data-chart="colors"></canvas></div></article>
+      <article class="card chart-card"><h3><i class="fas fa-star"></i> Favorite color combinations</h3><div class="chart-wrap"><canvas #statsChart data-chart="favoriteCombos"></canvas></div></article>
     </section>
   }
 </div>
