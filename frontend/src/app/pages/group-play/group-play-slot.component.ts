@@ -1,5 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnDestroy,
+  Output,
+  SimpleChanges,
+  inject,
+  signal,
+} from '@angular/core';
 
 import { Deck } from '../../models/group.model';
 import { PlaySlot } from './group-play.models';
@@ -11,13 +23,20 @@ import { PlaySlot } from './group-play.models';
   templateUrl: './group-play-slot.component.html',
   styleUrl: './group-play-slot.component.scss',
 })
-export class GroupPlaySlotComponent {
+export class GroupPlaySlotComponent implements AfterViewInit, OnChanges, OnDestroy {
+  private hostElement = inject(ElementRef<HTMLElement>);
+  private resizeObserver: ResizeObserver | null = null;
+
+  quarterTurnSlotWidth = signal<number | null>(null);
+  quarterTurnSlotHeight = signal<number | null>(null);
+
   @Input({ required: true }) slot!: PlaySlot;
   @Input({ required: true }) index!: number;
   @Input({ required: true }) isWinner = false;
   @Input({ required: true }) isLocked = false;
   @Input({ required: true }) isEliminated = false;
   @Input({ required: true }) isMirrored = false;
+  @Input({ required: true }) rotation = 0;
   @Input({ required: true }) activeSlots: PlaySlot[] = [];
   @Input({ required: true }) decks: Deck[] = [];
   @Input({ required: true }) defaultDeckImage = '/assets/images/deckBG_default.jpg';
@@ -38,6 +57,25 @@ export class GroupPlaySlotComponent {
   @Output() startCommanderHold = new EventEmitter<{ index: number; opponentIndex: number }>();
   @Output() startFeatureHold = new EventEmitter<number>();
   @Output() cancelFeatureHold = new EventEmitter<void>();
+
+  ngAfterViewInit(): void {
+    this.refreshQuarterTurnBounds();
+    if (typeof ResizeObserver === 'undefined') return;
+    this.resizeObserver = new ResizeObserver(() => this.refreshQuarterTurnBounds());
+    this.resizeObserver.observe(this.hostElement.nativeElement);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['rotation']) {
+      this.refreshQuarterTurnBounds();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (!this.resizeObserver) return;
+    this.resizeObserver.disconnect();
+    this.resizeObserver = null;
+  }
 
   handleOpenSlot(): void {
     this.openSlot.emit(this.index);
@@ -149,5 +187,29 @@ export class GroupPlaySlotComponent {
   getSlotFallbackColor(index: number): string {
     const palette = ['#9b2c2c', '#b25c1a', '#b88a12', '#2f7a4f', '#2b5c8a', '#5b3c9b'];
     return palette[index] || '#2b5c8a';
+  }
+
+  getRotationTransform(): string | null {
+    if (!this.rotation) return null;
+    if (this.isQuarterTurn()) {
+      return `translate(-50%, -50%) rotate(${this.rotation}deg)`;
+    }
+    return `rotate(${this.rotation}deg)`;
+  }
+
+  isQuarterTurn(): boolean {
+    return Math.abs(this.rotation) % 180 === 90;
+  }
+
+  private refreshQuarterTurnBounds(): void {
+    if (!this.isQuarterTurn()) {
+      this.quarterTurnSlotWidth.set(null);
+      this.quarterTurnSlotHeight.set(null);
+      return;
+    }
+    const hostRect = this.hostElement.nativeElement.getBoundingClientRect();
+    if (hostRect.width <= 0 || hostRect.height <= 0) return;
+    this.quarterTurnSlotWidth.set(Math.round(hostRect.height));
+    this.quarterTurnSlotHeight.set(Math.round(hostRect.width));
   }
 }

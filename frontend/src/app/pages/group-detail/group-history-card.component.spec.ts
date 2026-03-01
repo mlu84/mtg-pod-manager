@@ -32,9 +32,12 @@ describe('GroupHistoryCardComponent', () => {
 
   it('emits selected deck filter', () => {
     const component = new GroupHistoryCardComponent();
+    component.historyDeckOptions = [{ id: 'deck-1', name: 'Deck One' }];
     const emitSpy = vi.spyOn(component.historyDeckFilterChange, 'emit');
 
-    component.setDeckFilter('deck-1');
+    component.onDeckFilterInput({
+      target: { value: 'Deck One' },
+    } as unknown as Event);
 
     expect(emitSpy).toHaveBeenCalledWith('deck-1');
   });

@@ -167,77 +167,77 @@
             }
           </div>
         </div>
-      }
-    </div>
-    <div class="ranking-footer">
-      @if (hasRankingData) {
-        <div class="ranking-footer__controls">
-          <button
-            type="button"
-            class="ranking-search-toggle"
-            [attr.aria-expanded]="rankingSearchVisible"
-            [attr.aria-label]="rankingSearchVisible ? 'Hide ranking search' : 'Show ranking search'"
-            title="Toggle ranking search"
-            (click)="toggleRankingSearch()"
-          >
-            <i class="fas fa-filter"></i>
-          </button>
-          @if (rankingTotalPages > 1) {
-            <div class="pagination">
-              <button
-                class="pagination__btn"
-                (click)="setRankingPage(rankingPage - 1)"
-                [disabled]="rankingPage === 1"
-              >
-                <i class="fas fa-chevron-left"></i>
-              </button>
-              @for (page of [].constructor(rankingTotalPages); track $index) {
-                <button
-                  class="pagination__btn"
-                  [class.pagination__btn--active]="rankingPage === $index + 1"
-                  (click)="setRankingPage($index + 1)"
-                >
-                  {{ $index + 1 }}
-                </button>
-              }
-              <button
-                class="pagination__btn"
-                (click)="setRankingPage(rankingPage + 1)"
-                [disabled]="rankingPage === rankingTotalPages"
-              >
-                <i class="fas fa-chevron-right"></i>
-              </button>
-            </div>
-          }
-        </div>
-      }
-      @if (rankingSearchVisible) {
-        <div class="ranking-search">
-          <i class="fas fa-search"></i>
-          <div class="ranking-search__field">
-            <input
-              type="text"
-              class="form-control ranking-search__input"
-              placeholder="Search deck name..."
-              [value]="rankingSearchTerm"
-              (input)="handleRankingSearchInput($event)"
-              autocomplete="off"
-              maxlength="100"
-            />
-            @if (rankingSearchTerm) {
-              <button
-                type="button"
-                class="ranking-search__clear"
-                aria-label="Reset ranking search"
-                title="Reset search"
-                (click)="clearRankingSearch()"
-              >
-                <i class="fas fa-times"></i>
-              </button>
-            }
-          </div>
-        </div>
-      }
+  }
     </div>
   }
+
+  <div class="ranking-footer">
+    <div class="ranking-footer__controls">
+      <button
+        type="button"
+        class="ranking-search-toggle"
+        [attr.aria-expanded]="rankingSearchVisible"
+        [attr.aria-label]="rankingSearchVisible ? 'Hide ranking search' : 'Show ranking search'"
+        title="Toggle ranking search"
+        (click)="toggleRankingSearch()"
+      >
+        <i class="fas fa-filter"></i>
+      </button>
+      @if (rankingTotalPages > 1 && ranking.length > 0) {
+        <div class="pagination">
+          <button
+            class="pagination__btn"
+            (click)="setRankingPage(rankingPage - 1)"
+            [disabled]="rankingPage === 1"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          @for (page of [].constructor(rankingTotalPages); track $index) {
+            <button
+              class="pagination__btn"
+              [class.pagination__btn--active]="rankingPage === $index + 1"
+              (click)="setRankingPage($index + 1)"
+            >
+              {{ $index + 1 }}
+            </button>
+          }
+          <button
+            class="pagination__btn"
+            (click)="setRankingPage(rankingPage + 1)"
+            [disabled]="rankingPage === rankingTotalPages"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      }
+    </div>
+    @if (rankingSearchVisible) {
+      <div class="ranking-search">
+        <i class="fas fa-search"></i>
+        <div class="ranking-search__field">
+          <input
+            #rankingSearchInput
+            type="text"
+            class="form-control ranking-search__input"
+            placeholder="Search deck name..."
+            [value]="rankingSearchTerm"
+            (input)="handleRankingSearchInput($event)"
+            autocomplete="off"
+            maxlength="100"
+          />
+          @if (rankingSearchTerm) {
+            <button
+              type="button"
+              class="ranking-search__clear"
+              aria-label="Reset ranking search"
+              title="Reset search"
+              (click)="clearRankingSearch()"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
 </section>

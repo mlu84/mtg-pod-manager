@@ -1,6 +1,8 @@
 :host {
   display: block;
+  width: 100%;
   height: 100%;
+  position: relative;
 }
 
 .play-slot {
@@ -21,6 +23,7 @@
   overflow: hidden;
   position: relative;
   height: 100%;
+  transform-origin: center center;
 }
 
 .play-slot__overlay {
@@ -50,7 +53,7 @@
 }
 
 .play-slot--mirrored {
-  transform: rotate(180deg);
+  outline: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .play-slot__skull {
@@ -200,8 +203,10 @@
   z-index: 3;
 }
 
-:host-context(.play-column--right[data-count='5']) .play-slot__life .life-btn {
-  height: 75%;
+@media (min-width: 1200px) {
+  :host-context(.play-column--right[data-count='5']) .play-slot__life .life-btn {
+    height: 75%;
+  }
 }
 
 .play-slot__counters {
@@ -284,6 +289,10 @@
 
 .play-slot--locked {
   cursor: default;
+}
+
+:host-context(.play-screen--two-player-non-desktop) {
+  overflow: hidden;
 }
 
 @media (max-width: 1199px) {

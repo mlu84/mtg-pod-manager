@@ -17,6 +17,43 @@ import { MailService } from '../mail/mail.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UserStatisticsQueryDto } from './dto/user-statistics-query.dto';
 
+const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G'] as const;
+const DECK_COLOR_TO_CANONICAL_CODE: Record<string, string> = {
+  colorless: 'C',
+  c: 'C',
+  monowhite: 'W',
+  monoblue: 'U',
+  monoblack: 'B',
+  monored: 'R',
+  monogreen: 'G',
+  azorius: 'WU',
+  dimir: 'UB',
+  rakdos: 'BR',
+  gruul: 'RG',
+  selesnya: 'WG',
+  orzhov: 'WB',
+  izzet: 'UR',
+  golgari: 'BG',
+  boros: 'WR',
+  simic: 'UG',
+  bant: 'WUG',
+  esper: 'WUB',
+  grixis: 'UBR',
+  jund: 'BRG',
+  naya: 'WRG',
+  abzan: 'WBG',
+  jeskai: 'WUR',
+  sultai: 'UBG',
+  mardu: 'WBR',
+  temur: 'URG',
+  growth: 'WUBG',
+  artifice: 'WUBR',
+  aggression: 'UBRG',
+  altruism: 'WURG',
+  chaos: 'WBRG',
+  wubrg: 'WUBRG',
+};
+
 const profileSelect = {
   id: true,
   email: true,
@@ -521,20 +558,19 @@ export class UsersService {
 
     const comboValues: string[] = [];
     for (const deck of ownDecksAllTime) {
-      const colors = (deck.colors || '').trim();
-      if (!colors) {
+      const canonicalColors = this.toCanonicalColorCode(deck.colors);
+      if (!canonicalColors) {
         continue;
       }
-      comboValues.push(colors);
+      comboValues.push(canonicalColors);
 
-      if (colors === 'C' || colors.toLowerCase() === 'colorless') {
+      if (canonicalColors === 'C') {
         colorUsageCounts.Colorless += 1;
         continue;
       }
 
-      const uniqueColors = new Set(colors.split(''));
-      for (const color of ['W', 'U', 'B', 'R', 'G'] as const) {
-        if (uniqueColors.has(color)) {
+      for (const color of COLOR_ORDER) {
+        if (canonicalColors.includes(color)) {
           colorUsageCounts[color] += 1;
         }
       }
@@ -681,6 +717,23 @@ export class UsersService {
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
       .slice(0, limit);
+  }
+
+  private toCanonicalColorCode(rawColors?: string | null): string {
+    const normalized = (rawColors || '').trim().toLowerCase();
+    if (!normalized) {
+      return '';
+    }
+
+    const compact = normalized.replace(/[\s_-]+/g, '');
+    const mappedValue = DECK_COLOR_TO_CANONICAL_CODE[compact];
+    if (mappedValue) {
+      return mappedValue;
+    }
+
+    const upper = normalized.toUpperCase();
+    const ordered = COLOR_ORDER.filter((color) => upper.includes(color)).join('');
+    return ordered || (compact === 'colorless' || compact === 'c' ? 'C' : '');
   }
 
   private resolveStatisticsDateRange(from?: string, to?: string) {

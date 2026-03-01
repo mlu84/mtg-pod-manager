@@ -1,27 +1,12 @@
 import { ChartConfiguration, ChartDataset, ChartOptions } from 'chart.js';
+import {
+  APP_CHART_THEME_COLORS,
+  createAppChartOptions,
+  withChartAlpha,
+} from '../../core/charts/app-chart-theme';
 
 export function createBaseChartOptions(): ChartOptions {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        labels: {
-          color: '#e2e2ef',
-        },
-      },
-    },
-    scales: {
-      x: {
-        ticks: { color: '#b6b6c9' },
-        grid: { color: 'rgba(255,255,255,0.05)' },
-      },
-      y: {
-        ticks: { color: '#b6b6c9' },
-        grid: { color: 'rgba(255,255,255,0.05)' },
-      },
-    },
-  };
+  return createAppChartOptions();
 }
 
 export function buildBarChart(
@@ -34,7 +19,8 @@ export function buildBarChart(
   if (options?.tickColors && chartOptions.scales && chartOptions.scales['x']) {
     chartOptions.scales['x'].ticks = {
       ...chartOptions.scales['x'].ticks,
-      color: (ctx: { index: number }) => options.tickColors?.[ctx.index] || '#b6b6c9',
+      color: (ctx: { index: number }) =>
+        options.tickColors?.[ctx.index] || APP_CHART_THEME_COLORS.axisText,
     };
   }
 
@@ -46,7 +32,7 @@ export function buildBarChart(
         {
           label,
           data,
-          backgroundColor: options?.datasetColors || '#7f5af0',
+          backgroundColor: options?.datasetColors || APP_CHART_THEME_COLORS.primary,
         },
       ],
     },
@@ -85,14 +71,14 @@ export function buildLineAndBarChart(
         {
           label: 'Avg performance',
           data,
-          backgroundColor: '#7f5af0',
+          backgroundColor: APP_CHART_THEME_COLORS.primary,
         } as ChartDataset<'bar', number[]>,
         {
           type: 'line',
           label: 'Group average',
           data: labels.map(() => Number(avg.toFixed(1))),
-          borderColor: '#00b5a8',
-          backgroundColor: 'rgba(0,181,168,0.2)',
+          borderColor: APP_CHART_THEME_COLORS.secondary,
+          backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.secondary, 0.2),
         } as ChartDataset<'line', number[]>,
       ],
     },

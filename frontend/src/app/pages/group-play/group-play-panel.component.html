@@ -14,7 +14,7 @@
     <span class="panel-btn__label">d20</span>
     <span class="panel-btn__value">Roll</span>
   </button>
-  @if (isCompactViewport) {
+  @if (isCompactViewport && showMirrorToggle) {
     <button
       class="panel-btn panel-btn--neutral"
       [class.panel-btn--primary]="mirroredTopHalf"

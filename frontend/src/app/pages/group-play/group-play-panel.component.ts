@@ -13,6 +13,7 @@ export class GroupPlayPanelComponent {
   @Input({ required: true }) rolling = false;
   @Input({ required: true }) isCompactViewport = false;
   @Input({ required: true }) mirroredTopHalf = false;
+  @Input({ required: true }) showMirrorToggle = true;
   @Input({ required: true }) confirmAbortActive = false;
   @Input({ required: true }) confirmResetActive = false;
   @Input({ required: true }) gameStarted = false;
