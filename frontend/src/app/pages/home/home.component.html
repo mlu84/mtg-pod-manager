@@ -31,15 +31,60 @@
   <section class="features container" aria-label="Core features">
     <article class="feature-card card">
       <h2>Organize Groups and Seasons</h2>
-      <p>Set up your group structure and run season-based standings with clear progression.</p>
+      <p>
+        Set up your own or join groups and run custom MTG seasons. Or watch your decks perform in
+        your permanent standings.
+      </p>
+      <figure class="feature-card__media">
+        <button
+          type="button"
+          class="feature-card__image-btn"
+          (click)="openScreenshotModal('assets/images/landing/organize-groups-seasons.png', 'Friday Night Magic group detail with winners card, ranking, and side cards')"
+          aria-label="Open Organize Groups and Seasons screenshot"
+        >
+          <img
+            src="assets/images/landing/organize-groups-seasons.png"
+            alt="Friday Night Magic group detail with winners card, ranking, and side cards"
+            loading="lazy"
+          />
+        </button>
+      </figure>
     </article>
     <article class="feature-card card">
       <h2>Play and Record</h2>
       <p>Start live games, track outcomes, and save placements back into group history.</p>
+      <figure class="feature-card__media">
+        <button
+          type="button"
+          class="feature-card__image-btn"
+          (click)="openScreenshotModal('assets/images/landing/play-and-record.png', 'Active 4-player live game with deck selection, one eliminated player, life totals, poison, and commander damage')"
+          aria-label="Open Play and Record screenshot"
+        >
+          <img
+            src="assets/images/landing/play-and-record.png"
+            alt="Active 4-player live game with deck selection, one eliminated player, life totals, poison, and commander damage"
+            loading="lazy"
+          />
+        </button>
+      </figure>
     </article>
     <article class="feature-card card">
       <h2>Rank and Analyze</h2>
       <p>See standings, performance trends, and deck usage over time.</p>
+      <figure class="feature-card__media">
+        <button
+          type="button"
+          class="feature-card__image-btn"
+          (click)="openScreenshotModal('assets/images/landing/rank-and-analyze.png', 'Expanded statistics showing deck data rank trend for Heliod Lifegain in Roemerstrassen-Magic')"
+          aria-label="Open Rank and Analyze screenshot"
+        >
+          <img
+            src="assets/images/landing/rank-and-analyze.png"
+            alt="Expanded statistics showing deck data rank trend for Heliod Lifegain in Roemerstrassen-Magic"
+            loading="lazy"
+          />
+        </button>
+      </figure>
     </article>
   </section>
 
@@ -64,3 +109,19 @@
     </div>
   </section>
 </div>
+
+@if (activeScreenshot(); as screenshot) {
+  <div class="screenshot-modal-overlay" (click)="closeScreenshotModal()">
+    <div class="screenshot-modal card" (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="screenshot-modal__close"
+        aria-label="Close screenshot"
+        (click)="closeScreenshotModal()"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+      <img [src]="screenshot.src" [alt]="screenshot.alt" />
+    </div>
+  </div>
+}
