@@ -10,6 +10,15 @@
     <div class="filter-row">
       <label>From <input type="date" class="form-control" [(ngModel)]="from" name="from" [max]="maxDateInput" /></label>
       <label>To <input type="date" class="form-control" [(ngModel)]="to" name="to" [max]="maxDateInput" /></label>
+      <button
+        type="button"
+        class="btn"
+        [class.btn--primary]="allTime"
+        [class.btn--outline]="!allTime"
+        (click)="applyAllTime()"
+      >
+        All time
+      </button>
       <button type="button" class="btn btn--primary" (click)="applyFilters()">Apply</button>
       <button type="button" class="btn btn--outline" (click)="resetFilters()">Reset</button>
     </div>

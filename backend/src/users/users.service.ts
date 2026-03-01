@@ -446,7 +446,13 @@ export class UsersService {
   }
 
   async getUserStatistics(userId: string, queryDto: UserStatisticsQueryDto) {
-    const range = this.resolveStatisticsDateRange(queryDto.from, queryDto.to);
+    const range = queryDto.allTime
+      ? await this.resolveAllTimeStatisticsDateRange()
+      : this.resolveStatisticsDateRange(queryDto.from, queryDto.to);
+    const dateRangeFilter = {
+      gte: range.fromDate,
+      lte: range.toDate,
+    };
     const labels = this.buildStatisticsLabels(range);
 
     const [
@@ -461,19 +467,13 @@ export class UsersService {
       this.prisma.deck.findMany({
         where: {
           ownerId: userId,
-          createdAt: {
-            gte: range.fromDate,
-            lte: range.toDate,
-          },
+          createdAt: dateRangeFilter,
         },
         select: { createdAt: true },
       }),
       this.prisma.deck.findMany({
         where: {
-          createdAt: {
-            gte: range.fromDate,
-            lte: range.toDate,
-          },
+          createdAt: dateRangeFilter,
         },
         select: { createdAt: true },
       }),
@@ -481,10 +481,7 @@ export class UsersService {
         where: {
           userId,
           game: {
-            createdAt: {
-              gte: range.fromDate,
-              lte: range.toDate,
-            },
+            createdAt: dateRangeFilter,
           },
         },
         select: {
@@ -497,10 +494,7 @@ export class UsersService {
         where: {
           userId: { not: null },
           game: {
-            createdAt: {
-              gte: range.fromDate,
-              lte: range.toDate,
-            },
+            createdAt: dateRangeFilter,
           },
         },
         select: {
@@ -789,6 +783,47 @@ export class UsersService {
       toDate = now;
     }
 
+    const sameDay =
+      fromDate.getUTCFullYear() === toDate.getUTCFullYear() &&
+      fromDate.getUTCMonth() === toDate.getUTCMonth() &&
+      fromDate.getUTCDate() === toDate.getUTCDate();
+
+    return {
+      fromDate,
+      toDate,
+      bucket: sameDay ? ('hour' as const) : ('day' as const),
+    };
+  }
+
+  private async resolveAllTimeStatisticsDateRange() {
+    const now = new Date();
+    const [deckMinCreatedAt, gameMinCreatedAt] = await Promise.all([
+      this.prisma.deck.aggregate({
+        _min: { createdAt: true },
+      }),
+      this.prisma.game.aggregate({
+        _min: { createdAt: true },
+      }),
+    ]);
+
+    const candidates = [deckMinCreatedAt._min.createdAt, gameMinCreatedAt._min.createdAt].filter(
+      (value): value is Date => value instanceof Date,
+    );
+
+    if (candidates.length === 0) {
+      const fromDate = new Date(now);
+      fromDate.setUTCDate(fromDate.getUTCDate() - 6);
+      fromDate.setUTCHours(0, 0, 0, 0);
+      return {
+        fromDate,
+        toDate: now,
+        bucket: 'day' as const,
+      };
+    }
+
+    const fromDate = new Date(Math.min(...candidates.map((entry) => entry.getTime())));
+    fromDate.setUTCHours(0, 0, 0, 0);
+    const toDate = now;
     const sameDay =
       fromDate.getUTCFullYear() === toDate.getUTCFullYear() &&
       fromDate.getUTCMonth() === toDate.getUTCMonth() &&

@@ -28,6 +28,7 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
 
   from = '';
   to = '';
+  allTime = false;
   readonly maxDateInput = this.getTodayDateInputValue();
 
   loading = signal(true);
@@ -100,12 +101,27 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
       this.filterError.set(filterError);
       return;
     }
+    if (this.allTime && !this.from && !this.to) {
+      this.filterError.set(null);
+      this.load();
+      return;
+    }
+    this.allTime = false;
+    this.filterError.set(null);
+    this.load();
+  }
+
+  applyAllTime(): void {
+    this.from = '';
+    this.to = '';
+    this.allTime = true;
     this.filterError.set(null);
     this.load();
   }
 
   resetFilters(): void {
     this.setDefaultDateRange();
+    this.allTime = false;
     this.filterError.set(null);
     this.load();
   }
@@ -114,7 +130,9 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
     this.loading.set(true);
     this.error.set(null);
 
-    this.usersApiService.getUserStatistics(this.from || undefined, this.to || undefined).subscribe({
+    this.usersApiService
+      .getUserStatistics(this.from || undefined, this.to || undefined, this.allTime)
+      .subscribe({
       next: (response) => {
         this.stats.set(response);
         this.loading.set(false);

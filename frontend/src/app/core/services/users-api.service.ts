@@ -53,7 +53,7 @@ export class UsersApiService {
     return this.http.post<SubmitFeedbackResponse>(`${API_URL}/users/me/feedback`, data);
   }
 
-  getUserStatistics(from?: string, to?: string): Observable<UserStatisticsResponse> {
+  getUserStatistics(from?: string, to?: string, allTime = false): Observable<UserStatisticsResponse> {
     let params = new HttpParams();
     const normalizedFrom = from?.trim();
     const normalizedTo = to?.trim();
@@ -63,6 +63,9 @@ export class UsersApiService {
     }
     if (normalizedTo) {
       params = params.set('to', normalizedTo);
+    }
+    if (allTime) {
+      params = params.set('allTime', 'true');
     }
 
     return this.http.get<UserStatisticsResponse>(`${API_URL}/users/me/statistics`, {

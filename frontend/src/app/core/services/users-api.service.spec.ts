@@ -55,4 +55,20 @@ describe('UsersApiService', () => {
 
     expect(http.delete).toHaveBeenCalledWith(`${environment.apiUrl}/users/me`);
   });
+
+  it('getUserStatistics sends from/to query parameters', () => {
+    service.getUserStatistics('2026-03-01', '2026-03-07');
+
+    const [, options] = http.get.mock.calls[0];
+    expect(options.params.get('from')).toBe('2026-03-01');
+    expect(options.params.get('to')).toBe('2026-03-07');
+    expect(options.params.get('allTime')).toBeNull();
+  });
+
+  it('getUserStatistics sends allTime query parameter when requested', () => {
+    service.getUserStatistics(undefined, undefined, true);
+
+    const [, options] = http.get.mock.calls[0];
+    expect(options.params.get('allTime')).toBe('true');
+  });
 });
