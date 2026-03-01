@@ -96,6 +96,10 @@
 
 .feature-card {
   padding: 0.95rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  height: 100%;
 }
 
 .feature-card h2,
@@ -120,6 +124,77 @@
 .feature-card p {
   font-size: 0.94rem;
   line-height: 1.5;
+}
+
+.feature-card__media {
+  margin: 0.1rem 0 0;
+  margin-top: auto;
+  border-radius: 0.72rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(13, 14, 27, 0.68);
+  box-shadow: 0 16px 30px rgba(4, 5, 15, 0.35);
+}
+
+.feature-card__image-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.feature-card__media img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.screenshot-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  background: rgba(5, 8, 20, 0.82);
+  backdrop-filter: blur(3px);
+  padding: clamp(1rem, 3vw, 2rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screenshot-modal {
+  position: relative;
+  width: min(1240px, 100%);
+  max-height: 100%;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    display: block;
+    width: 100%;
+    max-height: calc(100vh - 5.5rem);
+    object-fit: contain;
+    border-radius: 0.6rem;
+  }
+}
+
+.screenshot-modal__close {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.42rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(14, 17, 32, 0.88);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
 }
 
 .seo-content {
@@ -233,6 +308,10 @@
   .feature-card p {
     font-size: 0.82rem;
     line-height: 1.42;
+  }
+
+  .feature-card__media {
+    border-radius: 0.58rem;
   }
 
   .seo-content {
