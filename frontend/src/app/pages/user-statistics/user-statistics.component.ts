@@ -170,7 +170,7 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
       stats.colors.labels,
       [
         {
-          label: 'Used in your decks',
+          label: 'Used in your decks (all time)',
           data: stats.colors.values,
           backgroundColor: [
             withChartAlpha(APP_CHART_THEME_COLORS.mana.W, 0.75),
@@ -194,7 +194,7 @@ export class UserStatisticsComponent implements AfterViewInit, OnDestroy {
       stats.favoriteColorCombinations.map((entry) => entry.label),
       [
         {
-          label: 'Deck count',
+          label: 'Deck count (all time)',
           data: stats.favoriteColorCombinations.map((entry) => entry.count),
           backgroundColor: withChartAlpha(APP_CHART_THEME_COLORS.primary, 0.7),
         },
