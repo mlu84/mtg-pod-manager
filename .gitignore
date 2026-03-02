@@ -45,6 +45,7 @@ temp/
 # Windows artifacts
 nul
 frontend/src/environments/
+frontend/src/assets/images/pitch/
 tmppw.txt
 docs/
 docs/MTG Pod-Manager Current Findings.md
